@@ -239,11 +239,16 @@ server.registerTool(
 
 ⚠️ THIS TOOL DOES NOT SHOW ANYTHING TO THE USER!
 ⚠️ YOU MUST CALL display_jobs AFTER THIS TO SHOW RESULTS!
+⚠️ THIS APPLIES TO EVERY SEARCH - not just the first one!
 
-WORKFLOW:
+WORKFLOW (repeat for EVERY job search):
 1. Call this tool → receive Swedish job data
 2. Translate job titles, descriptions, locations to user's language
-3. Call display_jobs with translated content → user sees results
+3. Call display_jobs with translated content → user sees widget
+
+IMPORTANT: Even if user has searched before in this conversation,
+you MUST ALWAYS call display_jobs after EVERY search_jobs call.
+Never skip display_jobs - user cannot see jobs without it!
 
 DO NOT respond to user until you have called display_jobs!
 
@@ -321,8 +326,10 @@ server.registerTool(
     title: "Display Jobs (Step 2 of 2)",
     description: `Show job results to user. This is the ONLY way to display jobs!
 
-Call this IMMEDIATELY after search_jobs with translated content.
-User will NOT see any jobs until you call this tool.`,
+Call this IMMEDIATELY after EVERY search_jobs call with translated content.
+User will NOT see any jobs until you call this tool.
+
+ALWAYS call this after search_jobs - for EVERY search in the conversation!`,
     inputSchema: {
       language: z.string(),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
