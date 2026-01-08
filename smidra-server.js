@@ -209,7 +209,7 @@ server.registerResource(
 );
 
 // ============================================================
-// search_jobs - Single-step with language support
+// search_jobs - Fully dynamic language support
 // ============================================================
 server.registerTool(
   "search_jobs",
@@ -219,13 +219,33 @@ server.registerTool(
 
 Use this when the user wants to find jobs, search for work, or mentions job hunting in Sweden.
 
-IMPORTANT: Always detect what language the user is writing in and pass it as the 'language' parameter.
-The widget will display UI labels in that language. Job content is in Swedish but the interface adapts.`,
+IMPORTANT - LANGUAGE HANDLING:
+1. Detect the language from the user's LAST message
+2. ALWAYS provide the 'labels' parameter with ALL UI texts translated to that language
+3. Set 'direction' to 'rtl' for Arabic, Hebrew, Persian, Urdu - otherwise 'ltr'
+
+The labels you provide will be displayed in the job search widget.`,
     inputSchema: {
       query: z.string().describe("Job title or keyword IN SWEDISH for best results (e.g., 'utvecklare', 'sjuksköterska', 'kock')"),
       location: z.string().optional().describe("City or region in Sweden (e.g., 'Stockholm', 'Göteborg', 'Gävle')"),
       limit: z.number().optional().default(5).describe("Number of results (default: 5, max: 20)"),
-      language: z.string().optional().default("sv").describe("User's language code for UI labels (e.g., 'ar' for Arabic, 'en' for English, 'sv' for Swedish, 'es' for Spanish, 'zh' for Chinese)")
+      language: z.string().describe("Language code detected from user's message (e.g., 'ar', 'tr', 'hi', 'pl', 'sv')"),
+      direction: z.enum(["ltr", "rtl"]).default("ltr").describe("Text direction: 'rtl' for Arabic/Hebrew/Persian/Urdu, 'ltr' for all others"),
+      labels: z.object({
+        results: z.string().describe("'Search Results' translated"),
+        found: z.string().describe("'jobs found' translated"),
+        details: z.string().describe("'Details' translated"),
+        hide: z.string().describe("'Hide' translated"),
+        apply: z.string().describe("'Apply' translated"),
+        noJobs: z.string().describe("'No jobs found' translated"),
+        tryAgain: z.string().describe("'Try different keywords' translated"),
+        location: z.string().describe("'Location' translated"),
+        deadline: z.string().describe("'Apply by' translated"),
+        type: z.string().describe("'Type' translated"),
+        salary: z.string().describe("'Salary' translated"),
+        daysLeft: z.string().describe("'days left' translated"),
+        today: z.string().describe("'Today!' translated")
+      }).describe("ALL UI labels translated to the user's language - YOU MUST PROVIDE THIS")
     },
     _meta: {
       "openai/outputTemplate": "ui://widget/job-list-v4.html",
@@ -234,37 +254,34 @@ The widget will display UI labels in that language. Job content is in Swedish bu
       "openai/widgetAccessible": true
     }
   },
-  async ({ query, location, limit, language }) => {
-    console.log(`🔧 search_jobs called: query="${query}", location="${location || 'hela Sverige'}", limit=${limit}, lang=${language}`);
+  async ({ query, location, limit, language, direction, labels }) => {
+    console.log(`🔧 search_jobs called: query="${query}", location="${location || 'hela Sverige'}", limit=${limit}, lang=${language}, dir=${direction}`);
 
     const data = await searchJobs(query, location, limit || 5);
     const jobs = data.hits.map(formatJob);
     const total = data.total?.value || 0;
 
-    // Language-specific labels
-    const labelsByLang = {
-      sv: { results: 'Sökresultat', found: 'jobb hittade', details: 'Visa mer', hide: 'Dölj', apply: 'Ansök', noJobs: 'Inga jobb hittades', tryAgain: 'Prova andra sökord', location: 'Plats', deadline: 'Sök senast', type: 'Typ', salary: 'Lön', daysLeft: 'dagar kvar', today: 'Idag!' },
-      en: { results: 'Search Results', found: 'jobs found', details: 'Details', hide: 'Hide', apply: 'Apply', noJobs: 'No jobs found', tryAgain: 'Try different keywords', location: 'Location', deadline: 'Apply by', type: 'Type', salary: 'Salary', daysLeft: 'days left', today: 'Today!' },
-      ar: { results: 'نتائج البحث', found: 'وظيفة', details: 'التفاصيل', hide: 'إخفاء', apply: 'تقديم', noJobs: 'لم يتم العثور على وظائف', tryAgain: 'جرب كلمات أخرى', location: 'الموقع', deadline: 'التقديم قبل', type: 'النوع', salary: 'الراتب', daysLeft: 'أيام متبقية', today: 'اليوم!' },
-      es: { results: 'Resultados', found: 'empleos encontrados', details: 'Detalles', hide: 'Ocultar', apply: 'Aplicar', noJobs: 'No se encontraron empleos', tryAgain: 'Prueba otras palabras', location: 'Ubicación', deadline: 'Fecha límite', type: 'Tipo', salary: 'Salario', daysLeft: 'días restantes', today: '¡Hoy!' },
-      zh: { results: '搜索结果', found: '个职位', details: '详情', hide: '隐藏', apply: '申请', noJobs: '未找到职位', tryAgain: '尝试其他关键词', location: '地点', deadline: '截止日期', type: '类型', salary: '薪资', daysLeft: '天剩余', today: '今天!' },
-      de: { results: 'Suchergebnisse', found: 'Jobs gefunden', details: 'Details', hide: 'Ausblenden', apply: 'Bewerben', noJobs: 'Keine Jobs gefunden', tryAgain: 'Versuchen Sie andere Begriffe', location: 'Standort', deadline: 'Bewerbungsfrist', type: 'Typ', salary: 'Gehalt', daysLeft: 'Tage übrig', today: 'Heute!' },
-      fr: { results: 'Résultats', found: 'emplois trouvés', details: 'Détails', hide: 'Masquer', apply: 'Postuler', noJobs: 'Aucun emploi trouvé', tryAgain: 'Essayez d\'autres mots', location: 'Lieu', deadline: 'Date limite', type: 'Type', salary: 'Salaire', daysLeft: 'jours restants', today: 'Aujourd\'hui!' }
+    // Fallback labels if ChatGPT doesn't provide them
+    const defaultLabels = {
+      results: 'Search Results', found: 'jobs found', details: 'Details', hide: 'Hide',
+      apply: 'Apply', noJobs: 'No jobs found', tryAgain: 'Try different keywords',
+      location: 'Location', deadline: 'Apply by', type: 'Type', salary: 'Salary',
+      daysLeft: 'days left', today: 'Today!'
     };
 
-    const lang = language?.toLowerCase()?.substring(0, 2) || 'sv';
-    const labels = labelsByLang[lang] || labelsByLang.en;
-    const direction = ['ar', 'he', 'fa', 'ur'].includes(lang) ? 'rtl' : 'ltr';
+    const finalLabels = labels || defaultLabels;
+    const finalDirection = direction || 'ltr';
+    const lang = language || 'en';
 
-    console.log(`📤 Found ${jobs.length} jobs (total: ${total}) - UI in ${lang} (${direction})`);
+    console.log(`📤 Found ${jobs.length} jobs (total: ${total}) - UI in ${lang} (${finalDirection})`);
 
     const result = {
       language: lang,
-      direction,
+      direction: finalDirection,
       query,
-      location: location || (lang === 'sv' ? 'Hela Sverige' : lang === 'ar' ? 'كل السويد' : 'All Sweden'),
+      location: location || 'All Sweden',
       total,
-      labels,
+      labels: finalLabels,
       jobs
     };
 
@@ -274,7 +291,7 @@ The widget will display UI labels in that language. Job content is in Swedish bu
       structuredContent: result,
       content: [{
         type: "text",
-        text: `${labels.results}: ${total} ${labels.found}\n\n${jobSummary}${jobs.length > 3 ? '\n...' : ''}`
+        text: `${finalLabels.results}: ${total} ${finalLabels.found}\n\n${jobSummary}${jobs.length > 3 ? '\n...' : ''}`
       }]
     };
   }
