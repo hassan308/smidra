@@ -145,7 +145,9 @@ lärare (teacher), städare/lokalvårdare (cleaner), chaufför (driver), ingenj�
       translatingText: z.string().describe("'Translating results...' in user's language")
     },
     _meta: {
-      "openai/outputTemplate": "ui://widget/job-list.html"
+      // NO widget here - only display_jobs shows widget
+      "openai/toolInvocation/invoking": "🔍",
+      "openai/toolInvocation/invoked": "✓"
     }
   },
   async ({ query, location, limit, language, direction, loadingText, translatingText }) => {
@@ -156,19 +158,10 @@ lärare (teacher), städare/lokalvårdare (cleaner), chaufför (driver), ingenj�
     const jobs = data.hits.map(formatJob);
     const total = data.total?.value || 0;
 
-    console.log(`📤 Found ${jobs.length} jobs - showing loading, waiting for translation...`);
+    console.log(`📤 Found ${jobs.length} jobs - waiting for translation...`);
 
-    // Show loading widget while ChatGPT translates
-    const loadingData = {
-      loading: true,
-      language,
-      direction,
-      loadingText: translatingText || loadingText || "Translating..."
-    };
-
-    // Return loading state to widget + job data for ChatGPT to translate
+    // Return job data for ChatGPT to translate (no widget yet)
     return {
-      structuredContent: loadingData,
       content: [{
         type: "text",
         text: `FOUND ${total} JOBS - NOW TRANSLATE AND CALL display_jobs:
