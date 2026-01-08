@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  smidra:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smidra
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8002:8002"
+    environment:
+      - PORT=8002
+      - NODE_ENV=production
+    networks:
+      - smidra-network
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  smidra-network:
+    driver: bridge
