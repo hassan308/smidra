@@ -209,7 +209,7 @@ server.registerResource(
 );
 
 // ============================================================
-// STEP 1: search_jobs - Returns raw data for translation
+// search_jobs - Single-step with language support
 // ============================================================
 server.registerTool(
   "search_jobs",
@@ -219,55 +219,62 @@ server.registerTool(
 
 Use this when the user wants to find jobs, search for work, or mentions job hunting in Sweden.
 
-IMPORTANT: This tool returns job data in Swedish. After receiving results, you MUST:
-1. Translate ALL job titles, descriptions, employer names, and location names to the user's language
-2. Call the display_jobs tool with the translated data to show the visual widget
-
-Example flow:
-- User asks in Arabic: "أبحث عن وظيفة مطور"
-- You call search_jobs with query="utvecklare" (translate to Swedish for better results)
-- You receive Swedish job data
-- You translate everything to Arabic
-- You call display_jobs with the Arabic translations`,
+IMPORTANT: Always detect what language the user is writing in and pass it as the 'language' parameter.
+The widget will display UI labels in that language. Job content is in Swedish but the interface adapts.`,
     inputSchema: {
       query: z.string().describe("Job title or keyword IN SWEDISH for best results (e.g., 'utvecklare', 'sjuksköterska', 'kock')"),
       location: z.string().optional().describe("City or region in Sweden (e.g., 'Stockholm', 'Göteborg', 'Gävle')"),
-      limit: z.number().optional().default(5).describe("Number of results (default: 5, max: 20)")
+      limit: z.number().optional().default(5).describe("Number of results (default: 5, max: 20)"),
+      language: z.string().optional().default("sv").describe("User's language code for UI labels (e.g., 'ar' for Arabic, 'en' for English, 'sv' for Swedish, 'es' for Spanish, 'zh' for Chinese)")
     },
     _meta: {
+      "openai/outputTemplate": "ui://widget/job-list-v4.html",
       "openai/toolInvocation/invoking": "Searching Arbetsförmedlingen...",
-      "openai/toolInvocation/invoked": "Found jobs - preparing display..."
+      "openai/toolInvocation/invoked": "Found jobs!",
+      "openai/widgetAccessible": true
     }
   },
-  async ({ query, location, limit }) => {
-    console.log(`🔧 search_jobs called: query="${query}", location="${location || 'hela Sverige'}", limit=${limit}`);
+  async ({ query, location, limit, language }) => {
+    console.log(`🔧 search_jobs called: query="${query}", location="${location || 'hela Sverige'}", limit=${limit}, lang=${language}`);
 
     const data = await searchJobs(query, location, limit || 5);
     const jobs = data.hits.map(formatJob);
     const total = data.total?.value || 0;
 
-    console.log(`📤 Found ${jobs.length} jobs (total: ${total})`);
+    // Language-specific labels
+    const labelsByLang = {
+      sv: { results: 'Sökresultat', found: 'jobb hittade', details: 'Visa mer', hide: 'Dölj', apply: 'Ansök', noJobs: 'Inga jobb hittades', tryAgain: 'Prova andra sökord', location: 'Plats', deadline: 'Sök senast', type: 'Typ', salary: 'Lön', daysLeft: 'dagar kvar', today: 'Idag!' },
+      en: { results: 'Search Results', found: 'jobs found', details: 'Details', hide: 'Hide', apply: 'Apply', noJobs: 'No jobs found', tryAgain: 'Try different keywords', location: 'Location', deadline: 'Apply by', type: 'Type', salary: 'Salary', daysLeft: 'days left', today: 'Today!' },
+      ar: { results: 'نتائج البحث', found: 'وظيفة', details: 'التفاصيل', hide: 'إخفاء', apply: 'تقديم', noJobs: 'لم يتم العثور على وظائف', tryAgain: 'جرب كلمات أخرى', location: 'الموقع', deadline: 'التقديم قبل', type: 'النوع', salary: 'الراتب', daysLeft: 'أيام متبقية', today: 'اليوم!' },
+      es: { results: 'Resultados', found: 'empleos encontrados', details: 'Detalles', hide: 'Ocultar', apply: 'Aplicar', noJobs: 'No se encontraron empleos', tryAgain: 'Prueba otras palabras', location: 'Ubicación', deadline: 'Fecha límite', type: 'Tipo', salary: 'Salario', daysLeft: 'días restantes', today: '¡Hoy!' },
+      zh: { results: '搜索结果', found: '个职位', details: '详情', hide: '隐藏', apply: '申请', noJobs: '未找到职位', tryAgain: '尝试其他关键词', location: '地点', deadline: '截止日期', type: '类型', salary: '薪资', daysLeft: '天剩余', today: '今天!' },
+      de: { results: 'Suchergebnisse', found: 'Jobs gefunden', details: 'Details', hide: 'Ausblenden', apply: 'Bewerben', noJobs: 'Keine Jobs gefunden', tryAgain: 'Versuchen Sie andere Begriffe', location: 'Standort', deadline: 'Bewerbungsfrist', type: 'Typ', salary: 'Gehalt', daysLeft: 'Tage übrig', today: 'Heute!' },
+      fr: { results: 'Résultats', found: 'emplois trouvés', details: 'Détails', hide: 'Masquer', apply: 'Postuler', noJobs: 'Aucun emploi trouvé', tryAgain: 'Essayez d\'autres mots', location: 'Lieu', deadline: 'Date limite', type: 'Type', salary: 'Salaire', daysLeft: 'jours restants', today: 'Aujourd\'hui!' }
+    };
 
-    // Return as TEXT only - no structuredContent
-    // ChatGPT will translate and call display_jobs
-    const jobData = { query, location: location || "Hela Sverige", total, jobs };
+    const lang = language?.toLowerCase()?.substring(0, 2) || 'sv';
+    const labels = labelsByLang[lang] || labelsByLang.en;
+    const direction = ['ar', 'he', 'fa', 'ur'].includes(lang) ? 'rtl' : 'ltr';
+
+    console.log(`📤 Found ${jobs.length} jobs (total: ${total}) - UI in ${lang} (${direction})`);
+
+    const result = {
+      language: lang,
+      direction,
+      query,
+      location: location || (lang === 'sv' ? 'Hela Sverige' : lang === 'ar' ? 'كل السويد' : 'All Sweden'),
+      total,
+      labels,
+      jobs
+    };
+
+    const jobSummary = jobs.slice(0, 3).map(j => `• ${j.title} - ${j.employer}`).join('\n');
 
     return {
+      structuredContent: result,
       content: [{
         type: "text",
-        text: `⚠️ ACTION REQUIRED: You MUST now call the display_jobs tool to show these results to the user.
-
-DO NOT just summarize these results in text. The user expects to see the visual job widget.
-
-STEPS:
-1. Detect the user's language from their message
-2. Translate ALL the job data below to that language
-3. Call display_jobs with: language, direction (rtl for Arabic/Hebrew), labels (translated UI text), and the translated jobs array
-
-RAW JOB DATA (translate this):
-${JSON.stringify(jobData, null, 2)}
-
-REMEMBER: Call display_jobs NOW with the translated data!`
+        text: `${labels.results}: ${total} ${labels.found}\n\n${jobSummary}${jobs.length > 3 ? '\n...' : ''}`
       }]
     };
   }
