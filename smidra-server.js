@@ -39,10 +39,21 @@ const regions = {
   "norrbotten": "25"
 };
 
+// Normalize Swedish characters
+function normalizeSwedish(str) {
+  return str
+    .toLowerCase()
+    .replace(/å/g, 'a')
+    .replace(/ä/g, 'a')
+    .replace(/ö/g, 'o')
+    .replace(/é/g, 'e')
+    .trim();
+}
+
 // Find region code from location string
 function findRegion(location) {
   if (!location) return null;
-  const loc = location.toLowerCase().trim();
+  const loc = normalizeSwedish(location);
 
   // Direct match
   if (regions[loc]) return regions[loc];

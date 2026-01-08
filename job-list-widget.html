@@ -401,6 +401,89 @@
       border-color: var(--brand-primary);
     }
 
+    /* Expandable Details */
+    .job-details-expanded {
+      display: none;
+      padding-top: 16px;
+      margin-top: 16px;
+      border-top: 1px solid var(--border-light);
+      animation: expandIn 0.3s ease;
+    }
+
+    .job-details-expanded.show {
+      display: block;
+    }
+
+    @keyframes expandIn {
+      from { opacity: 0; max-height: 0; }
+      to { opacity: 1; max-height: 1000px; }
+    }
+
+    .job-full-description {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow-y: auto;
+      padding: 14px;
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+      margin-bottom: 16px;
+    }
+
+    .job-full-description::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .job-full-description::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+
+    .job-info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .job-info-item {
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+    }
+
+    .job-info-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .job-info-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .btn-expand {
+      background: transparent;
+      color: var(--brand-primary);
+      border: 1px solid var(--brand-primary);
+    }
+
+    .btn-expand:hover {
+      background: rgba(99, 102, 241, 0.1);
+    }
+
+    .btn-expand.active {
+      background: var(--brand-primary);
+      color: white;
+    }
+
     /* Quick Info Chips */
     .job-quick-info {
       display: flex;
@@ -510,16 +593,20 @@
   <script>
     const translations = {
       'sv': {
-        searchResults: 'Sokresultat',
+        searchResults: 'Sökresultat',
         jobsFound: 'lediga jobb',
         showing: 'Visar',
-        deadline: 'Sok senast',
-        apply: 'Ansok',
+        deadline: 'Sök senast',
+        apply: 'Ansök',
         details: 'Mer info',
+        hideDetails: 'Dölj',
         noJobs: 'Inga jobb hittades',
-        tryAgain: 'Prova att soka med andra ord',
+        tryAgain: 'Prova att söka med andra ord',
         urgent: 'Snart!',
-        allSweden: 'Hela Sverige'
+        allSweden: 'Hela Sverige',
+        location: 'Plats',
+        employment: 'Anställning',
+        salary: 'Lön'
       },
       'en': {
         searchResults: 'Search Results',
@@ -528,10 +615,14 @@
         deadline: 'Apply by',
         apply: 'Apply',
         details: 'Details',
+        hideDetails: 'Hide',
         noJobs: 'No jobs found',
         tryAgain: 'Try different search terms',
         urgent: 'Soon!',
-        allSweden: 'All Sweden'
+        allSweden: 'All Sweden',
+        location: 'Location',
+        employment: 'Employment',
+        salary: 'Salary'
       }
     };
 
@@ -705,7 +796,7 @@
                 <div class="job-description">${truncateText(job.description, 140)}</div>
 
                 <div class="job-card-footer">
-                  <button class="btn btn-secondary" onclick="event.stopPropagation(); showDetails('${job.id}')">
+                  <button class="btn btn-expand" id="btn-${job.id}" onclick="event.stopPropagation(); toggleDetails('${job.id}')">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
                     </svg>
@@ -719,6 +810,33 @@
                     ${t('apply')}
                   </a>
                 </div>
+
+                <!-- Expandable Details -->
+                <div class="job-details-expanded" id="details-${job.id}">
+                  <div class="job-info-grid">
+                    <div class="job-info-item">
+                      <div class="job-info-label">${t('location')}</div>
+                      <div class="job-info-value">${job.location}${job.region ? ', ' + job.region : ''}</div>
+                    </div>
+                    <div class="job-info-item">
+                      <div class="job-info-label">${t('deadline')}</div>
+                      <div class="job-info-value">${job.deadline || 'Löpande'}</div>
+                    </div>
+                    ${job.employmentType ? `
+                    <div class="job-info-item">
+                      <div class="job-info-label">${t('employment')}</div>
+                      <div class="job-info-value">${job.employmentType.replace('Vanlig anställning', 'Fast tjänst')}</div>
+                    </div>
+                    ` : ''}
+                    ${job.salaryType ? `
+                    <div class="job-info-item">
+                      <div class="job-info-label">${t('salary')}</div>
+                      <div class="job-info-value">${job.salaryType.replace('Fast månads- vecko- eller timlön', 'Månadslön')}</div>
+                    </div>
+                    ` : ''}
+                  </div>
+                  <div class="job-full-description">${job.fullDescription || job.description || 'Ingen beskrivning tillgänglig.'}</div>
+                </div>
               </div>
             </div>
           `}).join('')}
@@ -728,11 +846,17 @@
       notifyHeight();
     }
 
-    function showDetails(jobId) {
-      if (typeof window.openai !== 'undefined' && window.openai.callTool) {
-        window.openai.callTool('get_job_details', { jobId });
-      } else {
-        window.open(`https://arbetsformedlingen.se/platsbanken/annonser/${jobId}`, '_blank');
+    function toggleDetails(jobId) {
+      const detailsEl = document.getElementById(`details-${jobId}`);
+      const btnEl = document.getElementById(`btn-${jobId}`);
+
+      if (detailsEl && btnEl) {
+        const isExpanded = detailsEl.classList.toggle('show');
+        btnEl.classList.toggle('active', isExpanded);
+        btnEl.innerHTML = isExpanded
+          ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg> ${t('hideDetails')}`
+          : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg> ${t('details')}`;
+        notifyHeight();
       }
     }
 
