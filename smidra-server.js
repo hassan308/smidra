@@ -261,17 +261,17 @@ The labels you provide will be displayed in the job search widget.`,
     const jobs = data.hits.map(formatJob);
     const total = data.total?.value || 0;
 
-    // Fallback labels if ChatGPT doesn't provide them
+    // Fallback labels - Swedish as default
     const defaultLabels = {
-      results: 'Search Results', found: 'jobs found', details: 'Details', hide: 'Hide',
-      apply: 'Apply', noJobs: 'No jobs found', tryAgain: 'Try different keywords',
-      location: 'Location', deadline: 'Apply by', type: 'Type', salary: 'Salary',
-      daysLeft: 'days left', today: 'Today!'
+      results: 'Sökresultat', found: 'jobb hittade', details: 'Visa mer', hide: 'Dölj',
+      apply: 'Ansök', noJobs: 'Inga jobb hittades', tryAgain: 'Prova andra sökord',
+      location: 'Plats', deadline: 'Sök senast', type: 'Typ', salary: 'Lön',
+      daysLeft: 'dagar kvar', today: 'Idag!'
     };
 
     const finalLabels = labels || defaultLabels;
     const finalDirection = direction || 'ltr';
-    const lang = language || 'en';
+    const lang = language || 'sv';
 
     console.log(`📤 Found ${jobs.length} jobs (total: ${total}) - UI in ${lang} (${finalDirection})`);
 
@@ -279,7 +279,7 @@ The labels you provide will be displayed in the job search widget.`,
       language: lang,
       direction: finalDirection,
       query,
-      location: location || 'All Sweden',
+      location: location || 'Hela Sverige',
       total,
       labels: finalLabels,
       jobs
