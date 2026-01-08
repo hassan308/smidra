@@ -166,14 +166,14 @@ const server = new McpServer({
   version: "1.0.0"
 });
 
-// Register job list widget resource
+// Register job list widget resource (v2 to bust cache)
 server.registerResource(
   "job-list-widget",
-  "ui://widget/job-list.html",
+  "ui://widget/job-list-v2.html",
   {},
   async () => ({
     contents: [{
-      uri: "ui://widget/job-list.html",
+      uri: "ui://widget/job-list-v2.html",
       mimeType: "text/html+skybridge",
       text: jobListHTML
     }]
@@ -206,7 +206,7 @@ server.registerTool(
       limit: z.number().optional().default(5).describe("Antal resultat att visa (standard: 5)")
     },
     _meta: {
-      "openai/outputTemplate": "ui://widget/job-list.html"
+      "openai/outputTemplate": "ui://widget/job-list-v2.html"
     }
   },
   async ({ query, location, limit }) => {
