@@ -646,13 +646,42 @@
     }
 
     // Handle data from ChatGPT
-    function handleData(data) {
-      console.log('[Smidra] Received data:', JSON.stringify(data, null, 2));
+    function handleData(rawData) {
+      console.log('[Smidra] Raw data type:', typeof rawData);
+      console.log('[Smidra] Raw data:', JSON.stringify(rawData, null, 2));
 
-      if (!data) {
+      if (!rawData) {
         console.log('[Smidra] No data received');
         return;
       }
+
+      // Try to extract data from different possible structures
+      let data = rawData;
+
+      // If it's a string, try to parse it
+      if (typeof rawData === 'string') {
+        try {
+          data = JSON.parse(rawData);
+          console.log('[Smidra] Parsed string data');
+        } catch (e) {
+          console.log('[Smidra] Could not parse string:', e);
+          return;
+        }
+      }
+
+      // Check for nested structures (e.g., data.content, data.result, etc.)
+      if (data.structuredContent) {
+        data = data.structuredContent;
+        console.log('[Smidra] Using structuredContent');
+      } else if (data.content && !data.jobs) {
+        data = data.content;
+        console.log('[Smidra] Using content property');
+      }
+
+      console.log('[Smidra] Final data keys:', Object.keys(data));
+      console.log('[Smidra] Jobs count:', data.jobs?.length || 0);
+      console.log('[Smidra] Query:', data.query);
+      console.log('[Smidra] Location:', data.location);
 
       // Apply language settings
       if (data.language) {
@@ -673,17 +702,21 @@
         console.log('[Smidra] Labels applied:', Object.keys(data.labels).length, 'labels');
       }
 
-      // Log jobs info
-      console.log('[Smidra] Jobs in data:', data.jobs?.length || 0);
-
       // Store data and render
       state.data = data;
       render();
     }
 
     // Handle globals from ChatGPT
-    function handleGlobals() {
+    function handleGlobals(event) {
+      console.log('[Smidra] openai:set_globals event received');
+      console.log('[Smidra] window.openai exists:', !!window.openai);
+
       if (!window.openai) return;
+
+      console.log('[Smidra] window.openai keys:', Object.keys(window.openai));
+      console.log('[Smidra] toolOutput exists:', !!window.openai.toolOutput);
+      console.log('[Smidra] toolOutput type:', typeof window.openai.toolOutput);
 
       if (window.openai.theme) applyTheme(window.openai.theme);
       if (window.openai.toolOutput) {
@@ -693,11 +726,17 @@
 
     // Initialize
     function init() {
+      console.log('[Smidra] Widget initializing...');
+      console.log('[Smidra] window.openai exists at init:', !!window.openai);
+
       // Set up event listener
       window.addEventListener('openai:set_globals', handleGlobals, { passive: true });
       document.getElementById('app').addEventListener('click', handleClick);
 
       if (window.openai) {
+        console.log('[Smidra] window.openai keys at init:', Object.keys(window.openai));
+        console.log('[Smidra] toolOutput at init:', !!window.openai.toolOutput);
+
         // Apply initial theme
         if (window.openai.theme) applyTheme(window.openai.theme);
 
@@ -706,18 +745,30 @@
 
         // Check for data
         if (window.openai.toolOutput) {
+          console.log('[Smidra] Found toolOutput immediately');
           handleData(window.openai.toolOutput);
         } else {
-          // Poll for data
+          console.log('[Smidra] No toolOutput yet, polling...');
+          // Poll for data with better logging
+          let pollCount = 0;
           const check = setInterval(() => {
+            pollCount++;
             if (window.openai?.toolOutput) {
+              console.log('[Smidra] Found toolOutput after', pollCount, 'polls');
               clearInterval(check);
               handleData(window.openai.toolOutput);
             }
           }, 50);
-          setTimeout(() => clearInterval(check), 10000);
+          setTimeout(() => {
+            clearInterval(check);
+            console.log('[Smidra] Polling timed out after', pollCount, 'polls');
+            if (!state.data) {
+              console.log('[Smidra] No data received - showing fallback');
+            }
+          }, 10000);
         }
       } else {
+        console.log('[Smidra] No window.openai - preview mode');
         // Preview mode - fetch sample data
         fetch('/api/search?q=utvecklare&limit=5')
           .then(r => r.json())
