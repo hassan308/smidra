@@ -250,16 +250,24 @@ Example flow:
 
     // Return as TEXT only - no structuredContent
     // ChatGPT will translate and call display_jobs
+    const jobData = { query, location: location || "Hela Sverige", total, jobs };
+
     return {
       content: [{
         type: "text",
-        text: JSON.stringify({
-          _instruction: "Translate all text fields to the user's language, then call display_jobs with the translated data",
-          query,
-          location: location || "Hela Sverige",
-          total,
-          jobs
-        }, null, 2)
+        text: `⚠️ ACTION REQUIRED: You MUST now call the display_jobs tool to show these results to the user.
+
+DO NOT just summarize these results in text. The user expects to see the visual job widget.
+
+STEPS:
+1. Detect the user's language from their message
+2. Translate ALL the job data below to that language
+3. Call display_jobs with: language, direction (rtl for Arabic/Hebrew), labels (translated UI text), and the translated jobs array
+
+RAW JOB DATA (translate this):
+${JSON.stringify(jobData, null, 2)}
+
+REMEMBER: Call display_jobs NOW with the translated data!`
       }]
     };
   }
@@ -388,10 +396,19 @@ IMPORTANT: This tool returns data in Swedish. After receiving results, you MUST:
     return {
       content: [{
         type: "text",
-        text: JSON.stringify({
-          _instruction: "Translate all text fields to the user's language, then call display_job_detail",
-          ...formatted
-        }, null, 2)
+        text: `⚠️ ACTION REQUIRED: You MUST now call the display_job_detail tool to show this job to the user.
+
+DO NOT just summarize this job in text. The user expects to see the visual job detail widget.
+
+STEPS:
+1. Detect the user's language from their message
+2. Translate ALL the job data below to that language
+3. Call display_job_detail with: language, direction (rtl for Arabic/Hebrew), labels (translated UI text), and the translated job object
+
+RAW JOB DATA (translate this):
+${JSON.stringify(formatted, null, 2)}
+
+REMEMBER: Call display_job_detail NOW with the translated data!`
       }]
     };
   }
