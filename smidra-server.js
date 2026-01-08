@@ -108,7 +108,118 @@ const server = new McpServer({
   version: "4.0.0"
 });
 
+// Loading widget HTML (auto-hides after results appear)
+const jobLoadingHTML = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: transparent;
+    }
+    .loading-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      border-radius: 12px;
+      border: 1px solid #bae6fd;
+      transition: opacity 0.3s, transform 0.3s;
+    }
+    .loading-container.hidden {
+      opacity: 0;
+      transform: scale(0.95);
+      pointer-events: none;
+      height: 0;
+      padding: 0;
+      margin: 0;
+      overflow: hidden;
+    }
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #0ea5e9;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .loading-text {
+      color: #0369a1;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .job-count {
+      margin-left: auto;
+      background: #0ea5e9;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    [dir="rtl"] { direction: rtl; }
+    [dir="rtl"] .loading-container { flex-direction: row-reverse; }
+    [dir="rtl"] .job-count { margin-left: 0; margin-right: auto; }
+  </style>
+</head>
+<body>
+  <div class="loading-container" id="loader">
+    <div class="spinner"></div>
+    <span class="loading-text" id="text">Loading...</span>
+    <span class="job-count" id="count"></span>
+  </div>
+  <script>
+    const loader = document.getElementById('loader');
+    const textEl = document.getElementById('text');
+    const countEl = document.getElementById('count');
+
+    function hideLoader() {
+      loader.classList.add('hidden');
+      setTimeout(() => {
+        document.body.style.display = 'none';
+        window.openai?.notifyIntrinsicHeight?.(0);
+      }, 300);
+    }
+
+    function init() {
+      const data = window.openai?.toolOutput;
+      if (data) {
+        if (data.direction) document.documentElement.dir = data.direction;
+        if (data.loadingText) textEl.textContent = data.loadingText;
+        if (data.jobCount) countEl.textContent = data.jobCount;
+      }
+      window.openai?.notifyIntrinsicHeight?.(document.body.scrollHeight);
+
+      // Auto-hide after 10 seconds (fallback)
+      setTimeout(hideLoader, 10000);
+    }
+
+    // Listen for new tool calls (display_jobs)
+    window.addEventListener('openai:tool_call', hideLoader);
+
+    // Also hide if we detect results widget appeared
+    const observer = new MutationObserver(() => {
+      // If another widget appeared, hide this one
+      if (document.hidden) hideLoader();
+    });
+
+    init();
+  </script>
+</body>
+</html>`;
+
 // Register widget resources
+server.registerResource("job-loading-widget", "ui://widget/job-loading.html", {}, async () => ({
+  contents: [{ uri: "ui://widget/job-loading.html", mimeType: "text/html+skybridge", text: jobLoadingHTML }]
+}));
+
 server.registerResource("job-list-widget", "ui://widget/job-list.html", {}, async () => ({
   contents: [{ uri: "ui://widget/job-list.html", mimeType: "text/html+skybridge", text: jobListHTML }]
 }));
@@ -145,9 +256,7 @@ lärare (teacher), städare/lokalvårdare (cleaner), chaufför (driver), ingenj�
       translatingText: z.string().describe("'Translating results...' in user's language")
     },
     _meta: {
-      // NO widget here - only display_jobs shows widget
-      "openai/toolInvocation/invoking": "🔍",
-      "openai/toolInvocation/invoked": "✓"
+      "openai/outputTemplate": "ui://widget/job-loading.html"
     }
   },
   async ({ query, location, limit, language, direction, loadingText, translatingText }) => {
@@ -160,8 +269,15 @@ lärare (teacher), städare/lokalvårdare (cleaner), chaufför (driver), ingenj�
 
     console.log(`📤 Found ${jobs.length} jobs - waiting for translation...`);
 
-    // Return job data for ChatGPT to translate (no widget yet)
+    // Return loading widget + job data for ChatGPT to translate
     return {
+      structuredContent: {
+        loading: true,
+        language,
+        direction,
+        loadingText: translatingText || loadingText || "Translating...",
+        jobCount: jobs.length
+      },
       content: [{
         type: "text",
         text: `FOUND ${total} JOBS - NOW TRANSLATE AND CALL display_jobs:
