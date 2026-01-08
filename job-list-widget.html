@@ -503,11 +503,23 @@
       const app = document.getElementById('app');
       const data = state.data;
 
+      // No data yet - initial loading
       if (!data) {
         app.innerHTML = `
           <div class="loading">
             <div class="spinner"></div>
             <div class="loading-text">${t('results')}...</div>
+          </div>`;
+        notifyHeight();
+        return;
+      }
+
+      // Loading state with translated text (while ChatGPT translates)
+      if (data.loading) {
+        app.innerHTML = `
+          <div class="loading">
+            <div class="spinner"></div>
+            <div class="loading-text">${esc(data.loadingText) || 'Loading...'}</div>
           </div>`;
         notifyHeight();
         return;

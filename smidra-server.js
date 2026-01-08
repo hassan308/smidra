@@ -14,120 +14,65 @@ const PORT = process.env.PORT || 8002;
 // Arbetsformedlingen JobSearch API
 const AF_API_BASE = "https://jobsearch.api.jobtechdev.se";
 
-// Swedish regions (lan) mapping
+// Swedish regions mapping
 const regions = {
-  "stockholm": "01",
-  "uppsala": "03",
-  "sodermanland": "04",
-  "ostergotland": "05",
-  "jonkoping": "06",
-  "kronoberg": "07",
-  "kalmar": "08",
-  "gotland": "09",
-  "blekinge": "10",
-  "skane": "12",
-  "halland": "13",
-  "vastra gotaland": "14",
-  "varmland": "17",
-  "orebro": "18",
-  "vastmanland": "19",
-  "dalarna": "20",
-  "gavleborg": "21",
-  "vasternorrland": "22",
-  "jamtland": "23",
-  "vasterbotten": "24",
+  "stockholm": "01", "uppsala": "03", "sodermanland": "04", "ostergotland": "05",
+  "jonkoping": "06", "kronoberg": "07", "kalmar": "08", "gotland": "09",
+  "blekinge": "10", "skane": "12", "halland": "13", "vastra gotaland": "14",
+  "varmland": "17", "orebro": "18", "vastmanland": "19", "dalarna": "20",
+  "gavleborg": "21", "vasternorrland": "22", "jamtland": "23", "vasterbotten": "24",
   "norrbotten": "25"
 };
 
-// Normalize Swedish characters
+// City to region mapping
+const cityToRegion = {
+  "goteborg": "14", "gothenburg": "14", "malmo": "12", "lund": "12",
+  "helsingborg": "12", "norrkoping": "05", "linkoping": "05", "orebro": "18",
+  "vasteras": "19", "umea": "24", "lulea": "25", "gavle": "21",
+  "sundsvall": "22", "ostersund": "23", "karlstad": "17", "vaxjo": "07",
+  "kalmar": "08", "halmstad": "13", "boras": "14", "eskilstuna": "04"
+};
+
 function normalizeSwedish(str) {
-  return str
-    .toLowerCase()
-    .replace(/å/g, 'a')
-    .replace(/ä/g, 'a')
-    .replace(/ö/g, 'o')
-    .replace(/é/g, 'e')
-    .trim();
+  return str.toLowerCase().replace(/å/g, 'a').replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/é/g, 'e').trim();
 }
 
-// Find region code from location string
 function findRegion(location) {
   if (!location) return null;
   const loc = normalizeSwedish(location);
-
-  // Direct match
   if (regions[loc]) return regions[loc];
-
-  // Partial match
   for (const [name, code] of Object.entries(regions)) {
-    if (loc.includes(name) || name.includes(loc)) {
-      return code;
-    }
+    if (loc.includes(name) || name.includes(loc)) return code;
   }
-
-  // Check if it's a city name that maps to a region
-  const cityToRegion = {
-    "goteborg": "14",
-    "gothenburg": "14",
-    "malmo": "12",
-    "lund": "12",
-    "helsingborg": "12",
-    "norrkoping": "05",
-    "linkoping": "05",
-    "orebro": "18",
-    "vasteras": "19",
-    "umea": "24",
-    "lulea": "25",
-    "gavle": "21",
-    "sundsvall": "22",
-    "ostersund": "23",
-    "karlstad": "17",
-    "vaxjo": "07",
-    "kalmar": "08",
-    "halmstad": "13",
-    "boras": "14",
-    "eskilstuna": "04"
-  };
-
   if (cityToRegion[loc]) return cityToRegion[loc];
-
   return null;
 }
 
-// Fetch jobs from Arbetsformedlingen
 async function searchJobs(query, location, limit = 10) {
   const params = new URLSearchParams();
   params.set("q", query);
   params.set("limit", limit.toString());
-
   const regionCode = findRegion(location);
-  if (regionCode) {
-    params.set("region", regionCode);
-  }
+  if (regionCode) params.set("region", regionCode);
 
   const url = `${AF_API_BASE}/search?${params.toString()}`;
   console.log(`🔍 Searching: ${url}`);
 
   try {
     const response = await fetch(url);
-    const data = await response.json();
-    return data;
+    return await response.json();
   } catch (error) {
     console.error("❌ API error:", error);
     return { total: { value: 0 }, hits: [] };
   }
 }
 
-// Fetch single job details
 async function getJobById(jobId) {
   const url = `${AF_API_BASE}/ad/${jobId}`;
   console.log(`📋 Fetching job: ${url}`);
-
   try {
     const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Job not found: ${jobId}`);
-    }
+    if (!response.ok) throw new Error(`Job not found: ${jobId}`);
     return await response.json();
   } catch (error) {
     console.error("❌ API error:", error);
@@ -135,7 +80,6 @@ async function getJobById(jobId) {
   }
 }
 
-// Format job for display
 function formatJob(job) {
   return {
     id: job.id,
@@ -150,309 +94,278 @@ function formatJob(job) {
     logoUrl: job.logo_url,
     employmentType: job.employment_type?.label || "",
     salaryType: job.salary_type?.label || "",
-    workingHours: job.working_hours_type?.label || "",
-    occupationField: job.occupation_field?.label || "",
-    published: job.publication_date ? new Date(job.publication_date).toLocaleDateString("sv-SE") : ""
+    workingHours: job.working_hours_type?.label || ""
   };
 }
 
-// Load widget HTML files
+// Load widget HTML
 const jobListHTML = readFileSync(join(__dirname, "job-list-widget.html"), "utf-8");
 const jobDetailHTML = readFileSync(join(__dirname, "job-detail-widget.html"), "utf-8");
 
 // Create MCP server
 const server = new McpServer({
   name: "smidra",
-  version: "3.0.0"
+  version: "4.0.0"
 });
 
-// Register job list widget resource
-server.registerResource(
-  "job-list-widget",
-  "ui://widget/job-list.html",
-  {},
-  async () => ({
-    contents: [{
-      uri: "ui://widget/job-list.html",
-      mimeType: "text/html+skybridge",
-      text: jobListHTML,
-      _meta: {
-        "openai/widgetPrefersBorder": true
-      }
-    }]
-  })
-);
+// Register widget resources
+server.registerResource("job-list-widget", "ui://widget/job-list.html", {}, async () => ({
+  contents: [{ uri: "ui://widget/job-list.html", mimeType: "text/html+skybridge", text: jobListHTML }]
+}));
 
-// Register job detail widget resource
-server.registerResource(
-  "job-detail-widget",
-  "ui://widget/job-detail.html",
-  {},
-  async () => ({
-    contents: [{
-      uri: "ui://widget/job-detail.html",
-      mimeType: "text/html+skybridge",
-      text: jobDetailHTML,
-      _meta: {
-        "openai/widgetPrefersBorder": true
-      }
-    }]
-  })
-);
+server.registerResource("job-detail-widget", "ui://widget/job-detail.html", {}, async () => ({
+  contents: [{ uri: "ui://widget/job-detail.html", mimeType: "text/html+skybridge", text: jobDetailHTML }]
+}));
 
 // ============================================================
-// SINGLE TOOL: search_jobs - Search + Translate + Display
+// STEP 1: search_jobs - Search and show LOADING widget
 // ============================================================
 server.registerTool(
   "search_jobs",
   {
-    title: "Search Jobs in Sweden",
-    description: `Search for jobs on Arbetsförmedlingen (Swedish Employment Agency) and display results.
+    title: "Search Jobs",
+    description: `Search for jobs on Arbetsförmedlingen and show loading state.
 
-IMPORTANT: Before calling this tool, you MUST:
-1. Detect the user's language from their message
-2. Translate the search query to Swedish (the API only understands Swedish)
-3. Prepare ALL translated labels in the user's language
+IMPORTANT WORKFLOW:
+1. Detect user's language
+2. Call this tool with translated loading text
+3. You will receive Swedish job data
+4. Translate ALL job content to user's language
+5. IMMEDIATELY call display_jobs with translated content
 
-The tool will search for jobs and display them with YOUR translated labels.
-
-Examples of Swedish job keywords:
-- Developer = utvecklare
-- Nurse = sjuksköterska
-- Chef/Cook = kock
-- Teacher = lärare
-- Cleaner = städare, lokalvårdare
-- Driver = chaufför
-- Accountant = revisor, ekonom
-- Engineer = ingenjör
-- Salesperson = säljare`,
+Swedish job keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef),
+lärare (teacher), städare/lokalvårdare (cleaner), chaufför (driver), ingenjör (engineer)`,
     inputSchema: {
-      // Search parameters
-      query: z.string().describe("Job search query IN SWEDISH (e.g., 'utvecklare', 'sjuksköterska')"),
-      location: z.string().optional().describe("City or region in Sweden (e.g., 'Stockholm', 'Gävle')"),
-      limit: z.number().optional().default(5).describe("Number of results (1-20, default: 5)"),
-
-      // Language settings
-      language: z.string().describe("User's language code (e.g., 'so' for Somali, 'ar' for Arabic, 'sv' for Swedish)"),
-      direction: z.enum(["ltr", "rtl"]).default("ltr").describe("Text direction: 'rtl' for Arabic/Hebrew/Persian/Urdu, 'ltr' for all others"),
-
-      // Translated display text
-      displayQuery: z.string().describe("The search term in the user's language (for display)"),
-      displayLocation: z.string().describe("The location in the user's language (for display)"),
-
-      // UI Labels - ALL must be translated to user's language
-      labels: z.object({
-        results: z.string().describe("'Search Results' translated"),
-        found: z.string().describe("'jobs found' translated"),
-        details: z.string().describe("'Show details' translated"),
-        hide: z.string().describe("'Hide' translated"),
-        apply: z.string().describe("'Apply' translated"),
-        noJobs: z.string().describe("'No jobs found' translated"),
-        tryAgain: z.string().describe("'Try different keywords' translated"),
-        location: z.string().describe("'Location' translated"),
-        deadline: z.string().describe("'Apply by' / 'Deadline' translated"),
-        type: z.string().describe("'Employment type' translated"),
-        salary: z.string().describe("'Salary' translated"),
-        daysLeft: z.string().describe("'days left' translated"),
-        today: z.string().describe("'Today!' translated")
-      }).describe("All UI labels translated to user's language")
+      query: z.string().describe("Search query IN SWEDISH"),
+      location: z.string().optional().describe("City/region in Sweden"),
+      limit: z.number().optional().default(5),
+      language: z.string().describe("User's language code (e.g., 'so', 'ar', 'sv')"),
+      direction: z.enum(["ltr", "rtl"]).default("ltr"),
+      loadingText: z.string().describe("'Searching for jobs...' in user's language"),
+      translatingText: z.string().describe("'Translating results...' in user's language")
     },
     _meta: {
-      "openai/outputTemplate": "ui://widget/job-list.html",
-      "openai/toolInvocation/invoking": "Söker jobb...",
-      "openai/toolInvocation/invoked": "Klart!"
+      "openai/outputTemplate": "ui://widget/job-list.html"
     }
   },
-  async ({ query, location, limit, language, direction, displayQuery, displayLocation, labels }) => {
-    console.log(`🔧 search_jobs called:`);
-    console.log(`   Query: "${query}" (Swedish) → "${displayQuery}" (${language})`);
-    console.log(`   Location: "${location || 'hela Sverige'}" → "${displayLocation}"`);
-    console.log(`   Direction: ${direction}`);
+  async ({ query, location, limit, language, direction, loadingText, translatingText }) => {
+    console.log(`🔧 search_jobs called: "${query}" in ${location || 'Sweden'} (${language})`);
 
     // Search for jobs
     const data = await searchJobs(query, location, limit || 5);
     const jobs = data.hits.map(formatJob);
     const total = data.total?.value || 0;
 
-    console.log(`✅ Found ${jobs.length} jobs (total: ${total})`);
+    console.log(`📤 Found ${jobs.length} jobs - showing loading, waiting for translation...`);
 
-    // Return widget data
-    const result = {
+    // Show loading widget while ChatGPT translates
+    const loadingData = {
+      loading: true,
       language,
       direction,
-      query: displayQuery,
-      location: displayLocation,
-      total,
-      labels,
-      jobs
+      loadingText: translatingText || loadingText || "Translating..."
     };
 
+    // Return loading state to widget + job data for ChatGPT to translate
     return {
-      structuredContent: result,
+      structuredContent: loadingData,
       content: [{
         type: "text",
-        text: `Found ${total} jobs for "${displayQuery}" in ${displayLocation}`
+        text: `FOUND ${total} JOBS - NOW TRANSLATE AND CALL display_jobs:
+
+Query (for display): translate "${query}" to ${language}
+Location (for display): ${location || 'Sweden'}
+
+TRANSLATE ALL THIS JOB DATA TO ${language.toUpperCase()}:
+${JSON.stringify(jobs, null, 2)}
+
+REQUIRED: Call display_jobs NOW with:
+- language: "${language}"
+- direction: "${direction}"
+- query: translated search term
+- location: translated location
+- total: ${total}
+- labels: ALL UI text translated
+- jobs: ALL job content translated (title, employer, location, description, deadline, employmentType, salaryType)`
       }]
     };
   }
 );
 
 // ============================================================
-// SINGLE TOOL: get_job_details - Get + Display job detail
+// STEP 2: display_jobs - Show translated results
+// ============================================================
+server.registerTool(
+  "display_jobs",
+  {
+    title: "Display Translated Jobs",
+    description: "Display the translated job results. Call this IMMEDIATELY after search_jobs.",
+    inputSchema: {
+      language: z.string(),
+      direction: z.enum(["ltr", "rtl"]).default("ltr"),
+      query: z.string().describe("Translated search term"),
+      location: z.string().describe("Translated location"),
+      total: z.number(),
+      labels: z.object({
+        results: z.string().describe("'Search Results'"),
+        found: z.string().describe("'jobs found'"),
+        details: z.string().describe("'Details'"),
+        hide: z.string().describe("'Hide'"),
+        apply: z.string().describe("'Apply'"),
+        noJobs: z.string().describe("'No jobs found'"),
+        tryAgain: z.string().describe("'Try different keywords'"),
+        location: z.string().describe("'Location'"),
+        deadline: z.string().describe("'Deadline'"),
+        type: z.string().describe("'Type'"),
+        salary: z.string().describe("'Salary'"),
+        daysLeft: z.string().describe("'days left'"),
+        today: z.string().describe("'Today!'")
+      }),
+      jobs: z.array(z.object({
+        id: z.string(),
+        title: z.string().describe("TRANSLATED job title"),
+        employer: z.string().describe("Employer name"),
+        location: z.string().describe("TRANSLATED location"),
+        region: z.string().optional(),
+        deadline: z.string().describe("TRANSLATED deadline"),
+        description: z.string().describe("TRANSLATED description"),
+        fullDescription: z.string().optional(),
+        url: z.string(),
+        employmentType: z.string().optional().describe("TRANSLATED"),
+        salaryType: z.string().optional().describe("TRANSLATED")
+      }))
+    },
+    _meta: {
+      "openai/outputTemplate": "ui://widget/job-list.html"
+    }
+  },
+  async ({ language, direction, query, location, total, labels, jobs }) => {
+    console.log(`✅ display_jobs: ${jobs.length} translated jobs in ${language}`);
+
+    return {
+      structuredContent: {
+        loading: false,
+        language,
+        direction,
+        query,
+        location,
+        total,
+        labels,
+        jobs
+      },
+      content: [{
+        type: "text",
+        text: `Showing ${jobs.length} jobs for "${query}" in ${location}`
+      }]
+    };
+  }
+);
+
+// ============================================================
+// get_job_details - Single step for job details
 // ============================================================
 server.registerTool(
   "get_job_details",
   {
     title: "Show Job Details",
-    description: `Get and display detailed information about a specific job.
-
-Use when the user wants to see more details about a job from the search results.
-
-Before calling, prepare translated labels in the user's language.`,
+    description: "Get and display job details. Translate labels before calling.",
     inputSchema: {
-      jobId: z.string().describe("The job ID from search results"),
-      language: z.string().describe("User's language code"),
-      direction: z.enum(["ltr", "rtl"]).default("ltr").describe("Text direction"),
+      jobId: z.string(),
+      language: z.string(),
+      direction: z.enum(["ltr", "rtl"]).default("ltr"),
       labels: z.object({
-        location: z.string().describe("'Location' translated"),
-        deadline: z.string().describe("'Deadline' translated"),
-        type: z.string().describe("'Type' translated"),
-        salary: z.string().describe("'Salary' translated"),
-        description: z.string().describe("'Description' translated"),
-        apply: z.string().describe("'Apply Now' translated"),
-        backToResults: z.string().describe("'Back to results' translated")
-      }).describe("UI labels in user's language")
+        location: z.string(),
+        deadline: z.string(),
+        type: z.string(),
+        salary: z.string(),
+        description: z.string(),
+        apply: z.string(),
+        backToResults: z.string()
+      })
     },
     _meta: {
-      "openai/outputTemplate": "ui://widget/job-detail.html",
-      "openai/toolInvocation/invoking": "Laddar jobbdetaljer...",
-      "openai/toolInvocation/invoked": "Klart!"
+      "openai/outputTemplate": "ui://widget/job-detail.html"
     }
   },
   async ({ jobId, language, direction, labels }) => {
-    console.log(`🔧 get_job_details called: jobId="${jobId}", language="${language}"`);
-
+    console.log(`🔧 get_job_details: ${jobId} (${language})`);
     const job = await getJobById(jobId);
-
     if (!job) {
-      return {
-        content: [{ type: "text", text: `Job not found: ${jobId}` }]
-      };
+      return { content: [{ type: "text", text: `Job not found: ${jobId}` }] };
     }
-
     const formatted = formatJob(job);
-    console.log(`✅ Returning job: ${formatted.title}`);
-
-    const result = {
-      language,
-      direction,
-      labels,
-      job: formatted
-    };
+    console.log(`✅ Returning: ${formatted.title}`);
 
     return {
-      structuredContent: result,
-      content: [{
-        type: "text",
-        text: `Showing details for: ${formatted.title} at ${formatted.employer}`
-      }]
+      structuredContent: { language, direction, labels, job: formatted },
+      content: [{ type: "text", text: `Details for: ${formatted.title}` }]
     };
   }
 );
 
-console.log("✅ Tools registered: search_jobs, get_job_details");
-
-// Track active transports by sessionId
-const transports = new Map();
+console.log("✅ Tools: search_jobs → display_jobs, get_job_details");
 
 // HTTP Server
+const transports = new Map();
+
 const httpServer = http.createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "*");
 
-  if (req.method === "OPTIONS") {
-    res.writeHead(204);
-    res.end();
-    return;
-  }
+  if (req.method === "OPTIONS") { res.writeHead(204); res.end(); return; }
 
   const url = new URL(req.url, `http://localhost:${PORT}`);
 
-  // Widget preview - job list
-  if (url.pathname === "/" || url.pathname === "/widget" || url.pathname === "/widget/list") {
+  if (url.pathname === "/" || url.pathname === "/widget") {
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
     res.end(jobListHTML);
     return;
   }
 
-  // Widget preview - job detail
   if (url.pathname === "/widget/detail") {
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
     res.end(jobDetailHTML);
     return;
   }
 
-  // Health check
   if (url.pathname === "/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end('{"status":"ok","service":"smidra","version":"3.0.0"}');
+    res.end('{"status":"ok","service":"smidra","version":"4.0.0"}');
     return;
   }
 
-  // API proxy for testing
   if (url.pathname === "/api/search") {
-    const query = url.searchParams.get("q") || "utvecklare";
-    const location = url.searchParams.get("location");
-    const limit = parseInt(url.searchParams.get("limit") || "5");
-
-    const data = await searchJobs(query, location, limit);
-    const jobs = data.hits.map(formatJob);
-
+    const q = url.searchParams.get("q") || "utvecklare";
+    const loc = url.searchParams.get("location");
+    const lim = parseInt(url.searchParams.get("limit") || "5");
+    const data = await searchJobs(q, loc, lim);
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ total: data.total?.value || 0, jobs }));
+    res.end(JSON.stringify({ total: data.total?.value || 0, jobs: data.hits.map(formatJob) }));
     return;
   }
 
-  // MCP endpoint
   if (url.pathname === "/mcp") {
-    // GET = SSE connection
     if (req.method === "GET") {
-      console.log("📡 SSE GET - new connection");
+      console.log("📡 SSE connection");
       const transport = new SSEServerTransport("/mcp", res);
-      const sessionId = transport.sessionId;
-      transports.set(sessionId, transport);
-      console.log(`📡 Session created: ${sessionId}`);
-
-      res.on("close", () => {
-        console.log(`📡 SSE connection closed: ${sessionId}`);
-        transports.delete(sessionId);
-      });
-
+      transports.set(transport.sessionId, transport);
+      console.log(`📡 Session: ${transport.sessionId}`);
+      res.on("close", () => { transports.delete(transport.sessionId); });
       await server.connect(transport);
       return;
     }
 
-    // POST = message
     if (req.method === "POST") {
       const sessionId = url.searchParams.get("sessionId");
-      console.log(`📡 POST received for session: ${sessionId}`);
-
       if (!sessionId || !transports.has(sessionId)) {
-        res.writeHead(400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: "Invalid or missing sessionId" }));
+        res.writeHead(400);
+        res.end('{"error":"Invalid session"}');
         return;
       }
-
-      const transport = transports.get(sessionId);
-      console.log("📡 Routing to transport");
-
       let body = "";
-      for await (const chunk of req) {
-        body += chunk.toString();
-      }
-
-      await transport.handlePostMessage(req, res, body);
+      for await (const chunk of req) body += chunk.toString();
+      await transports.get(sessionId).handlePostMessage(req, res, body);
       return;
     }
   }
@@ -463,13 +376,12 @@ const httpServer = http.createServer(async (req, res) => {
 
 httpServer.listen(PORT, () => {
   console.log(`
-💼 Smidra v3.0 - Multilingual Job Search (Single-Tool)
+💼 Smidra v4.0 - Hybrid Multilingual Job Search
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 MCP:     http://localhost:${PORT}/mcp
 Widget:  http://localhost:${PORT}/widget
-API:     http://localhost:${PORT}/api/search?q=utvecklare
 Health:  http://localhost:${PORT}/health
 
-Single tool flow: ChatGPT translates → search_jobs → Widget
+Flow: search_jobs (loading) → ChatGPT translates → display_jobs
 `);
 });
