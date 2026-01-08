@@ -140,10 +140,10 @@ function formatJob(job) {
   return {
     id: job.id,
     title: job.headline,
-    employer: job.employer?.name || "Okand arbetsgivare",
+    employer: job.employer?.name || "Okänd arbetsgivare",
     location: job.workplace_address?.municipality || job.workplace_address?.region || "Sverige",
     region: job.workplace_address?.region || "",
-    deadline: job.application_deadline ? new Date(job.application_deadline).toLocaleDateString("sv-SE") : "Lopande",
+    deadline: job.application_deadline ? new Date(job.application_deadline).toLocaleDateString("sv-SE") : "Löpande",
     description: job.description?.text?.substring(0, 300) + "..." || "",
     fullDescription: job.description?.text || "",
     url: job.webpage_url,
@@ -163,17 +163,17 @@ const jobDetailHTML = readFileSync(join(__dirname, "job-detail-widget.html"), "u
 // Create MCP server
 const server = new McpServer({
   name: "smidra",
-  version: "1.0.0"
+  version: "2.0.0"
 });
 
-// Register job list widget resource (v3 with improved metadata)
+// Register job list widget resource
 server.registerResource(
   "job-list-widget",
-  "ui://widget/job-list-v3.html",
+  "ui://widget/job-list-v4.html",
   {},
   async () => ({
     contents: [{
-      uri: "ui://widget/job-list-v3.html",
+      uri: "ui://widget/job-list-v4.html",
       mimeType: "text/html+skybridge",
       text: jobListHTML,
       _meta: {
@@ -190,11 +190,11 @@ server.registerResource(
 // Register job detail widget resource
 server.registerResource(
   "job-detail-widget",
-  "ui://widget/job-detail-v2.html",
+  "ui://widget/job-detail-v3.html",
   {},
   async () => ({
     contents: [{
-      uri: "ui://widget/job-detail-v2.html",
+      uri: "ui://widget/job-detail-v3.html",
       mimeType: "text/html+skybridge",
       text: jobDetailHTML,
       _meta: {
@@ -208,31 +208,35 @@ server.registerResource(
   })
 );
 
-// Register search_jobs tool
+// ============================================================
+// STEP 1: search_jobs - Returns raw data for translation
+// ============================================================
 server.registerTool(
   "search_jobs",
   {
     title: "Search Jobs in Sweden",
-    description: `Use this tool when the user wants to find jobs, search for work, look for employment, or mentions job hunting in Sweden.
+    description: `Search for jobs on Arbetsförmedlingen (Swedish Employment Agency).
 
-ALWAYS use this tool when the user:
-- Asks about jobs, work, or employment
-- Mentions job titles like "developer", "nurse", "chef", "engineer", etc.
-- Says "I'm looking for work" or "find me a job"
-- Mentions Swedish cities like Stockholm, Göteborg, Malmö, Gävle, Uppsala, etc.
-- Uses Swedish words like "jobb", "arbete", "lediga tjänster", "söker jobb"
+Use this when the user wants to find jobs, search for work, or mentions job hunting in Sweden.
 
-This tool searches Arbetsförmedlingen (Swedish Employment Agency) and displays results in an interactive widget.`,
+IMPORTANT: This tool returns job data in Swedish. After receiving results, you MUST:
+1. Translate ALL job titles, descriptions, employer names, and location names to the user's language
+2. Call the display_jobs tool with the translated data to show the visual widget
+
+Example flow:
+- User asks in Arabic: "أبحث عن وظيفة مطور"
+- You call search_jobs with query="utvecklare" (translate to Swedish for better results)
+- You receive Swedish job data
+- You translate everything to Arabic
+- You call display_jobs with the Arabic translations`,
     inputSchema: {
-      query: z.string().describe("Job title, skill, or keyword to search for (e.g., 'developer', 'nurse', 'chef', 'systemutvecklare')"),
-      location: z.string().optional().describe("City or region in Sweden (e.g., 'Stockholm', 'Göteborg', 'Gävle', 'Skåne')"),
-      limit: z.number().optional().default(5).describe("Number of results to show (default: 5, max: 20)")
+      query: z.string().describe("Job title or keyword IN SWEDISH for best results (e.g., 'utvecklare', 'sjuksköterska', 'kock')"),
+      location: z.string().optional().describe("City or region in Sweden (e.g., 'Stockholm', 'Göteborg', 'Gävle')"),
+      limit: z.number().optional().default(5).describe("Number of results (default: 5, max: 20)")
     },
     _meta: {
-      "openai/outputTemplate": "ui://widget/job-list-v3.html",
-      "openai/toolInvocation/invoking": "Searching for jobs...",
-      "openai/toolInvocation/invoked": "Found jobs!",
-      "openai/widgetAccessible": true
+      "openai/toolInvocation/invoking": "Searching Arbetsförmedlingen...",
+      "openai/toolInvocation/invoked": "Found jobs - preparing display..."
     }
   },
   async ({ query, location, limit }) => {
@@ -242,47 +246,129 @@ This tool searches Arbetsförmedlingen (Swedish Employment Agency) and displays 
     const jobs = data.hits.map(formatJob);
     const total = data.total?.value || 0;
 
-    const result = {
-      query,
-      location: location || "Hela Sverige",
-      total,
-      jobs
-    };
-
     console.log(`📤 Found ${jobs.length} jobs (total: ${total})`);
 
-    // Fallback text for non-widget display
-    const jobSummary = jobs.map(j => `- ${j.title} hos ${j.employer} (${j.location})`).join("\n");
-
+    // Return as TEXT only - no structuredContent
+    // ChatGPT will translate and call display_jobs
     return {
-      structuredContent: result,
       content: [{
         type: "text",
-        text: `Hittade ${total} jobb for "${query}"${location ? ` i ${location}` : ""}:\n\n${jobSummary}`
+        text: JSON.stringify({
+          _instruction: "Translate all text fields to the user's language, then call display_jobs with the translated data",
+          query,
+          location: location || "Hela Sverige",
+          total,
+          jobs
+        }, null, 2)
       }]
     };
   }
 );
 
-// Register get_job_details tool
+// ============================================================
+// STEP 2: display_jobs - Shows translated data in widget
+// ============================================================
+server.registerTool(
+  "display_jobs",
+  {
+    title: "Display Job Results",
+    description: `Display job search results in a visual widget.
+
+ONLY call this tool AFTER calling search_jobs and translating the results to the user's language.
+
+Pass the translated job data including:
+- Translated job titles
+- Translated descriptions
+- Translated employer names
+- Translated location names
+- UI labels in the user's language`,
+    inputSchema: {
+      language: z.string().describe("Language code (e.g., 'ar', 'en', 'sv', 'es', 'zh')"),
+      direction: z.enum(["ltr", "rtl"]).default("ltr").describe("Text direction: 'rtl' for Arabic/Hebrew, 'ltr' for others"),
+      query: z.string().describe("The search query (translated to user's language)"),
+      location: z.string().describe("The location (translated to user's language)"),
+      total: z.number().describe("Total number of jobs found"),
+      labels: z.object({
+        results: z.string().describe("'Search Results' in user's language"),
+        found: z.string().describe("'jobs found' in user's language"),
+        details: z.string().describe("'Details' in user's language"),
+        hide: z.string().describe("'Hide' in user's language"),
+        apply: z.string().describe("'Apply' in user's language"),
+        noJobs: z.string().describe("'No jobs found' in user's language"),
+        tryAgain: z.string().describe("'Try different keywords' in user's language"),
+        location: z.string().describe("'Location' in user's language"),
+        deadline: z.string().describe("'Apply by' in user's language"),
+        type: z.string().describe("'Type' in user's language"),
+        salary: z.string().describe("'Salary' in user's language"),
+        daysLeft: z.string().describe("'days left' in user's language"),
+        today: z.string().describe("'Today!' in user's language")
+      }).describe("UI labels translated to user's language"),
+      jobs: z.array(z.object({
+        id: z.string(),
+        title: z.string().describe("Translated job title"),
+        employer: z.string().describe("Employer name (keep original or translate)"),
+        location: z.string().describe("Translated location"),
+        region: z.string().optional(),
+        deadline: z.string().describe("Deadline date or 'Ongoing' translated"),
+        description: z.string().describe("Translated short description"),
+        fullDescription: z.string().optional().describe("Translated full description"),
+        url: z.string(),
+        logoUrl: z.string().optional(),
+        employmentType: z.string().optional().describe("Translated employment type"),
+        salaryType: z.string().optional().describe("Translated salary type"),
+        workingHours: z.string().optional().describe("Translated working hours")
+      })).describe("Array of jobs with translated content")
+    },
+    _meta: {
+      "openai/outputTemplate": "ui://widget/job-list-v4.html",
+      "openai/toolInvocation/invoking": "Preparing job display...",
+      "openai/toolInvocation/invoked": "Jobs ready!",
+      "openai/widgetAccessible": true
+    }
+  },
+  async ({ language, direction, query, location, total, labels, jobs }) => {
+    console.log(`🔧 display_jobs called: ${jobs.length} jobs in ${language} (${direction})`);
+
+    const result = {
+      language,
+      direction,
+      query,
+      location,
+      total,
+      labels,
+      jobs
+    };
+
+    return {
+      structuredContent: result,
+      content: [{
+        type: "text",
+        text: `Displaying ${jobs.length} jobs in ${language}`
+      }]
+    };
+  }
+);
+
+// ============================================================
+// STEP 1b: get_job_details - Returns raw data for translation
+// ============================================================
 server.registerTool(
   "get_job_details",
   {
-    title: "Show Job Details",
-    description: `Use this tool to show full details about a specific job. Only use when the user asks for more information about a particular job from the search results.
+    title: "Get Job Details",
+    description: `Get detailed information about a specific job.
 
-Use when the user says:
-- "Tell me more about this job"
-- "Show details for job X"
-- "I want to know more about the developer position"`,
+Use when the user wants more information about a particular job from the search results.
+
+IMPORTANT: This tool returns data in Swedish. After receiving results, you MUST:
+1. Translate all text to the user's language
+2. Call display_job_detail with the translated data`,
     inputSchema: {
       jobId: z.string().describe("The job ID from search results")
     },
     _meta: {
-      "openai/outputTemplate": "ui://widget/job-detail-v2.html",
       "openai/toolInvocation/invoking": "Loading job details...",
-      "openai/toolInvocation/invoked": "Job details ready!",
-      "openai/widgetAccessible": true
+      "openai/toolInvocation/invoked": "Got details - preparing display..."
     }
   },
   async ({ jobId }) => {
@@ -292,7 +378,7 @@ Use when the user says:
 
     if (!job) {
       return {
-        content: [{ type: "text", text: `Kunde inte hitta jobb med ID: ${jobId}` }]
+        content: [{ type: "text", text: `Job not found: ${jobId}` }]
       };
     }
 
@@ -300,16 +386,77 @@ Use when the user says:
     console.log(`📤 Returning job: ${formatted.title}`);
 
     return {
-      structuredContent: formatted,
       content: [{
         type: "text",
-        text: `${formatted.title} hos ${formatted.employer}\n\nPlats: ${formatted.location}\nSok senast: ${formatted.deadline}\n\n${formatted.description}`
+        text: JSON.stringify({
+          _instruction: "Translate all text fields to the user's language, then call display_job_detail",
+          ...formatted
+        }, null, 2)
       }]
     };
   }
 );
 
-console.log("✅ Tools registered: search_jobs, get_job_details");
+// ============================================================
+// STEP 2b: display_job_detail - Shows translated detail in widget
+// ============================================================
+server.registerTool(
+  "display_job_detail",
+  {
+    title: "Display Job Detail",
+    description: `Display detailed job information in a visual widget.
+
+ONLY call this after get_job_details and translating the content.`,
+    inputSchema: {
+      language: z.string().describe("Language code"),
+      direction: z.enum(["ltr", "rtl"]).default("ltr").describe("Text direction"),
+      labels: z.object({
+        location: z.string(),
+        deadline: z.string(),
+        type: z.string(),
+        salary: z.string(),
+        description: z.string(),
+        apply: z.string(),
+        backToResults: z.string()
+      }).describe("UI labels in user's language"),
+      job: z.object({
+        id: z.string(),
+        title: z.string(),
+        employer: z.string(),
+        location: z.string(),
+        region: z.string().optional(),
+        deadline: z.string(),
+        description: z.string(),
+        fullDescription: z.string(),
+        url: z.string(),
+        logoUrl: z.string().optional(),
+        employmentType: z.string().optional(),
+        salaryType: z.string().optional(),
+        workingHours: z.string().optional(),
+        occupationField: z.string().optional()
+      }).describe("Job data with translated content")
+    },
+    _meta: {
+      "openai/outputTemplate": "ui://widget/job-detail-v3.html",
+      "openai/toolInvocation/invoking": "Preparing job detail...",
+      "openai/toolInvocation/invoked": "Job detail ready!",
+      "openai/widgetAccessible": true
+    }
+  },
+  async ({ language, direction, labels, job }) => {
+    console.log(`🔧 display_job_detail called: ${job.title} in ${language}`);
+
+    return {
+      structuredContent: { language, direction, labels, ...job },
+      content: [{
+        type: "text",
+        text: `${job.title} at ${job.employer}`
+      }]
+    };
+  }
+);
+
+console.log("✅ Tools registered: search_jobs, display_jobs, get_job_details, display_job_detail");
 
 // Track active transports by sessionId
 const transports = new Map();
@@ -345,7 +492,7 @@ const httpServer = http.createServer(async (req, res) => {
   // Health check
   if (url.pathname === "/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end('{"status":"ok","service":"smidra"}');
+    res.end('{"status":"ok","service":"smidra","version":"2.0.0"}');
     return;
   }
 
@@ -419,11 +566,13 @@ const httpServer = http.createServer(async (req, res) => {
 
 httpServer.listen(PORT, () => {
   console.log(`
-💼 Smidra - Jobbsokning i ChatGPT
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💼 Smidra v2.0 - Multilingual Job Search
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 MCP:     http://localhost:${PORT}/mcp
 Widget:  http://localhost:${PORT}/widget
 API:     http://localhost:${PORT}/api/search?q=utvecklare
 Health:  http://localhost:${PORT}/health
+
+Flow: search_jobs → ChatGPT translates → display_jobs
 `);
 });

@@ -42,6 +42,10 @@
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
+    html[dir="rtl"] {
+      direction: rtl;
+    }
+
     body {
       font-family: var(--font);
       background: var(--bg);
@@ -87,6 +91,11 @@
       color: var(--text-secondary);
     }
 
+    [dir="rtl"] .header-meta {
+      flex-direction: row-reverse;
+      justify-content: flex-end;
+    }
+
     .header-meta svg {
       width: 14px;
       height: 14px;
@@ -97,6 +106,10 @@
       display: flex;
       align-items: center;
       gap: 4px;
+    }
+
+    [dir="rtl"] .header-meta span {
+      flex-direction: row-reverse;
     }
 
     /* Job List */
@@ -131,6 +144,10 @@
       margin-bottom: 10px;
     }
 
+    [dir="rtl"] .job-header {
+      flex-direction: row-reverse;
+    }
+
     .job-logo {
       width: 40px;
       height: 40px;
@@ -155,6 +172,7 @@
     .job-info {
       flex: 1;
       min-width: 0;
+      text-align: start;
     }
 
     .job-employer {
@@ -178,6 +196,10 @@
       margin-bottom: 10px;
     }
 
+    [dir="rtl"] .job-tags {
+      flex-direction: row-reverse;
+    }
+
     .tag {
       display: inline-flex;
       align-items: center;
@@ -188,6 +210,10 @@
       border-radius: 6px;
       background: var(--bg);
       color: var(--text-secondary);
+    }
+
+    [dir="rtl"] .tag {
+      flex-direction: row-reverse;
     }
 
     .tag svg { width: 11px; height: 11px; }
@@ -207,12 +233,17 @@
       -webkit-box-orient: vertical;
       overflow: hidden;
       margin-bottom: 12px;
+      text-align: start;
     }
 
     /* Actions */
     .job-actions {
       display: flex;
       gap: 8px;
+    }
+
+    [dir="rtl"] .job-actions {
+      flex-direction: row-reverse;
     }
 
     .btn {
@@ -229,6 +260,10 @@
       cursor: pointer;
       text-decoration: none;
       transition: all 0.15s;
+    }
+
+    [dir="rtl"] .btn {
+      flex-direction: row-reverse;
     }
 
     .btn svg { width: 14px; height: 14px; }
@@ -268,6 +303,7 @@
       background: var(--bg);
       padding: 8px 10px;
       border-radius: var(--radius);
+      text-align: start;
     }
 
     .info-label {
@@ -295,6 +331,7 @@
       padding: 10px;
       background: var(--bg);
       border-radius: var(--radius);
+      text-align: start;
     }
 
     .full-desc::-webkit-scrollbar { width: 4px; }
@@ -367,50 +404,36 @@
   </div>
 
   <script>
-    // Translations
-    const i18n = {
-      sv: {
-        results: 'Sökresultat',
-        found: 'jobb hittade',
-        allSweden: 'Hela Sverige',
-        details: 'Visa mer',
-        hide: 'Dölj',
-        apply: 'Ansök',
-        noJobs: 'Inga jobb hittades',
-        tryAgain: 'Prova andra sökord',
-        location: 'Plats',
-        deadline: 'Sök senast',
-        type: 'Typ',
-        salary: 'Lön'
-      },
-      en: {
-        results: 'Search Results',
-        found: 'jobs found',
-        allSweden: 'All Sweden',
-        details: 'Details',
-        hide: 'Hide',
-        apply: 'Apply',
-        noJobs: 'No jobs found',
-        tryAgain: 'Try different keywords',
-        location: 'Location',
-        deadline: 'Apply by',
-        type: 'Type',
-        salary: 'Salary'
-      }
+    // Default labels (fallback)
+    const defaultLabels = {
+      results: 'Search Results',
+      found: 'jobs found',
+      details: 'Details',
+      hide: 'Hide',
+      apply: 'Apply',
+      noJobs: 'No jobs found',
+      tryAgain: 'Try different keywords',
+      location: 'Location',
+      deadline: 'Apply by',
+      type: 'Type',
+      salary: 'Salary',
+      daysLeft: 'days left',
+      today: 'Today!'
     };
 
     // State
     let state = {
       theme: 'light',
-      locale: 'sv',
+      direction: 'ltr',
+      language: 'en',
+      labels: defaultLabels,
       expandedJobs: {},
       data: null
     };
 
-    // Get translation
+    // Get label
     function t(key) {
-      const lang = state.locale.startsWith('sv') ? 'sv' : 'en';
-      return i18n[lang]?.[key] || i18n.en[key];
+      return state.labels[key] || defaultLabels[key] || key;
     }
 
     // Escape HTML
@@ -428,9 +451,11 @@
 
     // Days until deadline
     function daysLeft(deadline) {
-      if (!deadline || deadline === 'Lopande') return null;
-      const [y, m, d] = deadline.split('-').map(Number);
-      if (!y) return null;
+      if (!deadline) return null;
+      // Try to parse various date formats
+      const dateMatch = deadline.match(/(\d{4})-(\d{2})-(\d{2})/);
+      if (!dateMatch) return null;
+      const [, y, m, d] = dateMatch.map(Number);
       const date = new Date(y, m - 1, d);
       return Math.ceil((date - new Date()) / 86400000);
     }
@@ -441,10 +466,11 @@
       state.theme = theme;
     }
 
-    // Apply locale
-    function applyLocale(locale) {
-      document.documentElement.lang = locale.split('-')[0];
-      state.locale = locale;
+    // Apply direction (RTL/LTR)
+    function applyDirection(dir) {
+      document.documentElement.setAttribute('dir', dir);
+      document.documentElement.lang = state.language;
+      state.direction = dir;
     }
 
     // Notify height
@@ -495,7 +521,7 @@
             <span class="header-label">${t('results')}</span>
             <h1 class="header-title">${esc(query)}</h1>
             <div class="header-meta">
-              <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${esc(location) || t('allSweden')}</span>
+              <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${esc(location)}</span>
             </div>
           </header>
           <div class="empty">
@@ -512,7 +538,7 @@
           <span class="header-label">${t('results')}</span>
           <h1 class="header-title">${esc(query)}</h1>
           <div class="header-meta">
-            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${esc(location) || t('allSweden')}</span>
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${esc(location)}</span>
             <span>${total} ${t('found')}</span>
           </div>
         </header>
@@ -543,9 +569,11 @@
                   ${esc(job.location)}
                 </span>
                 ${job.workingHours ? `<span class="tag">${esc(job.workingHours)}</span>` : ''}
-                ${job.deadline && job.deadline !== 'Lopande' ? `
+                ${job.deadline ? `
                   <span class="tag ${isUrgent ? 'urgent' : 'deadline'}">
-                    ${isUrgent ? (days <= 0 ? '⚡ Idag!' : `⚡ ${days}d kvar`) : job.deadline}
+                    ${isUrgent
+                      ? (days <= 0 ? `⚡ ${t('today')}` : `⚡ ${days} ${t('daysLeft')}`)
+                      : job.deadline}
                   </span>` : ''}
               </div>
 
@@ -577,20 +605,20 @@
                   </div>
                   <div class="info-item">
                     <div class="info-label">${t('deadline')}</div>
-                    <div class="info-value">${job.deadline || 'Löpande'}</div>
+                    <div class="info-value">${job.deadline || '-'}</div>
                   </div>
                   ${job.employmentType ? `
                   <div class="info-item">
                     <div class="info-label">${t('type')}</div>
-                    <div class="info-value">${esc(job.employmentType.replace('Vanlig anställning', 'Fast'))}</div>
+                    <div class="info-value">${esc(job.employmentType)}</div>
                   </div>` : ''}
                   ${job.salaryType ? `
                   <div class="info-item">
                     <div class="info-label">${t('salary')}</div>
-                    <div class="info-value">${esc(job.salaryType.replace('Fast månads- vecko- eller timlön', 'Månadslön'))}</div>
+                    <div class="info-value">${esc(job.salaryType)}</div>
                   </div>` : ''}
                 </div>
-                <div class="full-desc">${esc(job.fullDescription || job.description || 'Ingen beskrivning.')}</div>
+                <div class="full-desc">${esc(job.fullDescription || job.description || '')}</div>
               </div>
             </article>`;
           }).join('')}
@@ -617,15 +645,38 @@
       }
     }
 
+    // Handle data from ChatGPT
+    function handleData(data) {
+      if (!data) return;
+
+      // Apply language settings
+      if (data.language) {
+        state.language = data.language;
+        document.documentElement.lang = data.language;
+      }
+
+      // Apply direction (RTL for Arabic, Hebrew, etc.)
+      if (data.direction) {
+        applyDirection(data.direction);
+      }
+
+      // Apply labels
+      if (data.labels) {
+        state.labels = { ...defaultLabels, ...data.labels };
+      }
+
+      // Store data and render
+      state.data = data;
+      render();
+    }
+
     // Handle globals from ChatGPT
     function handleGlobals() {
       if (!window.openai) return;
 
       if (window.openai.theme) applyTheme(window.openai.theme);
-      if (window.openai.locale) applyLocale(window.openai.locale);
       if (window.openai.toolOutput) {
-        state.data = window.openai.toolOutput;
-        render();
+        handleData(window.openai.toolOutput);
       }
     }
 
@@ -636,35 +687,53 @@
       document.getElementById('app').addEventListener('click', handleClick);
 
       if (window.openai) {
-        // Apply initial theme/locale
+        // Apply initial theme
         if (window.openai.theme) applyTheme(window.openai.theme);
-        if (window.openai.locale) applyLocale(window.openai.locale);
 
         // Restore saved state
         restoreState();
 
         // Check for data
         if (window.openai.toolOutput) {
-          state.data = window.openai.toolOutput;
-          render();
+          handleData(window.openai.toolOutput);
         } else {
           // Poll for data
           const check = setInterval(() => {
             if (window.openai?.toolOutput) {
               clearInterval(check);
-              state.data = window.openai.toolOutput;
-              render();
+              handleData(window.openai.toolOutput);
             }
           }, 50);
           setTimeout(() => clearInterval(check), 10000);
         }
       } else {
-        // Preview mode
+        // Preview mode - fetch sample data
         fetch('/api/search?q=utvecklare&limit=5')
           .then(r => r.json())
           .then(d => {
-            state.data = { query: 'utvecklare', location: 'Hela Sverige', total: d.total, jobs: d.jobs };
-            render();
+            handleData({
+              language: 'sv',
+              direction: 'ltr',
+              query: 'utvecklare',
+              location: 'Hela Sverige',
+              total: d.total,
+              jobs: d.jobs,
+              labels: {
+                results: 'Sökresultat',
+                found: 'jobb hittade',
+                details: 'Visa mer',
+                hide: 'Dölj',
+                apply: 'Ansök',
+                noJobs: 'Inga jobb hittades',
+                tryAgain: 'Prova andra sökord',
+                location: 'Plats',
+                deadline: 'Sök senast',
+                type: 'Typ',
+                salary: 'Lön',
+                daysLeft: 'dagar kvar',
+                today: 'Idag!'
+              }
+            });
           })
           .catch(() => {
             document.getElementById('app').innerHTML = `
