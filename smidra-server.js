@@ -209,7 +209,7 @@ server.registerResource(
 );
 
 // ============================================================
-// search_jobs - Fully dynamic language support
+// search_jobs - Returns Swedish data, ChatGPT must translate
 // ============================================================
 server.registerTool(
   "search_jobs",
@@ -219,79 +219,52 @@ server.registerTool(
 
 Use this when the user wants to find jobs, search for work, or mentions job hunting in Sweden.
 
-IMPORTANT - LANGUAGE HANDLING:
-1. Detect the language from the user's LAST message
-2. ALWAYS provide the 'labels' parameter with ALL UI texts translated to that language
-3. Set 'direction' to 'rtl' for Arabic, Hebrew, Persian, Urdu - otherwise 'ltr'
+This tool returns job data in SWEDISH. You must then call display_jobs with translated content.
 
-The labels you provide will be displayed in the job search widget.`,
+WORKFLOW:
+1. Call this tool to get Swedish job data
+2. Translate ALL job titles, descriptions, locations to the user's language
+3. Call display_jobs with the translated data`,
     inputSchema: {
-      query: z.string().describe("Job title or keyword IN SWEDISH for best results (e.g., 'utvecklare', 'sjuksköterska', 'kock')"),
+      query: z.string().describe("Job title or keyword IN SWEDISH (e.g., 'utvecklare', 'sjuksköterska', 'kock')"),
       location: z.string().optional().describe("City or region in Sweden (e.g., 'Stockholm', 'Göteborg', 'Gävle')"),
-      limit: z.number().optional().default(5).describe("Number of results (default: 5, max: 20)"),
-      language: z.string().describe("Language code detected from user's message (e.g., 'ar', 'tr', 'hi', 'pl', 'sv')"),
-      direction: z.enum(["ltr", "rtl"]).default("ltr").describe("Text direction: 'rtl' for Arabic/Hebrew/Persian/Urdu, 'ltr' for all others"),
-      labels: z.object({
-        results: z.string().describe("'Search Results' translated"),
-        found: z.string().describe("'jobs found' translated"),
-        details: z.string().describe("'Details' translated"),
-        hide: z.string().describe("'Hide' translated"),
-        apply: z.string().describe("'Apply' translated"),
-        noJobs: z.string().describe("'No jobs found' translated"),
-        tryAgain: z.string().describe("'Try different keywords' translated"),
-        location: z.string().describe("'Location' translated"),
-        deadline: z.string().describe("'Apply by' translated"),
-        type: z.string().describe("'Type' translated"),
-        salary: z.string().describe("'Salary' translated"),
-        daysLeft: z.string().describe("'days left' translated"),
-        today: z.string().describe("'Today!' translated")
-      }).describe("ALL UI labels translated to the user's language - YOU MUST PROVIDE THIS")
+      limit: z.number().optional().default(5).describe("Number of results (default: 5, max: 20)")
     },
     _meta: {
-      "openai/outputTemplate": "ui://widget/job-list-v4.html",
-      "openai/toolInvocation/invoking": "Searching Arbetsförmedlingen...",
-      "openai/toolInvocation/invoked": "Found jobs!",
-      "openai/widgetAccessible": true
+      "openai/toolInvocation/invoking": "Söker jobb på Arbetsförmedlingen...",
+      "openai/toolInvocation/invoked": "Hittade jobb! Översätter..."
     }
   },
-  async ({ query, location, limit, language, direction, labels }) => {
-    console.log(`🔧 search_jobs called: query="${query}", location="${location || 'hela Sverige'}", limit=${limit}, lang=${language}, dir=${direction}`);
+  async ({ query, location, limit }) => {
+    console.log(`🔧 search_jobs called: query="${query}", location="${location || 'hela Sverige'}", limit=${limit}`);
 
     const data = await searchJobs(query, location, limit || 5);
     const jobs = data.hits.map(formatJob);
     const total = data.total?.value || 0;
 
-    // Fallback labels - Swedish as default
-    const defaultLabels = {
-      results: 'Sökresultat', found: 'jobb hittade', details: 'Visa mer', hide: 'Dölj',
-      apply: 'Ansök', noJobs: 'Inga jobb hittades', tryAgain: 'Prova andra sökord',
-      location: 'Plats', deadline: 'Sök senast', type: 'Typ', salary: 'Lön',
-      daysLeft: 'dagar kvar', today: 'Idag!'
-    };
+    console.log(`📤 Found ${jobs.length} jobs (total: ${total}) - returning for translation`);
 
-    const finalLabels = labels || defaultLabels;
-    const finalDirection = direction || 'ltr';
-    const lang = language || 'sv';
-
-    console.log(`📤 Found ${jobs.length} jobs (total: ${total}) - UI in ${lang} (${finalDirection})`);
-
-    const result = {
-      language: lang,
-      direction: finalDirection,
-      query,
-      location: location || 'Hela Sverige',
-      total,
-      labels: finalLabels,
-      jobs
-    };
-
-    const jobSummary = jobs.slice(0, 3).map(j => `• ${j.title} - ${j.employer}`).join('\n');
-
+    // Return Swedish data as text - ChatGPT will translate and call display_jobs
     return {
-      structuredContent: result,
       content: [{
         type: "text",
-        text: `${finalLabels.results}: ${total} ${finalLabels.found}\n\n${jobSummary}${jobs.length > 3 ? '\n...' : ''}`
+        text: `SWEDISH JOB DATA - You must now translate and call display_jobs:
+
+Total: ${total} jobs found
+Query: ${query}
+Location: ${location || 'Hela Sverige'}
+
+Jobs to translate:
+${JSON.stringify(jobs, null, 2)}
+
+NEXT STEP: Call display_jobs with:
+- language: detected from user
+- direction: "rtl" for Arabic/Hebrew/Persian/Urdu, otherwise "ltr"
+- labels: all UI text translated
+- jobs: all job content translated (title, employer, location, description, etc.)
+- query: translated search term
+- location: translated location name
+- total: ${total}`
       }]
     };
   }
