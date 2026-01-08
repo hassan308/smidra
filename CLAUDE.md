@@ -62,16 +62,22 @@ Hämtar detaljerad information om ett specifikt jobb.
 ### display_jobs / display_job_detail
 Backup-tools för att visa översatt data (används sällan).
 
-## Flöde för flerspråkig sökning
+## Flöde för flerspråkig sökning (två-stegs)
 
 ```
-1. Användare skriver på arabiska: "أبحث عن وظيفة مطور"
-2. ChatGPT förstår och anropar: search_jobs({ query: "utvecklare", language: "ar" })
-3. Server hämtar svenska jobb från AF
-4. Server sätter arabiska UI-labels och direction: "rtl"
-5. Widget renderas med arabiska knappar och höger-till-vänster layout
-6. Jobbinnehåll visas på svenska (originaldata)
+1. Användare skriver på somaliska: "Waxaan raadinayaa shaqo Stockholm"
+2. ChatGPT → search_jobs({ query: "utvecklare", location: "Stockholm" })
+3. Server returnerar svenska jobb som TEXT (ingen widget än)
+4. ChatGPT översätter ALLT till somaliska:
+   - Jobbtitlar
+   - Beskrivningar
+   - Platsnamn
+   - UI-labels
+5. ChatGPT → display_jobs({ language: "so", direction: "ltr", labels: {...}, jobs: [...] })
+6. Widget renderas med ALLT på somaliska! 🎉
 ```
+
+**Stöder ALLA språk** - ChatGPT översätter dynamiskt till vilket språk som helst.
 
 ## Deploy
 
