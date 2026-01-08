@@ -647,23 +647,34 @@
 
     // Handle data from ChatGPT
     function handleData(data) {
-      if (!data) return;
+      console.log('[Smidra] Received data:', JSON.stringify(data, null, 2));
+
+      if (!data) {
+        console.log('[Smidra] No data received');
+        return;
+      }
 
       // Apply language settings
       if (data.language) {
         state.language = data.language;
         document.documentElement.lang = data.language;
+        console.log('[Smidra] Language set to:', data.language);
       }
 
       // Apply direction (RTL for Arabic, Hebrew, etc.)
       if (data.direction) {
         applyDirection(data.direction);
+        console.log('[Smidra] Direction set to:', data.direction);
       }
 
       // Apply labels
       if (data.labels) {
         state.labels = { ...defaultLabels, ...data.labels };
+        console.log('[Smidra] Labels applied:', Object.keys(data.labels).length, 'labels');
       }
+
+      // Log jobs info
+      console.log('[Smidra] Jobs in data:', data.jobs?.length || 0);
 
       // Store data and render
       state.data = data;
