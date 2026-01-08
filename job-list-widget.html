@@ -6,160 +6,221 @@
   <title>Smidra - Jobbsokning</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      --smidra-primary: #2563eb;
-      --smidra-primary-dark: #1d4ed8;
-      --smidra-success: #10b981;
-      --smidra-success-dark: #059669;
-      --smidra-accent: #8b5cf6;
-      --smidra-warning: #f59e0b;
-      --bg-gradient-start: #f0f9ff;
-      --bg-gradient-end: #e0f2fe;
-      --glass: rgba(255, 255, 255, 0.7);
-      --glass-border: rgba(255, 255, 255, 0.9);
-      --card-bg: rgba(255, 255, 255, 0.85);
+      --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+
+      /* Brand Colors */
+      --brand-primary: #6366f1;
+      --brand-primary-light: #818cf8;
+      --brand-secondary: #ec4899;
+      --brand-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+
+      /* Semantic Colors */
+      --success: #10b981;
+      --success-light: #d1fae5;
+      --warning: #f59e0b;
+      --warning-light: #fef3c7;
+      --urgent: #ef4444;
+      --urgent-light: #fee2e2;
+
+      /* Light Theme */
+      --bg-primary: #fafbfc;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #f1f5f9;
       --text-primary: #0f172a;
       --text-secondary: #475569;
       --text-muted: #94a3b8;
-      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --border: #e2e8f0;
+      --border-light: #f1f5f9;
+
+      /* Effects */
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,0.12);
+      --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.15);
+
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
     }
 
     :root[data-theme="dark"] {
-      --bg-gradient-start: #0f172a;
-      --bg-gradient-end: #1e293b;
-      --glass: rgba(30, 41, 59, 0.8);
-      --glass-border: rgba(51, 65, 85, 0.5);
-      --card-bg: rgba(30, 41, 59, 0.9);
-      --text-primary: #f1f5f9;
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-tertiary: #334155;
+      --text-primary: #f8fafc;
       --text-secondary: #cbd5e1;
       --text-muted: #64748b;
+      --border: #334155;
+      --border-light: #1e293b;
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,0.4);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; }
 
     body {
       font-family: var(--font-main);
-      background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+      background: var(--bg-primary);
       min-height: 100vh;
       color: var(--text-primary);
-      line-height: 1.5;
+      line-height: 1.6;
     }
 
     .container {
-      max-width: 420px;
+      max-width: 440px;
       margin: 0 auto;
-      padding: 20px 16px;
+      padding: 16px;
     }
 
     /* Header */
     .header {
-      background: var(--glass);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid var(--glass-border);
+      background: var(--bg-secondary);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border-light);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--brand-gradient);
+    }
+
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-tertiary);
+      padding: 6px 12px;
       border-radius: 20px;
-      padding: 20px;
-      margin-bottom: 16px;
-      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--brand-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .header-badge svg {
+      width: 14px;
+      height: 14px;
     }
 
     .header-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--smidra-primary);
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      margin-bottom: 8px;
-    }
-
-    .header-query {
-      font-size: 24px;
-      font-weight: 700;
+      font-size: 26px;
+      font-weight: 800;
       color: var(--text-primary);
-      margin-bottom: 4px;
+      margin-bottom: 6px;
+      line-height: 1.2;
     }
 
-    .header-location {
-      font-size: 14px;
-      color: var(--text-secondary);
+    .header-subtitle {
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 6px;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .header-subtitle svg {
+      width: 16px;
+      height: 16px;
+      color: var(--brand-primary);
     }
 
     .header-stats {
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px solid var(--glass-border);
-      font-size: 13px;
+      display: flex;
+      gap: 16px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-light);
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      background: var(--brand-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stat-label {
+      font-size: 12px;
       color: var(--text-muted);
+      font-weight: 500;
     }
 
-    .header-stats strong {
-      color: var(--smidra-primary);
-      font-weight: 600;
-    }
-
-    /* Job Cards */
+    /* Job List */
     .job-list {
       display: flex;
       flex-direction: column;
       gap: 12px;
     }
 
+    /* Job Card - Redesigned */
     .job-card {
-      background: var(--card-bg);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid var(--glass-border);
-      border-radius: 16px;
-      padding: 16px;
-      transition: all 0.2s ease;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-light);
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       cursor: pointer;
       position: relative;
-      overflow: hidden;
-    }
-
-    .job-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, var(--smidra-primary), var(--smidra-accent));
-      opacity: 0;
-      transition: opacity 0.2s ease;
     }
 
     .job-card:hover {
-      transform: translateY(-2px);
+      transform: translateY(-4px);
       box-shadow: var(--shadow-lg);
+      border-color: var(--brand-primary);
     }
 
-    .job-card:hover::before {
-      opacity: 1;
+    .job-card:hover .job-card-accent {
+      width: 100%;
     }
 
+    .job-card-accent {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 3px;
+      width: 0;
+      background: var(--brand-gradient);
+      transition: width 0.3s ease;
+    }
+
+    .job-card-inner {
+      padding: 20px;
+    }
+
+    /* Card Header */
     .job-card-header {
       display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      margin-bottom: 12px;
+      gap: 14px;
+      margin-bottom: 14px;
     }
 
     .job-logo {
-      width: 44px;
-      height: 44px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, var(--smidra-primary), var(--smidra-accent));
+      width: 52px;
+      height: 52px;
+      border-radius: var(--radius-md);
+      background: var(--brand-gradient);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -167,35 +228,57 @@
       font-weight: 700;
       color: white;
       flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
     }
 
     .job-logo img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      border-radius: 10px;
     }
 
-    .job-info {
+    .job-logo::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%);
+    }
+
+    .job-header-content {
       flex: 1;
       min-width: 0;
     }
 
     .job-employer {
       font-size: 12px;
-      font-weight: 500;
-      color: var(--smidra-primary);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 2px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-weight: 600;
+      color: var(--brand-primary);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .job-employer-verified {
+      width: 14px;
+      height: 14px;
+      background: var(--success);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .job-employer-verified svg {
+      width: 8px;
+      height: 8px;
+      color: white;
     }
 
     .job-title {
-      font-size: 16px;
-      font-weight: 600;
+      font-size: 17px;
+      font-weight: 700;
       color: var(--text-primary);
       line-height: 1.3;
       display: -webkit-box;
@@ -204,169 +287,197 @@
       overflow: hidden;
     }
 
-    .job-meta {
+    /* Tags Row */
+    .job-tags {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 12px;
+      gap: 6px;
+      margin-bottom: 14px;
     }
 
-    .job-meta-item {
-      display: flex;
+    .job-tag {
+      display: inline-flex;
       align-items: center;
       gap: 4px;
-      font-size: 12px;
-      color: var(--text-secondary);
-      background: var(--glass);
-      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 10px;
       border-radius: 6px;
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
     }
 
-    .job-meta-item svg {
-      width: 14px;
-      height: 14px;
+    .job-tag svg {
+      width: 12px;
+      height: 12px;
       opacity: 0.7;
     }
 
+    .job-tag.location {
+      background: rgba(99, 102, 241, 0.1);
+      color: var(--brand-primary);
+    }
+
+    .job-tag.field {
+      background: rgba(236, 72, 153, 0.1);
+      color: var(--brand-secondary);
+    }
+
+    .job-tag.deadline {
+      background: var(--warning-light);
+      color: #b45309;
+    }
+
+    .job-tag.urgent {
+      background: var(--urgent-light);
+      color: var(--urgent);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    /* Description */
     .job-description {
       font-size: 13px;
       color: var(--text-secondary);
+      line-height: 1.6;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
-      margin-bottom: 12px;
+      margin-bottom: 16px;
     }
 
-    .job-actions {
+    /* Card Footer */
+    .job-card-footer {
       display: flex;
-      gap: 8px;
+      gap: 10px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border-light);
     }
 
     .btn {
       flex: 1;
-      padding: 10px 16px;
-      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
       font-size: 13px;
       font-weight: 600;
       border: none;
       cursor: pointer;
       transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
       text-decoration: none;
     }
 
+    .btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
     .btn-primary {
-      background: linear-gradient(135deg, var(--smidra-primary), var(--smidra-primary-dark));
+      background: var(--brand-gradient);
       color: white;
     }
 
     .btn-primary:hover {
       transform: scale(1.02);
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+      box-shadow: var(--shadow-glow);
     }
 
-    .btn-success {
-      background: linear-gradient(135deg, var(--smidra-success), var(--smidra-success-dark));
-      color: white;
-    }
-
-    .btn-success:hover {
-      transform: scale(1.02);
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-    }
-
-    .btn-outline {
-      background: var(--glass);
+    .btn-secondary {
+      background: var(--bg-tertiary);
       color: var(--text-primary);
-      border: 1px solid var(--glass-border);
+      border: 1px solid var(--border);
     }
 
-    .btn-outline:hover {
-      background: var(--card-bg);
+    .btn-secondary:hover {
+      background: var(--border-light);
+      border-color: var(--brand-primary);
     }
 
-    /* Deadline badge */
-    .deadline-badge {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      font-size: 11px;
-      font-weight: 500;
-      padding: 4px 8px;
-      border-radius: 6px;
-      background: rgba(245, 158, 11, 0.15);
-      color: var(--smidra-warning);
+    /* Quick Info Chips */
+    .job-quick-info {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 14px;
     }
 
-    .deadline-badge.urgent {
-      background: rgba(239, 68, 68, 0.15);
-      color: #ef4444;
+    .quick-info-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
     }
 
-    /* Empty state */
-    .empty-state {
-      text-align: center;
-      padding: 40px 20px;
-      color: var(--text-secondary);
+    .quick-info-item svg {
+      width: 14px;
+      height: 14px;
+      color: var(--text-muted);
     }
 
-    .empty-state-icon {
-      font-size: 48px;
-      margin-bottom: 16px;
-      opacity: 0.5;
-    }
-
-    .empty-state-title {
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin-bottom: 8px;
-    }
-
-    /* Loading */
-    .loading {
+    /* Loading & Empty States */
+    .loading, .empty-state {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 200px;
-      gap: 16px;
+      min-height: 300px;
+      text-align: center;
+      padding: 40px 20px;
     }
 
     .loading-spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid var(--glass-border);
-      border-top-color: var(--smidra-primary);
+      width: 48px;
+      height: 48px;
+      border: 3px solid var(--border);
+      border-top-color: var(--brand-primary);
       border-radius: 50%;
       animation: spin 1s linear infinite;
+      margin-bottom: 16px;
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .loading-text {
-      color: var(--text-secondary);
+    .empty-icon {
+      width: 80px;
+      height: 80px;
+      background: var(--bg-tertiary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      margin-bottom: 20px;
+    }
+
+    .empty-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .empty-text {
       font-size: 14px;
+      color: var(--text-muted);
     }
 
     /* Animations */
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .job-card {
-      animation: fadeInUp 0.3s ease forwards;
+      animation: slideUp 0.4s ease forwards;
+      opacity: 0;
     }
 
     .job-card:nth-child(1) { animation-delay: 0.05s; }
@@ -374,12 +485,15 @@
     .job-card:nth-child(3) { animation-delay: 0.15s; }
     .job-card:nth-child(4) { animation-delay: 0.2s; }
     .job-card:nth-child(5) { animation-delay: 0.25s; }
+    .job-card:nth-child(6) { animation-delay: 0.3s; }
 
     /* Responsive */
-    @media (max-width: 440px) {
+    @media (max-width: 400px) {
       .container { padding: 12px; }
-      .job-card { padding: 14px; }
-      .btn { padding: 8px 12px; font-size: 12px; }
+      .header { padding: 20px; }
+      .job-card-inner { padding: 16px; }
+      .job-title { font-size: 15px; }
+      .btn { padding: 10px 12px; font-size: 12px; }
     }
   </style>
 </head>
@@ -388,35 +502,36 @@
     <div id="content">
       <div class="loading">
         <div class="loading-spinner"></div>
-        <div class="loading-text">Soker jobb...</div>
+        <span style="color: var(--text-muted)">Soker jobb...</span>
       </div>
     </div>
   </div>
 
   <script>
-    // Localization
     const translations = {
       'sv': {
         searchResults: 'Sokresultat',
         jobsFound: 'lediga jobb',
+        showing: 'Visar',
         deadline: 'Sok senast',
         apply: 'Ansok',
-        details: 'Visa mer',
+        details: 'Mer info',
         noJobs: 'Inga jobb hittades',
         tryAgain: 'Prova att soka med andra ord',
-        loading: 'Soker jobb...',
-        inSweden: 'i hela Sverige'
+        urgent: 'Snart!',
+        allSweden: 'Hela Sverige'
       },
       'en': {
         searchResults: 'Search Results',
-        jobsFound: 'jobs found',
+        jobsFound: 'jobs available',
+        showing: 'Showing',
         deadline: 'Apply by',
         apply: 'Apply',
         details: 'Details',
         noJobs: 'No jobs found',
-        tryAgain: 'Try searching with different keywords',
-        loading: 'Searching for jobs...',
-        inSweden: 'in all of Sweden'
+        tryAgain: 'Try different search terms',
+        urgent: 'Soon!',
+        allSweden: 'All Sweden'
       }
     };
 
@@ -429,22 +544,29 @@
     }
 
     function getInitials(name) {
-      return name
-        .split(' ')
-        .slice(0, 2)
-        .map(w => w[0])
-        .join('')
-        .toUpperCase();
+      return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
     }
 
-    function isDeadlineSoon(deadline) {
-      if (!deadline || deadline === 'Lopande') return false;
+    function getDaysUntilDeadline(deadline) {
+      if (!deadline || deadline === 'Lopande') return null;
       const parts = deadline.split('-');
-      if (parts.length !== 3) return false;
+      if (parts.length !== 3) return null;
       const deadlineDate = new Date(parts[0], parts[1] - 1, parts[2]);
-      const now = new Date();
-      const diffDays = Math.ceil((deadlineDate - now) / (1000 * 60 * 60 * 24));
-      return diffDays <= 7 && diffDays >= 0;
+      return Math.ceil((deadlineDate - new Date()) / (1000 * 60 * 60 * 24));
+    }
+
+    function formatDeadline(deadline) {
+      const days = getDaysUntilDeadline(deadline);
+      if (days === null) return deadline;
+      if (days <= 0) return 'Idag!';
+      if (days === 1) return 'Imorgon';
+      if (days <= 7) return `${days} dagar`;
+      return deadline;
+    }
+
+    function truncateText(text, maxLength = 120) {
+      if (!text || text.length <= maxLength) return text;
+      return text.substring(0, maxLength).trim() + '...';
     }
 
     function renderJobs(data) {
@@ -454,20 +576,24 @@
       if (!jobs || jobs.length === 0) {
         contentEl.innerHTML = `
           <div class="header">
-            <div class="header-title">${t('searchResults')}</div>
-            <div class="header-query">"${query}"</div>
-            <div class="header-location">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                <circle cx="12" cy="10" r="3"/>
+            <div class="header-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
               </svg>
-              ${location || t('inSweden')}
+              ${t('searchResults')}
+            </div>
+            <div class="header-title">"${query}"</div>
+            <div class="header-subtitle">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+              </svg>
+              ${location || t('allSweden')}
             </div>
           </div>
           <div class="empty-state">
-            <div class="empty-state-icon">🔍</div>
-            <div class="empty-state-title">${t('noJobs')}</div>
-            <p>${t('tryAgain')}</p>
+            <div class="empty-icon">🔍</div>
+            <div class="empty-title">${t('noJobs')}</div>
+            <p class="empty-text">${t('tryAgain')}</p>
           </div>
         `;
         notifyHeight();
@@ -476,87 +602,126 @@
 
       contentEl.innerHTML = `
         <div class="header">
-          <div class="header-title">${t('searchResults')}</div>
-          <div class="header-query">"${query}"</div>
-          <div class="header-location">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-              <circle cx="12" cy="10" r="3"/>
+          <div class="header-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
             </svg>
-            ${location || t('inSweden')}
+            ${t('searchResults')}
+          </div>
+          <div class="header-title">"${query}"</div>
+          <div class="header-subtitle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+            ${location || t('allSweden')}
           </div>
           <div class="header-stats">
-            <strong>${total.toLocaleString()}</strong> ${t('jobsFound')}
+            <div class="stat-item">
+              <span class="stat-value">${total.toLocaleString()}</span>
+              <span class="stat-label">${t('jobsFound')}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">${jobs.length}</span>
+              <span class="stat-label">${t('showing')}</span>
+            </div>
           </div>
         </div>
 
         <div class="job-list">
-          ${jobs.map(job => `
-            <div class="job-card" data-job-id="${job.id}">
-              ${isDeadlineSoon(job.deadline) ? `<div class="deadline-badge urgent">⏰ ${job.deadline}</div>` : ''}
+          ${jobs.map(job => {
+            const daysLeft = getDaysUntilDeadline(job.deadline);
+            const isUrgent = daysLeft !== null && daysLeft <= 7;
 
-              <div class="job-card-header">
-                <div class="job-logo">
-                  ${job.logoUrl ? `<img src="${job.logoUrl}" alt="${job.employer}" onerror="this.parentElement.innerHTML='${getInitials(job.employer)}'">` : getInitials(job.employer)}
+            return `
+            <div class="job-card" onclick="showDetails('${job.id}')">
+              <div class="job-card-accent"></div>
+              <div class="job-card-inner">
+                <div class="job-card-header">
+                  <div class="job-logo">
+                    ${job.logoUrl
+                      ? `<img src="${job.logoUrl}" alt="${job.employer}" onerror="this.parentElement.innerHTML='${getInitials(job.employer)}'">`
+                      : getInitials(job.employer)
+                    }
+                  </div>
+                  <div class="job-header-content">
+                    <div class="job-employer">
+                      ${job.employer}
+                      ${job.logoUrl ? `
+                      <span class="job-employer-verified" title="Verifierad arbetsgivare">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      </span>
+                      ` : ''}
+                    </div>
+                    <div class="job-title">${job.title}</div>
+                  </div>
                 </div>
-                <div class="job-info">
-                  <div class="job-employer">${job.employer}</div>
-                  <div class="job-title">${job.title}</div>
-                </div>
-              </div>
 
-              <div class="job-meta">
-                <div class="job-meta-item">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                    <circle cx="12" cy="10" r="3"/>
-                  </svg>
-                  ${job.location}
+                <div class="job-tags">
+                  <span class="job-tag location">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    ${job.location}
+                  </span>
+                  ${job.occupationField ? `
+                  <span class="job-tag field">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3"/>
+                    </svg>
+                    ${job.occupationField}
+                  </span>
+                  ` : ''}
+                  ${job.deadline && job.deadline !== 'Lopande' ? `
+                  <span class="job-tag ${isUrgent ? 'urgent' : 'deadline'}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    ${isUrgent ? formatDeadline(job.deadline) : job.deadline}
+                  </span>
+                  ` : ''}
                 </div>
-                ${job.deadline && job.deadline !== 'Lopande' ? `
-                <div class="job-meta-item">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                    <line x1="16" y1="2" x2="16" y2="6"/>
-                    <line x1="8" y1="2" x2="8" y2="6"/>
-                    <line x1="3" y1="10" x2="21" y2="10"/>
-                  </svg>
-                  ${job.deadline}
-                </div>
-                ` : ''}
-                ${job.occupationField ? `
-                <div class="job-meta-item">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                  </svg>
-                  ${job.occupationField}
-                </div>
-                ` : ''}
-              </div>
 
-              <div class="job-description">${job.description}</div>
+                <div class="job-quick-info">
+                  ${job.workingHours ? `
+                  <div class="quick-info-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    ${job.workingHours}
+                  </div>
+                  ` : ''}
+                  ${job.employmentType ? `
+                  <div class="quick-info-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                    </svg>
+                    ${job.employmentType.replace('Vanlig anstallning', 'Fast')}
+                  </div>
+                  ` : ''}
+                </div>
 
-              <div class="job-actions">
-                <button class="btn btn-outline" onclick="showDetails('${job.id}')">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="12" y1="16" x2="12" y2="12"/>
-                    <line x1="12" y1="8" x2="12.01" y2="8"/>
-                  </svg>
-                  ${t('details')}
-                </button>
-                <a href="${job.url}" target="_blank" class="btn btn-success" onclick="event.stopPropagation()">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                    <polyline points="15 3 21 3 21 9"/>
-                    <line x1="10" y1="14" x2="21" y2="3"/>
-                  </svg>
-                  ${t('apply')}
-                </a>
+                <div class="job-description">${truncateText(job.description, 140)}</div>
+
+                <div class="job-card-footer">
+                  <button class="btn btn-secondary" onclick="event.stopPropagation(); showDetails('${job.id}')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+                    </svg>
+                    ${t('details')}
+                  </button>
+                  <a href="${job.url}" target="_blank" class="btn btn-primary" onclick="event.stopPropagation()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                      <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                    </svg>
+                    ${t('apply')}
+                  </a>
+                </div>
               </div>
             </div>
-          `).join('')}
+          `}).join('')}
         </div>
       `;
 
@@ -564,11 +729,9 @@
     }
 
     function showDetails(jobId) {
-      // Call the get_job_details tool via ChatGPT
       if (typeof window.openai !== 'undefined' && window.openai.callTool) {
         window.openai.callTool('get_job_details', { jobId });
       } else {
-        // Fallback: open in new tab
         window.open(`https://arbetsformedlingen.se/platsbanken/annonser/${jobId}`, '_blank');
       }
     }
@@ -589,16 +752,8 @@
         document.documentElement.setAttribute('data-theme', currentTheme);
       }
 
-      if (window.openai.locale && window.openai.locale !== currentLocale) {
-        currentLocale = window.openai.locale;
-        if (window.openai.toolOutput) {
-          renderJobs(window.openai.toolOutput);
-        }
-      }
-
-      if (window.openai.toolOutput) {
-        renderJobs(window.openai.toolOutput);
-      }
+      if (window.openai.locale) currentLocale = window.openai.locale;
+      if (window.openai.toolOutput) renderJobs(window.openai.toolOutput);
     }
 
     // Initialize
@@ -606,47 +761,29 @@
       currentTheme = window.openai.theme || 'light';
       currentLocale = window.openai.locale || 'sv';
       document.documentElement.setAttribute('data-theme', currentTheme);
-
       window.addEventListener('openai:set_globals', handleGlobalsUpdate, { passive: true });
 
       if (window.openai.toolOutput) {
         renderJobs(window.openai.toolOutput);
-      } else {
-        document.getElementById('content').innerHTML = `
-          <div class="empty-state">
-            <div class="empty-state-icon">💼</div>
-            <div class="empty-state-title">${t('noJobs')}</div>
-          </div>
-        `;
-        notifyHeight();
       }
     } else {
-      // Standalone preview - fetch sample data
-      async function fetchPreviewData() {
+      // Standalone preview
+      async function fetchPreview() {
         try {
-          const response = await fetch('/api/search?q=utvecklare&limit=5');
-          const data = await response.json();
-          renderJobs({
-            query: 'utvecklare',
-            location: 'Hela Sverige',
-            total: data.total,
-            jobs: data.jobs
-          });
-        } catch (error) {
+          const res = await fetch('/api/search?q=utvecklare&limit=5');
+          const data = await res.json();
+          renderJobs({ query: 'utvecklare', location: 'Hela Sverige', total: data.total, jobs: data.jobs });
+        } catch (e) {
           document.getElementById('content').innerHTML = `
-            <div class="header">
-              <div class="header-title">Smidra Preview</div>
-              <div class="header-query">"utvecklare"</div>
-            </div>
             <div class="empty-state">
-              <div class="empty-state-icon">🔌</div>
-              <div class="empty-state-title">Starta servern</div>
-              <p>Kor: node smidra-server.js</p>
+              <div class="empty-icon">🔌</div>
+              <div class="empty-title">Starta servern</div>
+              <p class="empty-text">node smidra-server.js</p>
             </div>
           `;
         }
       }
-      fetchPreviewData();
+      fetchPreview();
     }
   </script>
 </body>

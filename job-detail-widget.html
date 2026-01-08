@@ -6,64 +6,85 @@
   <title>Smidra - Jobbdetaljer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      --smidra-primary: #2563eb;
-      --smidra-primary-dark: #1d4ed8;
-      --smidra-success: #10b981;
-      --smidra-success-dark: #059669;
-      --smidra-accent: #8b5cf6;
-      --smidra-warning: #f59e0b;
-      --bg-gradient-start: #f0f9ff;
-      --bg-gradient-end: #e0f2fe;
-      --glass: rgba(255, 255, 255, 0.7);
-      --glass-border: rgba(255, 255, 255, 0.9);
-      --card-bg: rgba(255, 255, 255, 0.85);
+      --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+
+      /* Brand Colors */
+      --brand-primary: #6366f1;
+      --brand-primary-light: #818cf8;
+      --brand-secondary: #ec4899;
+      --brand-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+
+      /* Semantic Colors */
+      --success: #10b981;
+      --success-light: #d1fae5;
+      --warning: #f59e0b;
+      --warning-light: #fef3c7;
+      --urgent: #ef4444;
+      --urgent-light: #fee2e2;
+      --info: #0ea5e9;
+      --info-light: #e0f2fe;
+
+      /* Light Theme */
+      --bg-primary: #fafbfc;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #f1f5f9;
       --text-primary: #0f172a;
       --text-secondary: #475569;
       --text-muted: #94a3b8;
-      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --border: #e2e8f0;
+      --border-light: #f1f5f9;
+
+      /* Effects */
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,0.12);
+      --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.2);
+
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
     }
 
     :root[data-theme="dark"] {
-      --bg-gradient-start: #0f172a;
-      --bg-gradient-end: #1e293b;
-      --glass: rgba(30, 41, 59, 0.8);
-      --glass-border: rgba(51, 65, 85, 0.5);
-      --card-bg: rgba(30, 41, 59, 0.9);
-      --text-primary: #f1f5f9;
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-tertiary: #334155;
+      --text-primary: #f8fafc;
       --text-secondary: #cbd5e1;
       --text-muted: #64748b;
+      --border: #334155;
+      --border-light: #1e293b;
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,0.4);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; }
 
     body {
       font-family: var(--font-main);
-      background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+      background: var(--bg-primary);
       min-height: 100vh;
       color: var(--text-primary);
       line-height: 1.6;
     }
 
     .container {
-      max-width: 420px;
+      max-width: 440px;
       margin: 0 auto;
-      padding: 20px 16px;
+      padding: 16px;
     }
 
-    /* Job Detail Card */
-    .job-detail {
-      background: var(--card-bg);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid var(--glass-border);
-      border-radius: 24px;
+    /* Main Card */
+    .job-detail-card {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border-light);
       overflow: hidden;
-      animation: fadeIn 0.3s ease;
+      animation: fadeIn 0.4s ease;
     }
 
     @keyframes fadeIn {
@@ -71,307 +92,486 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Header Section */
-    .job-header {
-      background: linear-gradient(135deg, var(--smidra-primary), var(--smidra-accent));
-      padding: 24px 20px;
-      color: white;
+    /* Hero Section */
+    .job-hero {
+      background: var(--brand-gradient);
+      padding: 28px 24px;
       position: relative;
       overflow: hidden;
     }
 
-    .job-header::before {
+    .job-hero::before {
       content: '';
       position: absolute;
       top: -50%;
-      right: -50%;
-      width: 100%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 50%);
+      right: -30%;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 60%);
     }
 
-    .job-header-content {
+    .job-hero::after {
+      content: '';
+      position: absolute;
+      bottom: -30%;
+      left: -20%;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+    }
+
+    .job-hero-content {
       position: relative;
       z-index: 1;
     }
 
+    /* Logo */
+    .job-logo-container {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
     .job-logo-large {
-      width: 64px;
-      height: 64px;
-      border-radius: 16px;
+      width: 72px;
+      height: 72px;
+      border-radius: var(--radius-lg);
       background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 24px;
-      font-weight: 700;
-      margin-bottom: 16px;
-      backdrop-filter: blur(10px);
+      font-weight: 800;
+      color: white;
+      border: 2px solid rgba(255,255,255,0.3);
     }
 
     .job-logo-large img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      border-radius: 16px;
+      border-radius: calc(var(--radius-lg) - 2px);
     }
 
-    .job-employer-large {
-      font-size: 13px;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      opacity: 0.9;
-      margin-bottom: 4px;
+    .job-employer-info {
+      flex: 1;
+    }
+
+    .job-employer-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.9);
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .verified-badge {
+      width: 18px;
+      height: 18px;
+      background: rgba(255,255,255,0.25);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .verified-badge svg {
+      width: 10px;
+      height: 10px;
+      color: white;
+    }
+
+    .job-employer-field {
+      font-size: 12px;
+      color: rgba(255,255,255,0.7);
     }
 
     .job-title-large {
-      font-size: 22px;
-      font-weight: 700;
-      line-height: 1.3;
-      margin-bottom: 12px;
+      font-size: 26px;
+      font-weight: 800;
+      color: white;
+      line-height: 1.2;
+      margin-bottom: 16px;
     }
 
-    .job-header-meta {
+    /* Quick Stats */
+    .job-quick-stats {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 8px;
     }
 
-    .job-header-meta-item {
-      display: flex;
+    .quick-stat {
+      display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: 13px;
-      opacity: 0.9;
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(10px);
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 500;
+      color: white;
     }
 
-    .job-header-meta-item svg {
-      width: 16px;
-      height: 16px;
-      opacity: 0.8;
+    .quick-stat svg {
+      width: 14px;
+      height: 14px;
+      opacity: 0.9;
     }
 
     /* Content Section */
     .job-content {
-      padding: 20px;
+      padding: 24px;
     }
 
-    /* Tags */
-    .job-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 20px;
-    }
-
-    .job-tag {
-      font-size: 12px;
-      font-weight: 500;
-      padding: 6px 12px;
-      border-radius: 20px;
-      background: var(--glass);
-      color: var(--text-secondary);
-      border: 1px solid var(--glass-border);
-    }
-
-    .job-tag.primary {
-      background: rgba(37, 99, 235, 0.1);
-      color: var(--smidra-primary);
-      border-color: rgba(37, 99, 235, 0.2);
-    }
-
-    /* Description */
-    .job-section {
-      margin-bottom: 20px;
-    }
-
-    .job-section-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin-bottom: 10px;
+    /* Deadline Alert */
+    .deadline-alert {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 12px;
+      background: var(--warning-light);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      margin-bottom: 20px;
     }
 
-    .job-section-title svg {
-      width: 18px;
-      height: 18px;
-      color: var(--smidra-primary);
+    .deadline-alert.urgent {
+      background: var(--urgent-light);
+      border-color: rgba(239, 68, 68, 0.3);
     }
 
-    .job-description-full {
-      font-size: 14px;
-      color: var(--text-secondary);
-      white-space: pre-wrap;
-      max-height: 300px;
-      overflow-y: auto;
-      padding-right: 8px;
+    .deadline-alert-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--warning);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
     }
 
-    .job-description-full::-webkit-scrollbar {
-      width: 4px;
+    .deadline-alert.urgent .deadline-alert-icon {
+      background: var(--urgent);
     }
 
-    .job-description-full::-webkit-scrollbar-track {
-      background: var(--glass);
-      border-radius: 2px;
+    .deadline-alert-content {
+      flex: 1;
     }
 
-    .job-description-full::-webkit-scrollbar-thumb {
-      background: var(--text-muted);
-      border-radius: 2px;
+    .deadline-alert-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #92400e;
+    }
+
+    .deadline-alert.urgent .deadline-alert-title {
+      color: #991b1b;
+    }
+
+    .deadline-alert-text {
+      font-size: 12px;
+      color: #a16207;
+    }
+
+    .deadline-alert.urgent .deadline-alert-text {
+      color: #b91c1c;
     }
 
     /* Info Grid */
-    .job-info-grid {
+    .info-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 12px;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
     }
 
-    .job-info-item {
-      background: var(--glass);
-      border-radius: 12px;
-      padding: 12px;
-      border: 1px solid var(--glass-border);
+    .info-card {
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      border: 1px solid var(--border-light);
     }
 
-    .job-info-label {
+    .info-card-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--brand-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+
+    .info-card-icon svg {
+      width: 16px;
+      height: 16px;
+      color: white;
+    }
+
+    .info-card-label {
       font-size: 11px;
-      font-weight: 500;
+      font-weight: 600;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin-bottom: 4px;
     }
 
-    .job-info-value {
+    .info-card-value {
       font-size: 14px;
       font-weight: 600;
       color: var(--text-primary);
     }
 
-    /* Actions */
+    /* Section */
+    .section {
+      margin-bottom: 24px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .section-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--bg-tertiary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .section-icon svg {
+      width: 18px;
+      height: 18px;
+      color: var(--brand-primary);
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    /* Description */
+    .job-description {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.75;
+      white-space: pre-wrap;
+      max-height: 350px;
+      overflow-y: auto;
+      padding-right: 12px;
+      border-radius: var(--radius-md);
+      background: var(--bg-tertiary);
+      padding: 16px;
+      border: 1px solid var(--border-light);
+    }
+
+    .job-description::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .job-description::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .job-description::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+
+    .job-description::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+
+    /* Tags */
+    .tags-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-light);
+    }
+
+    .tag svg {
+      width: 14px;
+      height: 14px;
+      opacity: 0.7;
+    }
+
+    .tag.primary {
+      background: rgba(99, 102, 241, 0.1);
+      color: var(--brand-primary);
+      border-color: rgba(99, 102, 241, 0.2);
+    }
+
+    .tag.secondary {
+      background: rgba(236, 72, 153, 0.1);
+      color: var(--brand-secondary);
+      border-color: rgba(236, 72, 153, 0.2);
+    }
+
+    /* Footer Actions */
     .job-actions {
       display: flex;
       gap: 12px;
-      padding: 20px;
-      border-top: 1px solid var(--glass-border);
-      background: var(--glass);
+      padding: 20px 24px;
+      background: var(--bg-tertiary);
+      border-top: 1px solid var(--border-light);
     }
 
     .btn {
       flex: 1;
-      padding: 14px 20px;
-      border-radius: 12px;
-      font-size: 14px;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      transition: all 0.2s ease;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 10px;
+      padding: 16px 20px;
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
       text-decoration: none;
     }
 
-    .btn-success {
-      background: linear-gradient(135deg, var(--smidra-success), var(--smidra-success-dark));
+    .btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .btn-primary {
+      background: var(--brand-gradient);
       color: white;
     }
 
-    .btn-success:hover {
+    .btn-primary:hover {
       transform: scale(1.02);
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+      box-shadow: var(--shadow-glow);
     }
 
-    .btn-outline {
-      background: transparent;
+    .btn-secondary {
+      background: var(--bg-secondary);
       color: var(--text-primary);
-      border: 2px solid var(--glass-border);
+      border: 2px solid var(--border);
     }
 
-    .btn-outline:hover {
-      background: var(--card-bg);
+    .btn-secondary:hover {
+      border-color: var(--brand-primary);
+      background: var(--bg-primary);
     }
 
-    /* Deadline Alert */
-    .deadline-alert {
-      background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(234, 88, 12, 0.1));
-      border: 1px solid rgba(245, 158, 11, 0.3);
-      border-radius: 12px;
-      padding: 12px 16px;
+    /* Apply Link Section */
+    .apply-section {
+      background: var(--info-light);
+      border: 1px solid rgba(14, 165, 233, 0.2);
+      border-radius: var(--radius-md);
+      padding: 16px;
       margin-bottom: 20px;
+    }
+
+    .apply-section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0369a1;
+      margin-bottom: 8px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
-    .deadline-alert-icon {
-      font-size: 20px;
+    .apply-section-title svg {
+      width: 16px;
+      height: 16px;
     }
 
-    .deadline-alert-text {
-      font-size: 13px;
-      color: var(--smidra-warning);
-      font-weight: 500;
+    .apply-section-text {
+      font-size: 12px;
+      color: #0284c7;
+      word-break: break-all;
     }
 
-    /* Loading */
-    .loading {
+    /* Loading & Empty */
+    .loading, .empty-state {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 300px;
-      gap: 16px;
+      min-height: 400px;
+      text-align: center;
+      padding: 40px 20px;
     }
 
     .loading-spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid var(--glass-border);
-      border-top-color: var(--smidra-primary);
+      width: 48px;
+      height: 48px;
+      border: 3px solid var(--border);
+      border-top-color: var(--brand-primary);
       border-radius: 50%;
       animation: spin 1s linear infinite;
+      margin-bottom: 16px;
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Empty State */
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
+    .empty-icon {
+      width: 80px;
+      height: 80px;
+      background: var(--bg-tertiary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      margin-bottom: 20px;
     }
 
-    .empty-state-icon {
-      font-size: 48px;
-      margin-bottom: 16px;
-    }
-
-    .empty-state-title {
+    .empty-title {
       font-size: 18px;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--text-primary);
       margin-bottom: 8px;
     }
 
-    .empty-state-text {
+    .empty-text {
       font-size: 14px;
-      color: var(--text-secondary);
+      color: var(--text-muted);
     }
 
-    @media (max-width: 440px) {
+    /* Responsive */
+    @media (max-width: 400px) {
       .container { padding: 12px; }
-      .job-header { padding: 20px 16px; }
-      .job-content { padding: 16px; }
-      .job-title-large { font-size: 20px; }
-      .job-info-grid { grid-template-columns: 1fr; }
+      .job-hero { padding: 24px 20px; }
+      .job-content { padding: 20px; }
+      .job-title-large { font-size: 22px; }
+      .info-grid { grid-template-columns: 1fr; }
+      .btn { padding: 14px 16px; font-size: 13px; }
     }
   </style>
 </head>
@@ -380,7 +580,7 @@
     <div id="content">
       <div class="loading">
         <div class="loading-spinner"></div>
-        <div class="loading-text">Laddar jobbdetaljer...</div>
+        <span style="color: var(--text-muted)">Laddar jobbdetaljer...</span>
       </div>
     </div>
   </div>
@@ -390,36 +590,40 @@
       'sv': {
         apply: 'Ansok nu',
         back: 'Tillbaka',
-        description: 'Om jobbet',
-        requirements: 'Krav',
+        description: 'Om tjansten',
         details: 'Detaljer',
         location: 'Plats',
         deadline: 'Sista ansokningsdag',
-        employment: 'Anstallningsform',
+        deadlineAlert: 'Ansokningstiden gar snart ut!',
+        deadlineSoon: 'dagar kvar',
+        employment: 'Anstallning',
         hours: 'Arbetstid',
         salary: 'Lon',
         field: 'Yrkesomrade',
         published: 'Publicerad',
-        deadlineAlert: 'Ansokningstiden gar ut snart!',
         noJob: 'Jobbet hittades inte',
-        trySearch: 'Prova att soka igen'
+        trySearch: 'Prova att soka igen',
+        applyAt: 'Ansok pa Arbetsformedlingen',
+        requirements: 'Krav & kvalifikationer'
       },
       'en': {
         apply: 'Apply Now',
         back: 'Back',
-        description: 'About the Job',
-        requirements: 'Requirements',
+        description: 'About the Role',
         details: 'Details',
         location: 'Location',
         deadline: 'Application Deadline',
-        employment: 'Employment Type',
+        deadlineAlert: 'Application deadline approaching!',
+        deadlineSoon: 'days left',
+        employment: 'Employment',
         hours: 'Working Hours',
         salary: 'Salary',
         field: 'Field',
         published: 'Published',
-        deadlineAlert: 'Application deadline is approaching!',
         noJob: 'Job not found',
-        trySearch: 'Try searching again'
+        trySearch: 'Try searching again',
+        applyAt: 'Apply at Arbetsformedlingen',
+        requirements: 'Requirements & Qualifications'
       }
     };
 
@@ -432,30 +636,15 @@
     }
 
     function getInitials(name) {
-      return name
-        .split(' ')
-        .slice(0, 2)
-        .map(w => w[0])
-        .join('')
-        .toUpperCase();
+      return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
     }
 
-    function isDeadlineSoon(deadline) {
-      if (!deadline || deadline === 'Lopande') return false;
+    function getDaysUntilDeadline(deadline) {
+      if (!deadline || deadline === 'Lopande') return null;
       const parts = deadline.split('-');
-      if (parts.length !== 3) {
-        // Try parsing Swedish date format (YYYY-MM-DD or DD/MM/YYYY)
-        const sweParts = deadline.split('/');
-        if (sweParts.length === 3) {
-          const deadlineDate = new Date(sweParts[2], sweParts[1] - 1, sweParts[0]);
-          const diffDays = Math.ceil((deadlineDate - new Date()) / (1000 * 60 * 60 * 24));
-          return diffDays <= 7 && diffDays >= 0;
-        }
-        return false;
-      }
+      if (parts.length !== 3) return null;
       const deadlineDate = new Date(parts[0], parts[1] - 1, parts[2]);
-      const diffDays = Math.ceil((deadlineDate - new Date()) / (1000 * 60 * 60 * 24));
-      return diffDays <= 7 && diffDays >= 0;
+      return Math.ceil((deadlineDate - new Date()) / (1000 * 60 * 60 * 24));
     }
 
     function renderJob(job) {
@@ -464,113 +653,186 @@
       if (!job) {
         contentEl.innerHTML = `
           <div class="empty-state">
-            <div class="empty-state-icon">🔍</div>
-            <div class="empty-state-title">${t('noJob')}</div>
-            <p class="empty-state-text">${t('trySearch')}</p>
+            <div class="empty-icon">🔍</div>
+            <div class="empty-title">${t('noJob')}</div>
+            <p class="empty-text">${t('trySearch')}</p>
           </div>
         `;
         notifyHeight();
         return;
       }
 
+      const daysLeft = getDaysUntilDeadline(job.deadline);
+      const isUrgent = daysLeft !== null && daysLeft <= 7;
+      const showDeadlineAlert = daysLeft !== null && daysLeft <= 14;
+
       contentEl.innerHTML = `
-        <div class="job-detail">
-          <div class="job-header">
-            <div class="job-header-content">
-              <div class="job-logo-large">
-                ${job.logoUrl ? `<img src="${job.logoUrl}" alt="${job.employer}" onerror="this.parentElement.innerHTML='${getInitials(job.employer)}'">` : getInitials(job.employer)}
+        <div class="job-detail-card">
+          <div class="job-hero">
+            <div class="job-hero-content">
+              <div class="job-logo-container">
+                <div class="job-logo-large">
+                  ${job.logoUrl
+                    ? `<img src="${job.logoUrl}" alt="${job.employer}" onerror="this.parentElement.innerHTML='${getInitials(job.employer)}'">`
+                    : getInitials(job.employer)
+                  }
+                </div>
+                <div class="job-employer-info">
+                  <div class="job-employer-name">
+                    ${job.employer}
+                    ${job.logoUrl ? `
+                    <span class="verified-badge" title="Verifierad">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                    </span>
+                    ` : ''}
+                  </div>
+                  ${job.occupationField ? `<div class="job-employer-field">${job.occupationField}</div>` : ''}
+                </div>
               </div>
-              <div class="job-employer-large">${job.employer}</div>
-              <div class="job-title-large">${job.title}</div>
-              <div class="job-header-meta">
-                <div class="job-header-meta-item">
+
+              <h1 class="job-title-large">${job.title}</h1>
+
+              <div class="job-quick-stats">
+                <span class="quick-stat">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                    <circle cx="12" cy="10" r="3"/>
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
                   </svg>
                   ${job.location}${job.region ? `, ${job.region}` : ''}
-                </div>
-                ${job.deadline ? `
-                <div class="job-header-meta-item">
+                </span>
+                ${job.workingHours ? `
+                <span class="quick-stat">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                    <line x1="16" y1="2" x2="16" y2="6"/>
-                    <line x1="8" y1="2" x2="8" y2="6"/>
-                    <line x1="3" y1="10" x2="21" y2="10"/>
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  ${job.workingHours}
+                </span>
+                ` : ''}
+                ${job.deadline ? `
+                <span class="quick-stat">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
                   </svg>
                   ${job.deadline}
-                </div>
+                </span>
                 ` : ''}
               </div>
             </div>
           </div>
 
           <div class="job-content">
-            ${isDeadlineSoon(job.deadline) ? `
-            <div class="deadline-alert">
-              <span class="deadline-alert-icon">⏰</span>
-              <span class="deadline-alert-text">${t('deadlineAlert')}</span>
+            ${showDeadlineAlert ? `
+            <div class="deadline-alert ${isUrgent ? 'urgent' : ''}">
+              <div class="deadline-alert-icon">⏰</div>
+              <div class="deadline-alert-content">
+                <div class="deadline-alert-title">${t('deadlineAlert')}</div>
+                <div class="deadline-alert-text">${daysLeft} ${t('deadlineSoon')} (${job.deadline})</div>
+              </div>
             </div>
             ` : ''}
 
-            <div class="job-tags">
-              ${job.occupationField ? `<span class="job-tag primary">${job.occupationField}</span>` : ''}
-              ${job.employmentType ? `<span class="job-tag">${job.employmentType}</span>` : ''}
-              ${job.workingHours ? `<span class="job-tag">${job.workingHours}</span>` : ''}
-              ${job.salaryType ? `<span class="job-tag">${job.salaryType}</span>` : ''}
-            </div>
+            <div class="info-grid">
+              <div class="info-card">
+                <div class="info-card-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                  </svg>
+                </div>
+                <div class="info-card-label">${t('location')}</div>
+                <div class="info-card-value">${job.location}</div>
+              </div>
 
-            <div class="job-info-grid">
-              <div class="job-info-item">
-                <div class="job-info-label">${t('location')}</div>
-                <div class="job-info-value">${job.location}</div>
+              <div class="info-card">
+                <div class="info-card-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+                  </svg>
+                </div>
+                <div class="info-card-label">${t('deadline')}</div>
+                <div class="info-card-value">${job.deadline || 'Lopande'}</div>
               </div>
-              <div class="job-info-item">
-                <div class="job-info-label">${t('deadline')}</div>
-                <div class="job-info-value">${job.deadline || 'Lopande'}</div>
-              </div>
+
               ${job.employmentType ? `
-              <div class="job-info-item">
-                <div class="job-info-label">${t('employment')}</div>
-                <div class="job-info-value">${job.employmentType}</div>
+              <div class="info-card">
+                <div class="info-card-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                  </svg>
+                </div>
+                <div class="info-card-label">${t('employment')}</div>
+                <div class="info-card-value">${job.employmentType.replace('Vanlig anstallning', 'Fast tjanst')}</div>
               </div>
               ` : ''}
-              ${job.published ? `
-              <div class="job-info-item">
-                <div class="job-info-label">${t('published')}</div>
-                <div class="job-info-value">${job.published}</div>
+
+              ${job.salaryType ? `
+              <div class="info-card">
+                <div class="info-card-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                  </svg>
+                </div>
+                <div class="info-card-label">${t('salary')}</div>
+                <div class="info-card-value">${job.salaryType.replace('Fast manads- vecko- eller timlon', 'Manadslön')}</div>
               </div>
               ` : ''}
             </div>
 
-            <div class="job-section">
-              <div class="job-section-title">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                  <polyline points="14 2 14 8 20 8"/>
-                  <line x1="16" y1="13" x2="8" y2="13"/>
-                  <line x1="16" y1="17" x2="8" y2="17"/>
-                  <polyline points="10 9 9 9 8 9"/>
-                </svg>
-                ${t('description')}
+            <div class="section">
+              <div class="section-header">
+                <div class="section-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+                  </svg>
+                </div>
+                <h2 class="section-title">${t('description')}</h2>
               </div>
-              <div class="job-description-full">${job.fullDescription || job.description || 'Ingen beskrivning tillganglig.'}</div>
+              <div class="job-description">${job.fullDescription || job.description || 'Ingen beskrivning tillganglig.'}</div>
+            </div>
+
+            <div class="section">
+              <div class="section-header">
+                <div class="section-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                  </svg>
+                </div>
+                <h2 class="section-title">${t('details')}</h2>
+              </div>
+              <div class="tags-container">
+                ${job.occupationField ? `<span class="tag primary">${job.occupationField}</span>` : ''}
+                ${job.workingHours ? `<span class="tag">${job.workingHours}</span>` : ''}
+                ${job.employmentType ? `<span class="tag">${job.employmentType.replace('Vanlig anstallning', 'Fast tjanst')}</span>` : ''}
+                ${job.salaryType ? `<span class="tag secondary">${job.salaryType.replace('Fast manads- vecko- eller timlon', 'Manadslön')}</span>` : ''}
+                ${job.published ? `<span class="tag">Publicerad ${job.published}</span>` : ''}
+              </div>
+            </div>
+
+            <div class="apply-section">
+              <div class="apply-section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                  <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+                ${t('applyAt')}
+              </div>
+              <div class="apply-section-text">${job.url}</div>
             </div>
           </div>
 
           <div class="job-actions">
-            <button class="btn btn-outline" onclick="goBack()">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="19" y1="12" x2="5" y2="12"/>
-                <polyline points="12 19 5 12 12 5"/>
+            <button class="btn btn-secondary" onclick="goBack()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
               </svg>
               ${t('back')}
             </button>
-            <a href="${job.url}" target="_blank" class="btn btn-success">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <a href="${job.url}" target="_blank" class="btn btn-primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                <polyline points="15 3 21 3 21 9"/>
-                <line x1="10" y1="14" x2="21" y2="3"/>
+                <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
               </svg>
               ${t('apply')}
             </a>
@@ -605,16 +867,8 @@
         document.documentElement.setAttribute('data-theme', currentTheme);
       }
 
-      if (window.openai.locale && window.openai.locale !== currentLocale) {
-        currentLocale = window.openai.locale;
-        if (window.openai.toolOutput) {
-          renderJob(window.openai.toolOutput);
-        }
-      }
-
-      if (window.openai.toolOutput) {
-        renderJob(window.openai.toolOutput);
-      }
+      if (window.openai.locale) currentLocale = window.openai.locale;
+      if (window.openai.toolOutput) renderJob(window.openai.toolOutput);
     }
 
     // Initialize
@@ -622,34 +876,49 @@
       currentTheme = window.openai.theme || 'light';
       currentLocale = window.openai.locale || 'sv';
       document.documentElement.setAttribute('data-theme', currentTheme);
-
       window.addEventListener('openai:set_globals', handleGlobalsUpdate, { passive: true });
 
       if (window.openai.toolOutput) {
         renderJob(window.openai.toolOutput);
-      } else {
-        document.getElementById('content').innerHTML = `
-          <div class="empty-state">
-            <div class="empty-state-icon">📋</div>
-            <div class="empty-state-title">${t('noJob')}</div>
-          </div>
-        `;
-        notifyHeight();
       }
     } else {
-      // Standalone preview - show sample job
+      // Standalone preview
       renderJob({
         id: '12345',
-        title: 'Frontend-utvecklare',
-        employer: 'Exempel AB',
+        title: 'Senior Frontend-utvecklare',
+        employer: 'Spotify AB',
         location: 'Stockholm',
         region: 'Stockholms lan',
-        deadline: '2026-02-01',
+        deadline: '2026-01-20',
         description: 'Vi soker en erfaren frontend-utvecklare...',
-        fullDescription: 'Vi soker en erfaren frontend-utvecklare som vill vara med och bygga nasta generations webbtjanster.\n\nOm rollen:\nSom frontend-utvecklare hos oss kommer du att arbeta med moderna webbteknologier och vara en viktig del av vart produktteam.\n\nVi erbjuder:\n- Flexibla arbetstider\n- Mojlighet till distansarbete\n- Konkurrenskraftig lon\n- Fantastiska kollegor',
+        fullDescription: `Vi soker en erfaren frontend-utvecklare som vill vara med och bygga nasta generations webbtjanster hos Spotify.
+
+Om rollen
+Som frontend-utvecklare hos oss kommer du att arbeta med moderna webbteknologier och vara en viktig del av vart produktteam. Du kommer att samarbeta med designers, backend-utvecklare och produktchefer for att skapa fantastiska anvandarupplevelser.
+
+Arbetsuppgifter
+- Utveckla och underhalla frontend-applikationer med React och TypeScript
+- Samarbeta med UX-teamet for att implementera designsystem
+- Optimera prestanda och tillganglighet
+- Delta i kodgranskningar och tekniska diskussioner
+- Mentorskap av juniora utvecklare
+
+Vi soker dig som har
+- Minst 5 ars erfarenhet av frontend-utveckling
+- Gedigen kunskap i React, TypeScript och moderna CSS-tekniker
+- Erfarenhet av att arbeta i agila team
+- God kommunikationsformaga pa svenska och engelska
+- Passion for anvandarvanlighet och kodkvalitet
+
+Vi erbjuder
+- Konkurrenskraftig lon och formaner
+- Flexibla arbetstider och mojlighet till distansarbete
+- Fantastiska kollegor och en inspirerande arbetsmiljo
+- Mojligheter till professionell utveckling`,
         url: 'https://arbetsformedlingen.se/platsbanken/annonser/12345',
-        employmentType: 'Tillsvidareanstallning',
-        salaryType: 'Fast manadslön',
+        logoUrl: 'https://arbetsformedlingen.se/rest/agas/api/v1/organisation/5565494226/logotyper/logo.png',
+        employmentType: 'Vanlig anstallning',
+        salaryType: 'Fast manads- vecko- eller timlon',
         workingHours: 'Heltid',
         occupationField: 'Data/IT',
         published: '2026-01-01'
