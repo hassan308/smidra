@@ -276,42 +276,36 @@ Swedish keywords: utvecklare, sjuksköterska, kock, lärare, städare, lokalvår
 
     console.log(`📤 Found ${jobs.length} jobs - must call display_jobs next`);
 
-    // Return ONLY text - no widget! Forces ChatGPT to call display_jobs
+    // Return structured JSON with clear next_action
+    const response = {
+      status: "INCOMPLETE",
+      message: "Data retrieved. You MUST call display_jobs to show results to user.",
+      next_action: {
+        required: true,
+        tool: "display_jobs",
+        reason: "User cannot see any results until you call display_jobs"
+      },
+      data: {
+        total,
+        language,
+        direction,
+        query_swedish: query,
+        location_swedish: location || "Sweden",
+        jobs
+      },
+      instructions: {
+        translate: ["title", "description", "location", "deadline", "employmentType", "salaryType"],
+        keep_original: ["id", "url", "employer"],
+        ui_labels_needed: ["results", "found", "details", "hide", "apply", "noJobs", "tryAgain", "location", "deadline", "type", "salary", "daysLeft", "today"]
+      }
+    };
+
     return {
       content: [{
         type: "text",
-        text: `⚠️ INCOMPLETE - YOU MUST CALL display_jobs TO SHOW RESULTS ⚠️
+        text: `${JSON.stringify(response, null, 2)}
 
-Found ${total} jobs. Translate and call display_jobs NOW:
-
-TRANSLATE to ${language.toUpperCase()}:
-- query: "${query}"
-- location: "${location || 'Sweden'}"
-
-⚠️ IMPORTANT - DO NOT TRANSLATE:
-- id (keep exactly as is)
-- url (keep exactly as is - these are real links!)
-- employer names (keep original)
-
-TRANSLATE ONLY these fields:
-- title (job title)
-- location (city/region name)
-- description (job description)
-- deadline (date or "Ongoing")
-- employmentType (e.g., "Full-time", "Part-time")
-- salaryType (e.g., "Monthly salary")
-
-JOB DATA:
-${JSON.stringify(jobs, null, 2)}
-
-CALL display_jobs with:
-- language: "${language}"
-- direction: "${direction}"
-- query: translated
-- location: translated
-- total: ${total}
-- labels: all UI text translated
-- jobs: array with translated fields (KEEP id and url unchanged!)`
+⚠️ ACTION REQUIRED: Call display_jobs NOW with translated content!`
       }]
     };
   }
