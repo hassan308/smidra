@@ -166,20 +166,34 @@ lärare (teacher), städare/lokalvårdare (cleaner), chaufför (driver), ingenj�
         type: "text",
         text: `FOUND ${total} JOBS - NOW TRANSLATE AND CALL display_jobs:
 
-Query (for display): translate "${query}" to ${language}
-Location (for display): ${location || 'Sweden'}
+TRANSLATE to ${language.toUpperCase()}:
+- query: "${query}"
+- location: "${location || 'Sweden'}"
 
-TRANSLATE ALL THIS JOB DATA TO ${language.toUpperCase()}:
+⚠️ IMPORTANT - DO NOT TRANSLATE:
+- id (keep exactly as is)
+- url (keep exactly as is - these are real links!)
+- employer names (keep original)
+
+TRANSLATE ONLY these fields:
+- title (job title)
+- location (city/region name)
+- description (job description)
+- deadline (date or "Ongoing")
+- employmentType (e.g., "Full-time", "Part-time")
+- salaryType (e.g., "Monthly salary")
+
+JOB DATA:
 ${JSON.stringify(jobs, null, 2)}
 
-REQUIRED: Call display_jobs NOW with:
+CALL display_jobs with:
 - language: "${language}"
 - direction: "${direction}"
-- query: translated search term
-- location: translated location
+- query: translated
+- location: translated
 - total: ${total}
-- labels: ALL UI text translated
-- jobs: ALL job content translated (title, employer, location, description, deadline, employmentType, salaryType)`
+- labels: all UI text translated
+- jobs: array with translated fields (KEEP id and url unchanged!)`
       }]
     };
   }
@@ -215,15 +229,15 @@ server.registerTool(
         today: z.string().describe("'Today!'")
       }),
       jobs: z.array(z.object({
-        id: z.string(),
+        id: z.string().describe("KEEP ORIGINAL - do not change"),
         title: z.string().describe("TRANSLATED job title"),
-        employer: z.string().describe("Employer name"),
+        employer: z.string().describe("KEEP ORIGINAL employer name"),
         location: z.string().describe("TRANSLATED location"),
         region: z.string().optional(),
         deadline: z.string().describe("TRANSLATED deadline"),
         description: z.string().describe("TRANSLATED description"),
         fullDescription: z.string().optional(),
-        url: z.string(),
+        url: z.string().describe("KEEP ORIGINAL URL - do not modify!"),
         employmentType: z.string().optional().describe("TRANSLATED"),
         salaryType: z.string().optional().describe("TRANSLATED")
       }))
