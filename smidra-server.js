@@ -229,23 +229,25 @@ server.registerResource("job-detail-widget", "ui://widget/job-detail.html", {}, 
 }));
 
 // ============================================================
-// STEP 1: search_jobs - Search and show LOADING widget
+// STEP 1: search_jobs - Returns data, REQUIRES display_jobs
 // ============================================================
 server.registerTool(
   "search_jobs",
   {
-    title: "Search Jobs",
-    description: `Search for jobs on Arbetsförmedlingen and show loading state.
+    title: "Search Jobs (Step 1 of 2)",
+    description: `Search for jobs. Returns Swedish data that YOU MUST translate and pass to display_jobs.
 
-IMPORTANT WORKFLOW:
-1. Detect user's language
-2. Call this tool with translated loading text
-3. You will receive Swedish job data
-4. Translate ALL job content to user's language
-5. IMMEDIATELY call display_jobs with translated content
+⚠️ THIS TOOL DOES NOT SHOW ANYTHING TO THE USER!
+⚠️ YOU MUST CALL display_jobs AFTER THIS TO SHOW RESULTS!
 
-Swedish job keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef),
-lärare (teacher), städare/lokalvårdare (cleaner), chaufför (driver), ingenjör (engineer)`,
+WORKFLOW:
+1. Call this tool → receive Swedish job data
+2. Translate job titles, descriptions, locations to user's language
+3. Call display_jobs with translated content → user sees results
+
+DO NOT respond to user until you have called display_jobs!
+
+Swedish keywords: utvecklare, sjuksköterska, kock, lärare, städare, lokalvårdare, chaufför`,
     inputSchema: {
       query: z.string().describe("Search query IN SWEDISH"),
       location: z.string().optional().describe("City/region in Sweden"),
@@ -256,7 +258,7 @@ lärare (teacher), städare/lokalvårdare (cleaner), chaufför (driver), ingenj�
       translatingText: z.string().describe("'Translating results...' in user's language")
     },
     _meta: {
-      "openai/outputTemplate": "ui://widget/job-loading.html"
+      // No widget - forces ChatGPT to call display_jobs
     }
   },
   async ({ query, location, limit, language, direction, loadingText, translatingText }) => {
@@ -267,20 +269,15 @@ lärare (teacher), städare/lokalvårdare (cleaner), chaufför (driver), ingenj�
     const jobs = data.hits.map(formatJob);
     const total = data.total?.value || 0;
 
-    console.log(`📤 Found ${jobs.length} jobs - waiting for translation...`);
+    console.log(`📤 Found ${jobs.length} jobs - must call display_jobs next`);
 
-    // Return loading widget + job data for ChatGPT to translate
+    // Return ONLY text - no widget! Forces ChatGPT to call display_jobs
     return {
-      structuredContent: {
-        loading: true,
-        language,
-        direction,
-        loadingText: translatingText || loadingText || "Translating...",
-        jobCount: jobs.length
-      },
       content: [{
         type: "text",
-        text: `FOUND ${total} JOBS - NOW TRANSLATE AND CALL display_jobs:
+        text: `⚠️ INCOMPLETE - YOU MUST CALL display_jobs TO SHOW RESULTS ⚠️
+
+Found ${total} jobs. Translate and call display_jobs NOW:
 
 TRANSLATE to ${language.toUpperCase()}:
 - query: "${query}"
@@ -316,13 +313,16 @@ CALL display_jobs with:
 );
 
 // ============================================================
-// STEP 2: display_jobs - Show translated results
+// STEP 2: display_jobs - ONLY way to show results to user
 // ============================================================
 server.registerTool(
   "display_jobs",
   {
-    title: "Display Translated Jobs",
-    description: "Display the translated job results. Call this IMMEDIATELY after search_jobs.",
+    title: "Display Jobs (Step 2 of 2)",
+    description: `Show job results to user. This is the ONLY way to display jobs!
+
+Call this IMMEDIATELY after search_jobs with translated content.
+User will NOT see any jobs until you call this tool.`,
     inputSchema: {
       language: z.string(),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
