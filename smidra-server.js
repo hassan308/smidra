@@ -166,16 +166,23 @@ const server = new McpServer({
   version: "1.0.0"
 });
 
-// Register job list widget resource (v2 to bust cache)
+// Register job list widget resource (v3 with improved metadata)
 server.registerResource(
   "job-list-widget",
-  "ui://widget/job-list-v2.html",
+  "ui://widget/job-list-v3.html",
   {},
   async () => ({
     contents: [{
-      uri: "ui://widget/job-list-v2.html",
+      uri: "ui://widget/job-list-v3.html",
       mimeType: "text/html+skybridge",
-      text: jobListHTML
+      text: jobListHTML,
+      _meta: {
+        "openai/widgetPrefersBorder": true,
+        "openai/widgetCSP": {
+          connect_domains: ["https://jobsearch.api.jobtechdev.se"],
+          resource_domains: ["https://fonts.googleapis.com", "https://fonts.gstatic.com"]
+        }
+      }
     }]
   })
 );
@@ -183,13 +190,20 @@ server.registerResource(
 // Register job detail widget resource
 server.registerResource(
   "job-detail-widget",
-  "ui://widget/job-detail.html",
+  "ui://widget/job-detail-v2.html",
   {},
   async () => ({
     contents: [{
-      uri: "ui://widget/job-detail.html",
+      uri: "ui://widget/job-detail-v2.html",
       mimeType: "text/html+skybridge",
-      text: jobDetailHTML
+      text: jobDetailHTML,
+      _meta: {
+        "openai/widgetPrefersBorder": true,
+        "openai/widgetCSP": {
+          connect_domains: ["https://jobsearch.api.jobtechdev.se"],
+          resource_domains: ["https://fonts.googleapis.com", "https://fonts.gstatic.com"]
+        }
+      }
     }]
   })
 );
@@ -198,15 +212,27 @@ server.registerResource(
 server.registerTool(
   "search_jobs",
   {
-    title: "Sok jobb",
-    description: "Sok lediga jobb pa Arbetsformedlingen. Anvandaren kan soka pa yrke, kompetens, eller fritext. Valfritt: ange plats (stad eller lan).",
+    title: "Search Jobs in Sweden",
+    description: `Use this tool when the user wants to find jobs, search for work, look for employment, or mentions job hunting in Sweden.
+
+ALWAYS use this tool when the user:
+- Asks about jobs, work, or employment
+- Mentions job titles like "developer", "nurse", "chef", "engineer", etc.
+- Says "I'm looking for work" or "find me a job"
+- Mentions Swedish cities like Stockholm, Göteborg, Malmö, Gävle, Uppsala, etc.
+- Uses Swedish words like "jobb", "arbete", "lediga tjänster", "söker jobb"
+
+This tool searches Arbetsförmedlingen (Swedish Employment Agency) and displays results in an interactive widget.`,
     inputSchema: {
-      query: z.string().describe("Sokord - yrke, kompetens, eller fritext (t.ex. 'utvecklare', 'sjukskoterska', 'kock')"),
-      location: z.string().optional().describe("Plats - stad eller lan (t.ex. 'Stockholm', 'Goteborg', 'Skane')"),
-      limit: z.number().optional().default(5).describe("Antal resultat att visa (standard: 5)")
+      query: z.string().describe("Job title, skill, or keyword to search for (e.g., 'developer', 'nurse', 'chef', 'systemutvecklare')"),
+      location: z.string().optional().describe("City or region in Sweden (e.g., 'Stockholm', 'Göteborg', 'Gävle', 'Skåne')"),
+      limit: z.number().optional().default(5).describe("Number of results to show (default: 5, max: 20)")
     },
     _meta: {
-      "openai/outputTemplate": "ui://widget/job-list-v2.html"
+      "openai/outputTemplate": "ui://widget/job-list-v3.html",
+      "openai/toolInvocation/invoking": "Searching for jobs...",
+      "openai/toolInvocation/invoked": "Found jobs!",
+      "openai/widgetAccessible": true
     }
   },
   async ({ query, location, limit }) => {
@@ -242,13 +268,21 @@ server.registerTool(
 server.registerTool(
   "get_job_details",
   {
-    title: "Visa jobbdetaljer",
-    description: "Visa fullstandig information om ett specifikt jobb. Anvand jobb-ID fran sokresultaten.",
+    title: "Show Job Details",
+    description: `Use this tool to show full details about a specific job. Only use when the user asks for more information about a particular job from the search results.
+
+Use when the user says:
+- "Tell me more about this job"
+- "Show details for job X"
+- "I want to know more about the developer position"`,
     inputSchema: {
-      jobId: z.string().describe("Jobb-ID fran sokresultaten")
+      jobId: z.string().describe("The job ID from search results")
     },
     _meta: {
-      "openai/outputTemplate": "ui://widget/job-detail.html"
+      "openai/outputTemplate": "ui://widget/job-detail-v2.html",
+      "openai/toolInvocation/invoking": "Loading job details...",
+      "openai/toolInvocation/invoked": "Job details ready!",
+      "openai/widgetAccessible": true
     }
   },
   async ({ jobId }) => {
