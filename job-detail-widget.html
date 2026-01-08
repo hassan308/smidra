@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smidra - Jobbdetaljer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --smidra-primary: #2563eb;
+      --smidra-primary-dark: #1d4ed8;
+      --smidra-success: #10b981;
+      --smidra-success-dark: #059669;
+      --smidra-accent: #8b5cf6;
+      --smidra-warning: #f59e0b;
+      --bg-gradient-start: #f0f9ff;
+      --bg-gradient-end: #e0f2fe;
+      --glass: rgba(255, 255, 255, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.9);
+      --card-bg: rgba(255, 255, 255, 0.85);
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    :root[data-theme="dark"] {
+      --bg-gradient-start: #0f172a;
+      --bg-gradient-end: #1e293b;
+      --glass: rgba(30, 41, 59, 0.8);
+      --glass-border: rgba(51, 65, 85, 0.5);
+      --card-bg: rgba(30, 41, 59, 0.9);
+      --text-primary: #f1f5f9;
+      --text-secondary: #cbd5e1;
+      --text-muted: #64748b;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+
+    body {
+      font-family: var(--font-main);
+      background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+      min-height: 100vh;
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 20px 16px;
+    }
+
+    /* Job Detail Card */
+    .job-detail {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      overflow: hidden;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Header Section */
+    .job-header {
+      background: linear-gradient(135deg, var(--smidra-primary), var(--smidra-accent));
+      padding: 24px 20px;
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .job-header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 100%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 50%);
+    }
+
+    .job-header-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .job-logo-large {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      backdrop-filter: blur(10px);
+    }
+
+    .job-logo-large img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 16px;
+    }
+
+    .job-employer-large {
+      font-size: 13px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.9;
+      margin-bottom: 4px;
+    }
+
+    .job-title-large {
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 12px;
+    }
+
+    .job-header-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .job-header-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    .job-header-meta-item svg {
+      width: 16px;
+      height: 16px;
+      opacity: 0.8;
+    }
+
+    /* Content Section */
+    .job-content {
+      padding: 20px;
+    }
+
+    /* Tags */
+    .job-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .job-tag {
+      font-size: 12px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 20px;
+      background: var(--glass);
+      color: var(--text-secondary);
+      border: 1px solid var(--glass-border);
+    }
+
+    .job-tag.primary {
+      background: rgba(37, 99, 235, 0.1);
+      color: var(--smidra-primary);
+      border-color: rgba(37, 99, 235, 0.2);
+    }
+
+    /* Description */
+    .job-section {
+      margin-bottom: 20px;
+    }
+
+    .job-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .job-section-title svg {
+      width: 18px;
+      height: 18px;
+      color: var(--smidra-primary);
+    }
+
+    .job-description-full {
+      font-size: 14px;
+      color: var(--text-secondary);
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+
+    .job-description-full::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .job-description-full::-webkit-scrollbar-track {
+      background: var(--glass);
+      border-radius: 2px;
+    }
+
+    .job-description-full::-webkit-scrollbar-thumb {
+      background: var(--text-muted);
+      border-radius: 2px;
+    }
+
+    /* Info Grid */
+    .job-info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .job-info-item {
+      background: var(--glass);
+      border-radius: 12px;
+      padding: 12px;
+      border: 1px solid var(--glass-border);
+    }
+
+    .job-info-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .job-info-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    /* Actions */
+    .job-actions {
+      display: flex;
+      gap: 12px;
+      padding: 20px;
+      border-top: 1px solid var(--glass-border);
+      background: var(--glass);
+    }
+
+    .btn {
+      flex: 1;
+      padding: 14px 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, var(--smidra-success), var(--smidra-success-dark));
+      color: white;
+    }
+
+    .btn-success:hover {
+      transform: scale(1.02);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--text-primary);
+      border: 2px solid var(--glass-border);
+    }
+
+    .btn-outline:hover {
+      background: var(--card-bg);
+    }
+
+    /* Deadline Alert */
+    .deadline-alert {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(234, 88, 12, 0.1));
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .deadline-alert-icon {
+      font-size: 20px;
+    }
+
+    .deadline-alert-text {
+      font-size: 13px;
+      color: var(--smidra-warning);
+      font-weight: 500;
+    }
+
+    /* Loading */
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 300px;
+      gap: 16px;
+    }
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--glass-border);
+      border-top-color: var(--smidra-primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .empty-state-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .empty-state-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    @media (max-width: 440px) {
+      .container { padding: 12px; }
+      .job-header { padding: 20px 16px; }
+      .job-content { padding: 16px; }
+      .job-title-large { font-size: 20px; }
+      .job-info-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="content">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Laddar jobbdetaljer...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const translations = {
+      'sv': {
+        apply: 'Ansok nu',
+        back: 'Tillbaka',
+        description: 'Om jobbet',
+        requirements: 'Krav',
+        details: 'Detaljer',
+        location: 'Plats',
+        deadline: 'Sista ansokningsdag',
+        employment: 'Anstallningsform',
+        hours: 'Arbetstid',
+        salary: 'Lon',
+        field: 'Yrkesomrade',
+        published: 'Publicerad',
+        deadlineAlert: 'Ansokningstiden gar ut snart!',
+        noJob: 'Jobbet hittades inte',
+        trySearch: 'Prova att soka igen'
+      },
+      'en': {
+        apply: 'Apply Now',
+        back: 'Back',
+        description: 'About the Job',
+        requirements: 'Requirements',
+        details: 'Details',
+        location: 'Location',
+        deadline: 'Application Deadline',
+        employment: 'Employment Type',
+        hours: 'Working Hours',
+        salary: 'Salary',
+        field: 'Field',
+        published: 'Published',
+        deadlineAlert: 'Application deadline is approaching!',
+        noJob: 'Job not found',
+        trySearch: 'Try searching again'
+      }
+    };
+
+    let currentLocale = 'sv';
+    let currentTheme = 'light';
+
+    function t(key) {
+      const lang = currentLocale.startsWith('sv') ? 'sv' : 'en';
+      return translations[lang]?.[key] || translations['en'][key];
+    }
+
+    function getInitials(name) {
+      return name
+        .split(' ')
+        .slice(0, 2)
+        .map(w => w[0])
+        .join('')
+        .toUpperCase();
+    }
+
+    function isDeadlineSoon(deadline) {
+      if (!deadline || deadline === 'Lopande') return false;
+      const parts = deadline.split('-');
+      if (parts.length !== 3) {
+        // Try parsing Swedish date format (YYYY-MM-DD or DD/MM/YYYY)
+        const sweParts = deadline.split('/');
+        if (sweParts.length === 3) {
+          const deadlineDate = new Date(sweParts[2], sweParts[1] - 1, sweParts[0]);
+          const diffDays = Math.ceil((deadlineDate - new Date()) / (1000 * 60 * 60 * 24));
+          return diffDays <= 7 && diffDays >= 0;
+        }
+        return false;
+      }
+      const deadlineDate = new Date(parts[0], parts[1] - 1, parts[2]);
+      const diffDays = Math.ceil((deadlineDate - new Date()) / (1000 * 60 * 60 * 24));
+      return diffDays <= 7 && diffDays >= 0;
+    }
+
+    function renderJob(job) {
+      const contentEl = document.getElementById('content');
+
+      if (!job) {
+        contentEl.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">🔍</div>
+            <div class="empty-state-title">${t('noJob')}</div>
+            <p class="empty-state-text">${t('trySearch')}</p>
+          </div>
+        `;
+        notifyHeight();
+        return;
+      }
+
+      contentEl.innerHTML = `
+        <div class="job-detail">
+          <div class="job-header">
+            <div class="job-header-content">
+              <div class="job-logo-large">
+                ${job.logoUrl ? `<img src="${job.logoUrl}" alt="${job.employer}" onerror="this.parentElement.innerHTML='${getInitials(job.employer)}'">` : getInitials(job.employer)}
+              </div>
+              <div class="job-employer-large">${job.employer}</div>
+              <div class="job-title-large">${job.title}</div>
+              <div class="job-header-meta">
+                <div class="job-header-meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  ${job.location}${job.region ? `, ${job.region}` : ''}
+                </div>
+                ${job.deadline ? `
+                <div class="job-header-meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                  ${job.deadline}
+                </div>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+
+          <div class="job-content">
+            ${isDeadlineSoon(job.deadline) ? `
+            <div class="deadline-alert">
+              <span class="deadline-alert-icon">⏰</span>
+              <span class="deadline-alert-text">${t('deadlineAlert')}</span>
+            </div>
+            ` : ''}
+
+            <div class="job-tags">
+              ${job.occupationField ? `<span class="job-tag primary">${job.occupationField}</span>` : ''}
+              ${job.employmentType ? `<span class="job-tag">${job.employmentType}</span>` : ''}
+              ${job.workingHours ? `<span class="job-tag">${job.workingHours}</span>` : ''}
+              ${job.salaryType ? `<span class="job-tag">${job.salaryType}</span>` : ''}
+            </div>
+
+            <div class="job-info-grid">
+              <div class="job-info-item">
+                <div class="job-info-label">${t('location')}</div>
+                <div class="job-info-value">${job.location}</div>
+              </div>
+              <div class="job-info-item">
+                <div class="job-info-label">${t('deadline')}</div>
+                <div class="job-info-value">${job.deadline || 'Lopande'}</div>
+              </div>
+              ${job.employmentType ? `
+              <div class="job-info-item">
+                <div class="job-info-label">${t('employment')}</div>
+                <div class="job-info-value">${job.employmentType}</div>
+              </div>
+              ` : ''}
+              ${job.published ? `
+              <div class="job-info-item">
+                <div class="job-info-label">${t('published')}</div>
+                <div class="job-info-value">${job.published}</div>
+              </div>
+              ` : ''}
+            </div>
+
+            <div class="job-section">
+              <div class="job-section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10 9 9 9 8 9"/>
+                </svg>
+                ${t('description')}
+              </div>
+              <div class="job-description-full">${job.fullDescription || job.description || 'Ingen beskrivning tillganglig.'}</div>
+            </div>
+          </div>
+
+          <div class="job-actions">
+            <button class="btn btn-outline" onclick="goBack()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="19" y1="12" x2="5" y2="12"/>
+                <polyline points="12 19 5 12 12 5"/>
+              </svg>
+              ${t('back')}
+            </button>
+            <a href="${job.url}" target="_blank" class="btn btn-success">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/>
+                <line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+              ${t('apply')}
+            </a>
+          </div>
+        </div>
+      `;
+
+      notifyHeight();
+    }
+
+    function goBack() {
+      if (typeof window.openai !== 'undefined' && window.openai.sendFollowUpMessage) {
+        window.openai.sendFollowUpMessage('Visa jobbsokningen igen');
+      } else {
+        window.history.back();
+      }
+    }
+
+    function notifyHeight() {
+      if (typeof window.openai !== 'undefined' && window.openai.notifyIntrinsicHeight) {
+        requestAnimationFrame(() => {
+          window.openai.notifyIntrinsicHeight(document.body.scrollHeight);
+        });
+      }
+    }
+
+    function handleGlobalsUpdate() {
+      if (typeof window.openai === 'undefined') return;
+
+      if (window.openai.theme && window.openai.theme !== currentTheme) {
+        currentTheme = window.openai.theme;
+        document.documentElement.setAttribute('data-theme', currentTheme);
+      }
+
+      if (window.openai.locale && window.openai.locale !== currentLocale) {
+        currentLocale = window.openai.locale;
+        if (window.openai.toolOutput) {
+          renderJob(window.openai.toolOutput);
+        }
+      }
+
+      if (window.openai.toolOutput) {
+        renderJob(window.openai.toolOutput);
+      }
+    }
+
+    // Initialize
+    if (typeof window.openai !== 'undefined') {
+      currentTheme = window.openai.theme || 'light';
+      currentLocale = window.openai.locale || 'sv';
+      document.documentElement.setAttribute('data-theme', currentTheme);
+
+      window.addEventListener('openai:set_globals', handleGlobalsUpdate, { passive: true });
+
+      if (window.openai.toolOutput) {
+        renderJob(window.openai.toolOutput);
+      } else {
+        document.getElementById('content').innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📋</div>
+            <div class="empty-state-title">${t('noJob')}</div>
+          </div>
+        `;
+        notifyHeight();
+      }
+    } else {
+      // Standalone preview - show sample job
+      renderJob({
+        id: '12345',
+        title: 'Frontend-utvecklare',
+        employer: 'Exempel AB',
+        location: 'Stockholm',
+        region: 'Stockholms lan',
+        deadline: '2026-02-01',
+        description: 'Vi soker en erfaren frontend-utvecklare...',
+        fullDescription: 'Vi soker en erfaren frontend-utvecklare som vill vara med och bygga nasta generations webbtjanster.\n\nOm rollen:\nSom frontend-utvecklare hos oss kommer du att arbeta med moderna webbteknologier och vara en viktig del av vart produktteam.\n\nVi erbjuder:\n- Flexibla arbetstider\n- Mojlighet till distansarbete\n- Konkurrenskraftig lon\n- Fantastiska kollegor',
+        url: 'https://arbetsformedlingen.se/platsbanken/annonser/12345',
+        employmentType: 'Tillsvidareanstallning',
+        salaryType: 'Fast manadslön',
+        workingHours: 'Heltid',
+        occupationField: 'Data/IT',
+        published: '2026-01-01'
+      });
+    }
+  </script>
+</body>
+</html>
