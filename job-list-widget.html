@@ -874,20 +874,13 @@
       render();
     }
 
-    // Request action from ChatGPT using callTool()
-    function requestAction(action, job) {
-      console.log('=== SMIDRA: Action requested ===', action);
+    // Request action from ChatGPT
+    async function requestAction(action, job) {
+      console.log('=== SMIDRA: Action ===', action, job?.title);
 
       // Handle local actions first
       if (action === 'share') {
-        // Try to copy URL (might be blocked)
-        try {
-          navigator.clipboard?.writeText(job.url);
-          showToast(t('copied'));
-        } catch (e) {
-          // Fallback: show URL in alert
-          alert('Länk: ' + job.url);
-        }
+        alert('Länk: ' + job.url);
         return;
       }
 
@@ -896,70 +889,91 @@
         return;
       }
 
-      // Use callTool() to call our MCP backend!
-      if (typeof window.openai?.callTool === 'function') {
-        const lang = state.language || 'sv';
-        let toolName, toolArgs;
+      // Build message for ChatGPT
+      const lang = state.language || 'sv';
+      let message = '';
 
-        switch (action) {
-          case 'salary':
-            toolName = 'get_salary_info';
-            toolArgs = {
-              jobTitle: job.title,
-              location: job.location || 'Sverige',
-              language: lang
-            };
-            break;
-
-          case 'help':
-            toolName = 'write_cover_letter';
-            toolArgs = {
-              jobTitle: job.title,
-              employer: job.employer,
-              location: job.location,
-              jobDescription: job.description,
-              language: lang
-            };
-            break;
-
-          case 'market':
-            toolName = 'analyze_job_market';
-            toolArgs = {
-              jobTitle: job.title,
-              location: job.location,
-              language: lang
-            };
-            break;
-
-          case 'compare':
-            toolName = 'compare_jobs';
-            const selectedJobs = state.selectedJobs.map(id => {
-              const j = state.data?.jobs?.find(x => x.id === id);
-              return j ? { title: j.title, employer: j.employer, location: j.location, description: j.description } : null;
-            }).filter(Boolean);
-            toolArgs = { jobs: selectedJobs, language: lang };
-            break;
-
-          default:
-            console.log('Unknown action:', action);
-            return;
-        }
-
-        console.log('Calling tool:', toolName, toolArgs);
-        showToast('Laddar...');
-
-        try {
-          window.openai.callTool(toolName, toolArgs);
-          showToast('Skickat till ChatGPT!');
-          console.log('SUCCESS: callTool executed');
-        } catch (e) {
-          console.error('callTool failed:', e);
-          showToast('Fel: ' + e.message);
-        }
-      } else {
-        console.log('callTool not available');
-        showToast('Funktionen är inte tillgänglig');
+      switch (action) {
+        case 'salary':
+          message = `Visa lönestatistik för "${job.title}" i ${job.location || 'Sverige'}. Ge mig snittlön, lönespann och jämför med andra regioner.`;
+          break;
+        case 'help':
+          message = `Hjälp mig skriva ett personligt brev för tjänsten "${job.title}" hos ${job.employer}. Jobbet är i ${job.location}. Beskriving: ${job.description?.substring(0, 200)}`;
+          break;
+        case 'market':
+          message = `Ge mig arbetsmarknadsanalys för yrket "${job.title}". Hur ser efterfrågan ut? Framtidsutsikter? Tips för att sticka ut?`;
+          break;
+        case 'compare':
+          const jobs = state.selectedJobs.map(id => state.data?.jobs?.find(x => x.id === id)).filter(Boolean);
+          message = `Jämför dessa jobb:\n${jobs.map((j, i) => `${i+1}. ${j.title} hos ${j.employer} i ${j.location}`).join('\n')}\n\nVilket rekommenderar du?`;
+          break;
+        default:
+          return;
       }
+
+      console.log('Message:', message);
+      showToast('Skickar...');
+
+      // METHOD 1: Try sendFollowUpMessage FIRST (must be synchronous from click!)
+      if (typeof window.openai?.sendFollowUpMessage === 'function') {
+        try {
+          console.log('Trying sendFollowUpMessage...');
+          const result = window.openai.sendFollowUpMessage(message);
+          console.log('sendFollowUpMessage result:', result);
+          showToast('Skickat!');
+          return;
+        } catch (e) {
+          console.log('sendFollowUpMessage error:', e);
+        }
+      }
+
+      // METHOD 2: Try callTool with await
+      if (typeof window.openai?.callTool === 'function') {
+        try {
+          console.log('Trying callTool...');
+          const toolName = action === 'salary' ? 'get_salary_info' :
+                          action === 'help' ? 'write_cover_letter' :
+                          action === 'market' ? 'analyze_job_market' : 'compare_jobs';
+
+          const toolArgs = {
+            jobTitle: job?.title || '',
+            location: job?.location || 'Sverige',
+            employer: job?.employer || '',
+            jobDescription: job?.description || '',
+            language: lang
+          };
+
+          if (action === 'compare') {
+            const jobs = state.selectedJobs.map(id => {
+              const j = state.data?.jobs?.find(x => x.id === id);
+              return j ? { title: j.title, employer: j.employer, location: j.location } : null;
+            }).filter(Boolean);
+            toolArgs.jobs = jobs;
+          }
+
+          const result = await window.openai.callTool(toolName, toolArgs);
+          console.log('callTool result:', result);
+          showToast('Skickat!');
+          return;
+        } catch (e) {
+          console.log('callTool error:', e);
+        }
+      }
+
+      // METHOD 3: Try requestTargetedReply
+      if (typeof window.openai?.requestTargetedReply === 'function') {
+        try {
+          console.log('Trying requestTargetedReply...');
+          const result = window.openai.requestTargetedReply({ message });
+          console.log('requestTargetedReply result:', result);
+          showToast('Skickat!');
+          return;
+        } catch (e) {
+          console.log('requestTargetedReply error:', e);
+        }
+      }
+
+      showToast('Kunde inte skicka');
     }
 
     // Show message dialog for copy
