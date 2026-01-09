@@ -65,7 +65,7 @@ description: `Search for jobs. Returns Swedish data...
 DO NOT respond to user until you have called display_jobs!`
 ```
 
-#### 3. Tool 1 returnerar BARA text (ingen widget/structuredContent)
+#### 3. Tool 1 returnerar strukturerat JSON med `next_action`
 ```javascript
 // FEL - ChatGPT tror uppgiften är klar:
 return {
@@ -73,17 +73,45 @@ return {
   content: [{ type: "text", text: "..." }]
 };
 
-// RÄTT - Tvingar ChatGPT att göra något:
+// RÄTT - Strukturerat JSON som guidar ChatGPT:
+const response = {
+  status: "INCOMPLETE",
+  message: "Data retrieved. You MUST call display_jobs to show results.",
+  next_action: {
+    required: true,
+    tool: "display_jobs",
+    reason: "User cannot see any results until you call display_jobs"
+  },
+  data: {
+    total,
+    language,
+    direction,
+    query_swedish: query,
+    location_swedish: location,
+    jobs
+  },
+  instructions: {
+    translate: ["title", "description", "location", "deadline", "employmentType", "salaryType"],
+    keep_original: ["id", "url", "employer"],
+    ui_labels_needed: ["results", "found", "details", "hide", "apply", "noJobs", "tryAgain", "location", "deadline", "type", "salary", "daysLeft", "today"]
+  }
+};
+
 return {
   content: [{
     type: "text",
-    text: `⚠️ INCOMPLETE - YOU MUST CALL display_jobs TO SHOW RESULTS ⚠️
+    text: `${JSON.stringify(response, null, 2)}
 
-    Found ${total} jobs. Translate and call display_jobs NOW:
-    ${JSON.stringify(jobs)}`
+⚠️ ACTION REQUIRED: Call display_jobs NOW with translated content!`
   }]
 };
 ```
+
+**Varför JSON fungerar bättre:**
+- `status: "INCOMPLETE"` - Tydligt att något saknas
+- `next_action.required: true` - Explicit krav
+- `next_action.tool` - Exakt vilket verktyg som ska anropas
+- `instructions` - Strukturerad guide för översättning
 
 #### 4. Tool 2 beskrivning betonar att det är ENDA sättet
 ```javascript
@@ -260,16 +288,19 @@ window.openai.openExternal({ href })         // Öppna länk
 
 ### ✅ Vad fungerar för två-stegs tool-flöden:
 1. **Namnge tools med stegnummer** - "(Step 1 of 2)"
-2. **Step 1 får INTE visa widget** - returnera bara text
-3. **Step 1 ska verka "ofullständig"** - "⚠️ INCOMPLETE"
-4. **Beskriv att Step 2 är ENDA sättet** att visa resultat
-5. **"DO NOT respond until you call [step 2]"**
+2. **Step 1 får INTE visa widget** - returnera bara text/JSON
+3. **Returnera strukturerat JSON med `next_action`** - ChatGPT följer strukturerade instruktioner
+4. **`status: "INCOMPLETE"`** - Signalerar att uppgiften inte är klar
+5. **`next_action.required: true`** - Explicit krav på nästa steg
+6. **`instructions`-objekt** - Tydlig guide för vad som ska göras
+7. **Beskriv att Step 2 är ENDA sättet** att visa resultat
+8. **"EVERY search" i beskrivningen** - Gäller alla sökningar, inte bara första
 
 ### ❌ Vad fungerar INTE:
 - Returnera widget från Step 1 (ChatGPT tror den är klar)
-- Anta att ChatGPT följer "IMPORTANT" eller "MUST" utan konsekvenser
-- Förlita sig på XML/JSON-format för att tvinga beteende
+- Bara "IMPORTANT" eller "MUST" i fritext utan struktur
 - Loading-widgets som ska uppdateras (skapar dubletter)
+- Anta att ChatGPT kommer ihåg instruktioner från tidigare i konversationen
 
 ---
 
