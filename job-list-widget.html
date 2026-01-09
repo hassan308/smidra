@@ -908,6 +908,18 @@
       console.log('=== SMIDRA: Sending message ===');
       console.log('Message:', message.substring(0, 50) + '...');
 
+      // DETAILED DEBUG: What does window.openai contain?
+      console.log('window.openai =', window.openai);
+      if (window.openai) {
+        console.log('Keys:', Object.keys(window.openai));
+        console.log('toolOutput:', window.openai.toolOutput);
+        console.log('sendMessage:', window.openai.sendMessage);
+        console.log('theme:', window.openai.theme);
+        for (const key of Object.keys(window.openai)) {
+          console.log(`  ${key}:`, typeof window.openai[key], window.openai[key]);
+        }
+      }
+
       // Method 1: window.openai.sendMessage (official API)
       if (typeof window.openai?.sendMessage === 'function') {
         try {
@@ -945,17 +957,9 @@
         console.log('Input injection failed (expected due to cross-origin):', e.message);
       }
 
-      // Method 4: Copy to clipboard automatically and notify user
-      try {
-        navigator.clipboard.writeText(message).then(() => {
-          showToast('Kopierat! Klistra in med Ctrl+V');
-          console.log('SUCCESS: Copied to clipboard');
-        });
-      } catch (e) {
-        console.log('Clipboard failed:', e);
-      }
+      // Clipboard is blocked by ChatGPT's permissions policy, skip it
 
-      // Final fallback: Show dialog
+      // Final fallback: Show dialog with manual copy
       showMessageDialog(message, action);
     }
 
