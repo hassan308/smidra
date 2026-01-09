@@ -427,7 +427,158 @@ server.registerTool(
   }
 );
 
-console.log("✅ Tools: search_jobs → display_jobs, get_job_details");
+// ============================================================
+// ACTION TOOLS - Called from widget buttons via callTool()
+// ============================================================
+
+// Salary statistics tool
+server.registerTool(
+  "get_salary_info",
+  {
+    title: "Get Salary Statistics",
+    description: "Get salary statistics for a specific job/occupation. Returns text for ChatGPT to present.",
+    inputSchema: {
+      jobTitle: z.string().describe("The job title to get salary info for"),
+      location: z.string().optional().describe("Location (city or region)"),
+      language: z.string().default("sv").describe("Response language code")
+    }
+  },
+  async ({ jobTitle, location, language }) => {
+    console.log(`💰 get_salary_info: ${jobTitle} in ${location || 'Sweden'}`);
+
+    // Return instructions for ChatGPT to answer using its knowledge
+    return {
+      content: [{
+        type: "text",
+        text: `USER REQUEST: Salary statistics for "${jobTitle}" in ${location || 'Sweden'}.
+
+Please provide helpful salary information based on your knowledge:
+- Average/median salary range
+- Entry level vs senior level
+- How it compares to other regions
+- Factors that affect salary
+
+Respond in the user's language (${language}). Be helpful and informative!`
+      }]
+    };
+  }
+);
+
+// Cover letter help tool
+server.registerTool(
+  "write_cover_letter",
+  {
+    title: "Write Cover Letter",
+    description: "Help user write a cover letter for a specific job application.",
+    inputSchema: {
+      jobTitle: z.string().describe("The job title"),
+      employer: z.string().describe("The employer/company name"),
+      location: z.string().optional(),
+      jobDescription: z.string().describe("Brief job description"),
+      language: z.string().default("sv")
+    }
+  },
+  async ({ jobTitle, employer, location, jobDescription, language }) => {
+    console.log(`✍️ write_cover_letter: ${jobTitle} at ${employer}`);
+
+    return {
+      content: [{
+        type: "text",
+        text: `USER REQUEST: Help write a cover letter for this job application.
+
+Job: ${jobTitle}
+Company: ${employer}
+Location: ${location || 'Not specified'}
+Description: ${jobDescription}
+
+Please write a professional, engaging cover letter that:
+- Shows enthusiasm for the role
+- Highlights relevant skills (ask user about their background if needed)
+- Is tailored to the company
+- Has a strong opening and closing
+
+Respond in ${language}. Offer to customize it further based on user's experience.`
+      }]
+    };
+  }
+);
+
+// Job market analysis tool
+server.registerTool(
+  "analyze_job_market",
+  {
+    title: "Analyze Job Market",
+    description: "Provide job market analysis for a specific occupation.",
+    inputSchema: {
+      jobTitle: z.string().describe("The job/occupation to analyze"),
+      location: z.string().optional(),
+      language: z.string().default("sv")
+    }
+  },
+  async ({ jobTitle, location, language }) => {
+    console.log(`📊 analyze_job_market: ${jobTitle}`);
+
+    return {
+      content: [{
+        type: "text",
+        text: `USER REQUEST: Job market analysis for "${jobTitle}" in ${location || 'Sweden'}.
+
+Please provide helpful job market insights:
+- Current demand/supply situation
+- Industry trends
+- Future outlook
+- Skills in high demand
+- Tips for standing out as a candidate
+
+Respond in ${language}. Be encouraging and practical!`
+      }]
+    };
+  }
+);
+
+// Compare jobs tool
+server.registerTool(
+  "compare_jobs",
+  {
+    title: "Compare Jobs",
+    description: "Compare multiple jobs and provide recommendation.",
+    inputSchema: {
+      jobs: z.array(z.object({
+        title: z.string(),
+        employer: z.string(),
+        location: z.string().optional(),
+        description: z.string().optional()
+      })).describe("List of jobs to compare"),
+      language: z.string().default("sv")
+    }
+  },
+  async ({ jobs, language }) => {
+    console.log(`⚖️ compare_jobs: ${jobs.length} jobs`);
+
+    const jobList = jobs.map((j, i) => `${i + 1}. ${j.title} at ${j.employer} (${j.location || 'N/A'})`).join('\n');
+
+    return {
+      content: [{
+        type: "text",
+        text: `USER REQUEST: Compare these jobs and give a recommendation.
+
+Jobs to compare:
+${jobList}
+
+Please provide:
+- Pros and cons of each
+- Salary comparison (if you can estimate)
+- Career growth potential
+- Your recommendation based on typical career goals
+
+Ask the user about their priorities (salary, growth, location, etc.) to give better advice.
+Respond in ${language}.`
+      }]
+    };
+  }
+);
+
+console.log("✅ Tools: search_jobs → display_jobs, get_job_details, get_salary_info, write_cover_letter, analyze_job_market, compare_jobs");
 
 // HTTP Server
 const transports = new Map();

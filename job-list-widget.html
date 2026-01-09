@@ -874,24 +874,19 @@
       render();
     }
 
-    // Request action from ChatGPT
+    // Request action from ChatGPT using callTool()
     function requestAction(action, job) {
-      const messages = {
-        salary: `Visa lönestatistik för yrket "${job.title}" i ${job.location || 'Sverige'}. Inkludera snittlön, lönespann och jämförelse med andra regioner.`,
-        help: `Hjälp mig skriva ett personligt brev för denna tjänst:\n\nTjänst: ${job.title}\nFöretag: ${job.employer}\nPlats: ${job.location}\n\nBeskrivning: ${job.description}\n\nSkriv ett professionellt och engagerande personligt brev.`,
-        share: null, // Handled locally
-        compare: `Jämför dessa jobb åt mig och ge en rekommendation:\n\n${state.selectedJobs.map((id, i) => {
-          const j = state.data.jobs.find(x => x.id === id);
-          return j ? `Jobb ${i + 1}: ${j.title} på ${j.employer} i ${j.location}` : '';
-        }).join('\n')}`,
-        market: `Ge mig arbetsmarknadsanalys för yrket "${job.title}". Inkludera:\n- Antal lediga tjänster i Sverige\n- Efterfrågan och trender\n- Framtidsutsikter\n- Tips för att sticka ut`,
-        cv: `Analysera hur väl mitt CV matchar denna tjänst:\n\nTjänst: ${job.title}\nFöretag: ${job.employer}\n\nBeskrivning: ${job.description}\n\nBe mig klistra in mitt CV för analys.`
-      };
+      console.log('=== SMIDRA: Action requested ===', action);
 
+      // Handle local actions first
       if (action === 'share') {
-        if (job.url) {
+        // Try to copy URL (might be blocked)
+        try {
           navigator.clipboard?.writeText(job.url);
           showToast(t('copied'));
+        } catch (e) {
+          // Fallback: show URL in alert
+          alert('Länk: ' + job.url);
         }
         return;
       }
@@ -901,80 +896,70 @@
         return;
       }
 
-      const message = messages[action];
-      if (!message) return;
+      // Use callTool() to call our MCP backend!
+      if (typeof window.openai?.callTool === 'function') {
+        const lang = state.language || 'sv';
+        let toolName, toolArgs;
 
-      // Try multiple methods to send message to ChatGPT
-      console.log('=== SMIDRA: Sending message ===');
-      console.log('Message:', message.substring(0, 50) + '...');
+        switch (action) {
+          case 'salary':
+            toolName = 'get_salary_info';
+            toolArgs = {
+              jobTitle: job.title,
+              location: job.location || 'Sverige',
+              language: lang
+            };
+            break;
 
-      // DETAILED DEBUG: What does window.openai contain?
-      console.log('window.openai =', window.openai);
-      if (window.openai) {
-        console.log('Keys:', Object.keys(window.openai));
-        console.log('toolOutput:', window.openai.toolOutput);
-        console.log('sendMessage:', window.openai.sendMessage);
-        console.log('theme:', window.openai.theme);
-        for (const key of Object.keys(window.openai)) {
-          console.log(`  ${key}:`, typeof window.openai[key], window.openai[key]);
+          case 'help':
+            toolName = 'write_cover_letter';
+            toolArgs = {
+              jobTitle: job.title,
+              employer: job.employer,
+              location: job.location,
+              jobDescription: job.description,
+              language: lang
+            };
+            break;
+
+          case 'market':
+            toolName = 'analyze_job_market';
+            toolArgs = {
+              jobTitle: job.title,
+              location: job.location,
+              language: lang
+            };
+            break;
+
+          case 'compare':
+            toolName = 'compare_jobs';
+            const selectedJobs = state.selectedJobs.map(id => {
+              const j = state.data?.jobs?.find(x => x.id === id);
+              return j ? { title: j.title, employer: j.employer, location: j.location, description: j.description } : null;
+            }).filter(Boolean);
+            toolArgs = { jobs: selectedJobs, language: lang };
+            break;
+
+          default:
+            console.log('Unknown action:', action);
+            return;
         }
-      }
 
-      // Method 1: window.openai.sendFollowUpMessage (correct API!)
-      if (typeof window.openai?.sendFollowUpMessage === 'function') {
+        console.log('Calling tool:', toolName, toolArgs);
+        showToast('Laddar...');
+
         try {
-          console.log('Calling sendFollowUpMessage...');
-          window.openai.sendFollowUpMessage(message);
+          window.openai.callTool(toolName, toolArgs);
           showToast('Skickat till ChatGPT!');
-          console.log('SUCCESS: sendFollowUpMessage worked');
-          return;
+          console.log('SUCCESS: callTool executed');
         } catch (e) {
-          console.log('sendFollowUpMessage failed:', e);
+          console.error('callTool failed:', e);
+          showToast('Fel: ' + e.message);
         }
+      } else {
+        console.log('callTool not available');
+        showToast('Funktionen är inte tillgänglig');
       }
-
-      // Method 1b: Try requestTargetedReply as alternative
-      if (typeof window.openai?.requestTargetedReply === 'function') {
-        try {
-          console.log('Calling requestTargetedReply...');
-          window.openai.requestTargetedReply(message);
-          showToast('Skickat till ChatGPT!');
-          console.log('SUCCESS: requestTargetedReply worked');
-          return;
-        } catch (e) {
-          console.log('requestTargetedReply failed:', e);
-        }
-      }
-
-      // Method 2: postMessage to parent (ChatGPT window)
-      try {
-        window.parent.postMessage({
-          type: 'chatgpt-plugin-message',
-          message: message
-        }, '*');
-        console.log('Tried postMessage to parent');
-      } catch (e) {
-        console.log('postMessage failed:', e);
-      }
-
-      // Method 3: Try finding ChatGPT's input and injecting text
-      try {
-        const chatInput = window.parent.document.querySelector('textarea[data-id="root"]');
-        if (chatInput) {
-          chatInput.value = message;
-          chatInput.dispatchEvent(new Event('input', { bubbles: true }));
-          showToast('Text ifylld - tryck Enter!');
-          console.log('SUCCESS: Injected into chat input');
-          return;
-        }
-      } catch (e) {
-        console.log('Input injection failed (expected due to cross-origin):', e.message);
-      }
-
-      // Clipboard is blocked by ChatGPT's permissions policy, skip it
-
-      // Final fallback: Show dialog with manual copy
-      showMessageDialog(message, action);
     }
 
     // Show message dialog for copy
