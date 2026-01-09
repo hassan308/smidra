@@ -551,6 +551,135 @@
       z-index: 1000;
     }
 
+    /* Message Dialog */
+    .message-dialog {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 2000;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .message-dialog.open {
+      opacity: 1;
+    }
+
+    .dialog-backdrop {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    .dialog-content {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.95);
+      background: hsl(var(--card));
+      border-radius: calc(var(--radius) * 2);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      width: calc(100% - 32px);
+      max-width: 400px;
+      max-height: 80vh;
+      overflow: hidden;
+      transition: transform 0.2s;
+    }
+
+    .message-dialog.open .dialog-content {
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .dialog-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid hsl(var(--border));
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .dialog-close {
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      color: hsl(var(--muted-foreground));
+      padding: 4px 8px;
+      border-radius: var(--radius);
+      transition: background 0.15s;
+    }
+
+    .dialog-close:hover {
+      background: hsl(var(--secondary));
+    }
+
+    .dialog-body {
+      padding: 20px;
+    }
+
+    .dialog-instruction {
+      margin: 0 0 12px 0;
+      font-size: 14px;
+      color: hsl(var(--muted-foreground));
+    }
+
+    .dialog-message {
+      width: 100%;
+      min-height: 120px;
+      padding: 12px;
+      border: 1px solid hsl(var(--border));
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-family: inherit;
+      resize: none;
+      background: hsl(var(--secondary));
+      color: hsl(var(--foreground));
+    }
+
+    .dialog-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 16px 20px;
+      border-top: 1px solid hsl(var(--border));
+      background: hsl(var(--secondary) / 0.5);
+    }
+
+    .dialog-btn {
+      padding: 10px 20px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: none;
+    }
+
+    .dialog-btn.secondary {
+      background: hsl(var(--secondary));
+      color: hsl(var(--foreground));
+    }
+
+    .dialog-btn.secondary:hover {
+      background: hsl(var(--border));
+    }
+
+    .dialog-btn.primary {
+      background: hsl(var(--primary));
+      color: hsl(var(--primary-foreground));
+    }
+
+    .dialog-btn.primary:hover {
+      opacity: 0.9;
+    }
+
     .toast.show {
       transform: translateX(-50%) translateY(0);
       opacity: 1;
@@ -773,13 +902,77 @@
       }
 
       const message = messages[action];
-      if (message && window.openai?.sendMessage) {
-        window.openai.sendMessage(message);
-      } else if (message) {
-        // Fallback: show in console
-        console.log('Request to ChatGPT:', message);
-        showToast('Skickar till ChatGPT...');
+      if (!message) return;
+
+      // Debug: log what APIs are available
+      console.log('window.openai:', window.openai);
+      console.log('sendMessage available:', typeof window.openai?.sendMessage);
+
+      // Try sendMessage first
+      if (window.openai?.sendMessage) {
+        try {
+          window.openai.sendMessage(message);
+          showToast('Skickat till ChatGPT!');
+          return;
+        } catch (e) {
+          console.error('sendMessage failed:', e);
+        }
       }
+
+      // Fallback: Show dialog with copy option
+      showMessageDialog(message, action);
+    }
+
+    // Show message dialog for copy
+    function showMessageDialog(message, action) {
+      const titles = {
+        salary: '💰 Lönestatistik',
+        help: '✍️ Ansökningshjälp',
+        market: '📈 Arbetsmarknad',
+        compare: '⚖️ Jämför jobb',
+        cv: '📄 CV-analys'
+      };
+
+      // Remove existing dialog
+      document.querySelector('.message-dialog')?.remove();
+
+      const dialog = document.createElement('div');
+      dialog.className = 'message-dialog';
+      dialog.innerHTML = `
+        <div class="dialog-backdrop" onclick="closeDialog()"></div>
+        <div class="dialog-content">
+          <div class="dialog-header">
+            <span>${titles[action] || 'Fråga ChatGPT'}</span>
+            <button class="dialog-close" onclick="closeDialog()">✕</button>
+          </div>
+          <div class="dialog-body">
+            <p class="dialog-instruction">Kopiera texten nedan och klistra in i chatten:</p>
+            <textarea class="dialog-message" readonly>${message}</textarea>
+          </div>
+          <div class="dialog-footer">
+            <button class="dialog-btn secondary" onclick="closeDialog()">Stäng</button>
+            <button class="dialog-btn primary" onclick="copyMessage()">📋 Kopiera</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(dialog);
+      setTimeout(() => dialog.classList.add('open'), 10);
+      notifyHeight();
+
+      window.copyMessage = () => {
+        const textarea = dialog.querySelector('.dialog-message');
+        textarea.select();
+        navigator.clipboard?.writeText(message);
+        showToast('Kopierat! Klistra in i chatten.');
+        closeDialog();
+      };
+
+      window.closeDialog = () => {
+        dialog.classList.remove('open');
+        setTimeout(() => dialog.remove(), 200);
+        notifyHeight();
+      };
     }
 
     // Filter jobs
