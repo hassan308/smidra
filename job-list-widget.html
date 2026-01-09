@@ -920,15 +920,29 @@
         }
       }
 
-      // Method 1: window.openai.sendMessage (official API)
-      if (typeof window.openai?.sendMessage === 'function') {
+      // Method 1: window.openai.sendFollowUpMessage (correct API!)
+      if (typeof window.openai?.sendFollowUpMessage === 'function') {
         try {
-          window.openai.sendMessage(message);
-          showToast('Skickat!');
-          console.log('SUCCESS: sendMessage worked');
+          console.log('Calling sendFollowUpMessage...');
+          window.openai.sendFollowUpMessage(message);
+          showToast('Skickat till ChatGPT!');
+          console.log('SUCCESS: sendFollowUpMessage worked');
           return;
         } catch (e) {
-          console.log('sendMessage failed:', e);
+          console.log('sendFollowUpMessage failed:', e);
+        }
+      }
+
+      // Method 1b: Try requestTargetedReply as alternative
+      if (typeof window.openai?.requestTargetedReply === 'function') {
+        try {
+          console.log('Calling requestTargetedReply...');
+          window.openai.requestTargetedReply(message);
+          showToast('Skickat till ChatGPT!');
+          console.log('SUCCESS: requestTargetedReply worked');
+          return;
+        } catch (e) {
+          console.log('requestTargetedReply failed:', e);
         }
       }
 
