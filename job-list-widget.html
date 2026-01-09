@@ -905,18 +905,29 @@
       if (!message) return;
 
       // Debug: log what APIs are available
-      console.log('window.openai:', window.openai);
-      console.log('sendMessage available:', typeof window.openai?.sendMessage);
+      console.log('=== SMIDRA DEBUG ===');
+      console.log('window.openai exists:', !!window.openai);
+      console.log('window.openai object:', window.openai);
+      console.log('sendMessage type:', typeof window.openai?.sendMessage);
+      console.log('All openai methods:', window.openai ? Object.keys(window.openai) : 'N/A');
+      console.log('Message to send:', message);
+      console.log('===================');
 
       // Try sendMessage first
-      if (window.openai?.sendMessage) {
+      if (typeof window.openai?.sendMessage === 'function') {
         try {
-          window.openai.sendMessage(message);
+          console.log('Calling sendMessage...');
+          const result = window.openai.sendMessage(message);
+          console.log('sendMessage result:', result);
           showToast('Skickat till ChatGPT!');
           return;
         } catch (e) {
-          console.error('sendMessage failed:', e);
+          console.error('sendMessage error:', e);
+          showToast('Fel: ' + e.message);
         }
+      } else {
+        console.log('sendMessage not available, showing dialog');
+        showToast('sendMessage ej tillgänglig - visar dialog');
       }
 
       // Fallback: Show dialog with copy option
