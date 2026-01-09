@@ -904,33 +904,58 @@
       const message = messages[action];
       if (!message) return;
 
-      // Debug: log what APIs are available
-      console.log('=== SMIDRA DEBUG ===');
-      console.log('window.openai exists:', !!window.openai);
-      console.log('window.openai object:', window.openai);
-      console.log('sendMessage type:', typeof window.openai?.sendMessage);
-      console.log('All openai methods:', window.openai ? Object.keys(window.openai) : 'N/A');
-      console.log('Message to send:', message);
-      console.log('===================');
+      // Try multiple methods to send message to ChatGPT
+      console.log('=== SMIDRA: Sending message ===');
+      console.log('Message:', message.substring(0, 50) + '...');
 
-      // Try sendMessage first
+      // Method 1: window.openai.sendMessage (official API)
       if (typeof window.openai?.sendMessage === 'function') {
         try {
-          console.log('Calling sendMessage...');
-          const result = window.openai.sendMessage(message);
-          console.log('sendMessage result:', result);
-          showToast('Skickat till ChatGPT!');
+          window.openai.sendMessage(message);
+          showToast('Skickat!');
+          console.log('SUCCESS: sendMessage worked');
           return;
         } catch (e) {
-          console.error('sendMessage error:', e);
-          showToast('Fel: ' + e.message);
+          console.log('sendMessage failed:', e);
         }
-      } else {
-        console.log('sendMessage not available, showing dialog');
-        showToast('sendMessage ej tillgänglig - visar dialog');
       }
 
-      // Fallback: Show dialog with copy option
+      // Method 2: postMessage to parent (ChatGPT window)
+      try {
+        window.parent.postMessage({
+          type: 'chatgpt-plugin-message',
+          message: message
+        }, '*');
+        console.log('Tried postMessage to parent');
+      } catch (e) {
+        console.log('postMessage failed:', e);
+      }
+
+      // Method 3: Try finding ChatGPT's input and injecting text
+      try {
+        const chatInput = window.parent.document.querySelector('textarea[data-id="root"]');
+        if (chatInput) {
+          chatInput.value = message;
+          chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+          showToast('Text ifylld - tryck Enter!');
+          console.log('SUCCESS: Injected into chat input');
+          return;
+        }
+      } catch (e) {
+        console.log('Input injection failed (expected due to cross-origin):', e.message);
+      }
+
+      // Method 4: Copy to clipboard automatically and notify user
+      try {
+        navigator.clipboard.writeText(message).then(() => {
+          showToast('Kopierat! Klistra in med Ctrl+V');
+          console.log('SUCCESS: Copied to clipboard');
+        });
+      } catch (e) {
+        console.log('Clipboard failed:', e);
+      }
+
+      // Final fallback: Show dialog
       showMessageDialog(message, action);
     }
 
