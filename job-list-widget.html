@@ -1053,8 +1053,6 @@
       }, []); // No dependencies - uses refs
 
       // Handle incoming data
-      // shouldLoadMore=true only for preview mode, NOT for ChatGPT
-      // ChatGPT already filters the search correctly
       const handleData = useCallback((data, shouldLoadMore = false) => {
         if (!data) return;
 
@@ -1065,12 +1063,9 @@
           markerJobIds.current.clear();
         }
 
+        // Update refs for loadMoreJobs
         const initialCount = data.jobs?.length || 0;
-        // In ChatGPT mode, total = what we have (don't load more)
-        // In preview mode, use API total for progressive loading
-        const total = shouldLoadMore ? (data.total || initialCount) : initialCount;
-
-        // Update refs for loadMoreJobs (only used in preview mode)
+        const total = data.total || initialCount;
         loadedCountRef.current = initialCount;
         totalAvailableRef.current = total;
         searchParamsRef.current = {
@@ -1086,7 +1081,6 @@
         setCurrentPage(1);
         setLoading(false);
 
-        // Only load more in preview mode
         if (shouldLoadMore && initialCount < total) {
           setTimeout(loadMoreJobs, 500);
         }
@@ -1099,16 +1093,14 @@
 
         const handleGlobals = () => {
           if (window.openai?.toolOutput) {
-            // ChatGPT mode - don't load more, ChatGPT already filtered
-            handleData(window.openai.toolOutput, false);
+            handleData(window.openai.toolOutput, true);
           }
         };
 
         window.addEventListener('openai:set_globals', handleGlobals);
 
         if (window.openai?.toolOutput) {
-          // ChatGPT mode - don't load more
-          handleData(window.openai.toolOutput, false);
+          handleData(window.openai.toolOutput, true);
         } else {
           // Preview mode
           fetch('https://api.smidra.se/api/search?q=utvecklare&limit=100')
