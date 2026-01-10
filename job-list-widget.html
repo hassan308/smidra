@@ -1028,7 +1028,7 @@
           }
 
           console.log(`Fetching offset ${currentOffset}...`);
-          const res = await fetch(`/api/search?${params}`);
+          const res = await fetch(`https://api.smidra.se/api/search?${params}`);
           const data = await res.json();
 
           if (data.jobs?.length > 0) {
@@ -1103,7 +1103,7 @@
           handleData(window.openai.toolOutput, true);
         } else {
           // Preview mode
-          fetch('/api/search?q=utvecklare&limit=100')
+          fetch('https://api.smidra.se/api/search?q=utvecklare&limit=100')
             .then(r => r.json())
             .then(d => handleData({
               query: 'Utvecklare',
