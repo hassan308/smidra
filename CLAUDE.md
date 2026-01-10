@@ -267,13 +267,16 @@ const regions = {
 window.openai.toolOutput  // Data från tool
 window.openai.theme       // "light" eller "dark"
 window.openai.locale      // Användarens locale
+window.openai.widgetState // Sparad state
 ```
 
 ### Widget API
 ```javascript
 window.openai.notifyIntrinsicHeight(height)  // Meddela höjd
 window.openai.setWidgetState(state)          // Spara state
-window.openai.openExternal({ href })         // Öppna länk
+window.openai.openExternal({ href })         // Öppna länk externt
+window.openai.callTool(name, args)           // Anropa MCP-verktyg
+window.openai.sendFollowUpMessage({ prompt }) // Skicka meddelande till chatten
 ```
 
 ### RTL-stöd (Arabiska, Hebreiska, Persiska, Urdu)
@@ -281,6 +284,82 @@ window.openai.openExternal({ href })         // Öppna länk
 [dir="rtl"] .job-header { flex-direction: row-reverse; }
 [dir="rtl"] .job-tags { flex-direction: row-reverse; }
 ```
+
+---
+
+## 🔑 VIKTIGT: Widget Knappar → ChatGPT Svar
+
+### Problemet
+Hur får man knappar i widgeten att trigga svar från ChatGPT?
+
+### Lösningen - `sendFollowUpMessage({ prompt })`
+
+```javascript
+// ✅ RÄTT - Använd objekt med prompt-nyckel!
+window.openai.sendFollowUpMessage({
+  prompt: "Visa lönestatistik för Utvecklare i Stockholm"
+});
+
+// ❌ FEL - Funkar INTE med bara sträng!
+window.openai.sendFollowUpMessage("Visa lönestatistik...");
+```
+
+### Komplett exempel - Knapp som frågar ChatGPT
+
+```javascript
+function requestAction(action, job) {
+  // Bygg meddelande baserat på action
+  let message = '';
+
+  switch (action) {
+    case 'salary':
+      message = `Visa lönestatistik för "${job.title}" i ${job.location}`;
+      break;
+    case 'help':
+      message = `Hjälp mig skriva personligt brev för tjänsten "${job.title}" hos ${job.employer}`;
+      break;
+    case 'market':
+      message = `Ge mig arbetsmarknadsanalys för yrket "${job.title}"`;
+      break;
+  }
+
+  // Skicka till ChatGPT - visas som om användaren skrev det!
+  if (typeof window.openai?.sendFollowUpMessage === 'function') {
+    window.openai.sendFollowUpMessage({ prompt: message });
+  }
+}
+```
+
+### Flödet
+
+```
+[Användare klickar "💰 Lön" i widgeten]
+        │
+        ▼
+Widget: sendFollowUpMessage({ prompt: "Visa lönestatistik för Utvecklare..." })
+        │
+        ▼
+Meddelandet visas i chatten (som om användaren skrev det)
+        │
+        ▼
+ChatGPT svarar med sin kunskap - INGEN MCP-anrop behövs!
+```
+
+### Viktiga lärdomar
+
+| API | Syntax | Användning |
+|-----|--------|------------|
+| `sendFollowUpMessage` | `{ prompt: "text" }` | Skicka meddelande till chatten |
+| `callTool` | `(name, args)` | Anropa MCP-verktyg direkt |
+| `openExternal` | `{ href: "url" }` | Öppna extern länk |
+| `setWidgetState` | `(stateObject)` | Spara widget-state |
+
+### ❌ Vad som INTE fungerar i widgets
+
+- `navigator.clipboard` - Blockerat av permissions policy
+- `window.parent.document` - Blockerat av cross-origin
+- `sendFollowUpMessage("sträng")` - Måste vara objekt med `prompt`!
+- `sendMessage` - Finns inte, använd `sendFollowUpMessage`
 
 ---
 
@@ -308,6 +387,12 @@ window.openai.openExternal({ href })         // Öppna länk
 
 - [x] Översätta jobbinnehåll (två-stegs flöde)
 - [x] RTL-stöd för arabiska
-- [ ] Spara favoriter
-- [ ] Filter på yrkeskategori
+- [x] Widget-knappar som triggar ChatGPT-svar (sendFollowUpMessage)
+- [x] Lönestatistik-knapp
+- [x] Ansökningshjälp-knapp (personligt brev)
+- [x] Arbetsmarknadsanalys-knapp
+- [x] Jämför jobb-funktion
+- [x] Spara favoriter (widgetState)
+- [x] Filter heltid/deltid
 - [ ] Notifikationer för nya jobb
+- [ ] CV-matchning
