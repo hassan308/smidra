@@ -67,44 +67,45 @@ async function searchJobsSingle(query, location, limit = 100, offset = 0) {
   }
 }
 
+// Quick search - returns first batch immediately with total count
+async function searchJobsQuick(query, location, limit = 100) {
+  const startTime = Date.now();
+  console.log(`🚀 Quick search: "${query}" (first ${limit} jobs)`);
+
+  const result = await searchJobsSingle(query, location, limit, 0);
+  const elapsed = Date.now() - startTime;
+
+  console.log(`🚀 Quick complete: ${result.hits?.length || 0}/${result.total?.value || 0} jobs in ${elapsed}ms`);
+  return result;
+}
+
 // Parallel search - fetches ALL jobs using concurrent requests
-async function searchJobs(query, location, limit = 0) {
-  const BATCH_SIZE = 100; // Jobs per request
-  const MAX_CONCURRENT = 10; // Max parallel requests at once
+async function searchJobsAll(query, location) {
+  const BATCH_SIZE = 100;
+  const MAX_CONCURRENT = 10;
   const startTime = Date.now();
 
-  // First, get total count with a small request
+  // First, get total count
   console.log(`🔍 Getting total count for "${query}"...`);
   const initial = await searchJobsSingle(query, location, 1, 0);
   const totalAvailable = initial.total?.value || 0;
 
   if (totalAvailable === 0) {
-    console.log(`❌ No jobs found for "${query}"`);
     return { total: { value: 0 }, hits: [] };
   }
 
-  // Determine how many to fetch (0 = all)
-  const targetCount = limit > 0 ? Math.min(limit, totalAvailable) : totalAvailable;
-  const numBatches = Math.ceil(targetCount / BATCH_SIZE);
+  const numBatches = Math.ceil(totalAvailable / BATCH_SIZE);
+  console.log(`⚡ Fetching ALL ${totalAvailable} jobs in ${numBatches} parallel batches...`);
 
-  console.log(`⚡ Fetching ALL ${targetCount} jobs in ${numBatches} parallel batches...`);
-
-  // Create all batch requests
   const batchRequests = [];
   for (let i = 0; i < numBatches; i++) {
-    const offset = i * BATCH_SIZE;
-    const batchLimit = Math.min(BATCH_SIZE, targetCount - offset);
-    batchRequests.push({ offset, limit: batchLimit });
+    batchRequests.push({ offset: i * BATCH_SIZE, limit: BATCH_SIZE });
   }
 
-  // Execute in waves of MAX_CONCURRENT to avoid overwhelming the API
   const allHits = [];
   for (let wave = 0; wave < batchRequests.length; wave += MAX_CONCURRENT) {
     const waveBatches = batchRequests.slice(wave, wave + MAX_CONCURRENT);
-    const waveNum = Math.floor(wave / MAX_CONCURRENT) + 1;
-    const totalWaves = Math.ceil(batchRequests.length / MAX_CONCURRENT);
-
-    console.log(`   Wave ${waveNum}/${totalWaves}: ${waveBatches.length} requests`);
+    console.log(`   Wave ${Math.floor(wave / MAX_CONCURRENT) + 1}: ${waveBatches.length} requests`);
 
     const waveResults = await Promise.all(
       waveBatches.map(b => searchJobsSingle(query, location, b.limit, b.offset))
@@ -118,10 +119,15 @@ async function searchJobs(query, location, limit = 0) {
   const elapsed = Date.now() - startTime;
   console.log(`⚡ Complete: ${allHits.length}/${totalAvailable} jobs in ${elapsed}ms`);
 
-  return {
-    total: { value: totalAvailable },
-    hits: allHits
-  };
+  return { total: { value: totalAvailable }, hits: allHits };
+}
+
+// Main search function - quick by default, all if specified
+async function searchJobs(query, location, limit = 100) {
+  if (limit === 0) {
+    return searchJobsAll(query, location);
+  }
+  return searchJobsQuick(query, location, limit);
 }
 
 async function getJobById(jobId) {
@@ -318,7 +324,7 @@ Swedish keywords: utvecklare, sjuksköterska, kock, lärare, städare, lokalvår
     inputSchema: {
       query: z.string().describe("Search query IN SWEDISH"),
       location: z.string().optional().describe("City/region in Sweden"),
-      limit: z.number().optional().default(0).describe("Number of jobs (0 = ALL available jobs)"),
+      limit: z.number().optional().default(100).describe("First batch size (more loads progressively)"),
       language: z.string().describe("User's language code (e.g., 'so', 'ar', 'sv')"),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
       loadingText: z.string().describe("'Searching for jobs...' in user's language"),
@@ -390,7 +396,9 @@ ALWAYS call this after search_jobs - for EVERY search in the conversation!`,
       language: z.string(),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
       query: z.string().describe("Translated search term"),
+      querySwedish: z.string().describe("Original Swedish search term (for fetching more)"),
       location: z.string().describe("Translated location"),
+      locationSwedish: z.string().optional().describe("Original Swedish location"),
       total: z.number(),
       labels: z.object({
         results: z.string().describe("'Search Results'"),
@@ -425,7 +433,7 @@ ALWAYS call this after search_jobs - for EVERY search in the conversation!`,
       "openai/outputTemplate": "ui://widget/job-list.html"
     }
   },
-  async ({ language, direction, query, location, total, labels, jobs }) => {
+  async ({ language, direction, query, querySwedish, location, locationSwedish, total, labels, jobs }) => {
     console.log(`✅ display_jobs: ${jobs.length} translated jobs in ${language}`);
 
     return {
@@ -434,7 +442,9 @@ ALWAYS call this after search_jobs - for EVERY search in the conversation!`,
         language,
         direction,
         query,
+        querySwedish,
         location,
+        locationSwedish,
         total,
         labels,
         jobs
@@ -759,10 +769,30 @@ const httpServer = http.createServer(async (req, res) => {
   if (url.pathname === "/api/search") {
     const q = url.searchParams.get("q") || "utvecklare";
     const loc = url.searchParams.get("location");
-    const lim = parseInt(url.searchParams.get("limit") || "0"); // 0 = all jobs
-    const data = await searchJobs(q, loc, lim);
+    const lim = parseInt(url.searchParams.get("limit") || "100");
+    const offset = parseInt(url.searchParams.get("offset") || "0");
+
+    // If offset > 0, fetch specific page
+    if (offset > 0) {
+      const data = await searchJobsSingle(q, loc, lim, offset);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({
+        total: data.total?.value || 0,
+        offset,
+        jobs: data.hits.map(formatJob)
+      }));
+      return;
+    }
+
+    // First page - quick response
+    const data = await searchJobsQuick(q, loc, lim);
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ total: data.total?.value || 0, jobs: data.hits.map(formatJob) }));
+    res.end(JSON.stringify({
+      total: data.total?.value || 0,
+      offset: 0,
+      hasMore: (data.total?.value || 0) > lim,
+      jobs: data.hits.map(formatJob)
+    }));
     return;
   }
 

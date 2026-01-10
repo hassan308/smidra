@@ -56,6 +56,18 @@
     .header-count {
       font-size: 13px;
       color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .header-loading {
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(99, 102, 241, 0.2);
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
     }
 
     .search-info {
@@ -511,7 +523,9 @@
 
   <script>
     const JOBS_PER_PAGE = 10;
+    const BATCH_SIZE = 100;
     let actionLoadingTimeout = null;
+    let loadingMoreJobs = false;
 
     const state = {
       data: null,
@@ -521,7 +535,12 @@
       expandedJob: null,
       savedJobs: [],
       filter: 'all',
-      actionLoading: false
+      actionLoading: false,
+      totalAvailable: 0,
+      loadedCount: 0,
+      isLoadingMore: false,
+      searchQuery: '',
+      searchLocation: ''
     };
 
     const defaultLabels = {
@@ -596,6 +615,49 @@
       const loader = document.getElementById('actionLoading');
       if (loader) loader.classList.remove('show');
       notifyHeight();
+    }
+
+    // Progressive loading - fetch more jobs in background
+    async function loadMoreJobs() {
+      if (state.isLoadingMore || !state.data?.jobs) return;
+      if (state.loadedCount >= state.totalAvailable) return;
+
+      state.isLoadingMore = true;
+      const offset = state.loadedCount;
+
+      console.log(`Loading more jobs: offset=${offset}, have=${state.loadedCount}/${state.totalAvailable}`);
+
+      try {
+        const params = new URLSearchParams({
+          q: state.searchQuery || 'jobb',
+          limit: BATCH_SIZE.toString(),
+          offset: offset.toString()
+        });
+        if (state.searchLocation) params.set('location', state.searchLocation);
+
+        const response = await fetch(`/api/search?${params}`);
+        const data = await response.json();
+
+        if (data.jobs && data.jobs.length > 0) {
+          // Add new jobs to existing list
+          state.data.jobs.push(...data.jobs);
+          state.loadedCount = state.data.jobs.length;
+
+          console.log(`Loaded ${data.jobs.length} more jobs. Total: ${state.loadedCount}/${state.totalAvailable}`);
+
+          // Update UI
+          render();
+
+          // Continue loading if there's more
+          if (state.loadedCount < state.totalAvailable) {
+            setTimeout(loadMoreJobs, 100); // Small delay between batches
+          }
+        }
+      } catch (error) {
+        console.error('Error loading more jobs:', error);
+      } finally {
+        state.isLoadingMore = false;
+      }
     }
 
     function notifyHeight() {
@@ -781,7 +843,12 @@ Svara på användarens språk (${lang}).`;
         <div class="header">
           <div class="header-top">
             <span class="header-title">${esc(t('results'))}</span>
-            <span class="header-count">${filteredJobs.length} ${t('jobs')}</span>
+            <span class="header-count">
+              ${state.loadedCount < state.totalAvailable
+                ? `${state.loadedCount}/${state.totalAvailable} ${t('jobs')}`
+                : `${filteredJobs.length} ${t('jobs')}`}
+              ${state.isLoadingMore ? '<span class="header-loading"></span>' : ''}
+            </span>
           </div>
           <div class="search-info">${esc(d.query || 'Jobb')}</div>
           ${d.location ? `<div class="search-location">${t('inLocation')} ${esc(d.location)}</div>` : ''}
@@ -916,7 +983,7 @@ Svara på användarens språk (${lang}).`;
       }).join('');
     }
 
-    function handleData(data) {
+    function handleData(data, startProgressiveLoad = false) {
       if (!data) return;
 
       if (data.language) {
@@ -931,7 +998,18 @@ Svara på användarens språk (${lang}).`;
       state.data = data;
       state.currentPage = 1;
       state.expandedJob = null;
+      state.totalAvailable = data.total || data.jobs?.length || 0;
+      state.loadedCount = data.jobs?.length || 0;
+      state.searchQuery = data.querySwedish || data.query || '';
+      state.searchLocation = data.locationSwedish || data.location || '';
+
       render();
+
+      // Start progressive loading if there are more jobs
+      if (startProgressiveLoad && state.loadedCount < state.totalAvailable) {
+        console.log(`Starting progressive load: ${state.loadedCount}/${state.totalAvailable}`);
+        setTimeout(loadMoreJobs, 500);
+      }
     }
 
     function init() {
@@ -955,15 +1033,18 @@ Svara på användarens språk (${lang}).`;
       if (window.openai?.toolOutput) {
         handleData(window.openai.toolOutput);
       } else {
-        // Preview mode - fetch ALL jobs (uses parallel fetching on server)
-        fetch('/api/search?q=utvecklare')
+        // Preview mode - fetch first batch quickly, then load more progressively
+        fetch('/api/search?q=utvecklare&limit=100')
           .then(r => r.json())
-          .then(d => handleData({
-            query: 'Utvecklare',
-            location: 'Sverige',
-            total: d.total,
-            jobs: d.jobs
-          }))
+          .then(d => {
+            handleData({
+              query: 'Utvecklare',
+              querySwedish: 'utvecklare',
+              location: 'Sverige',
+              total: d.total,
+              jobs: d.jobs
+            }, true); // Start progressive loading
+          })
           .catch(() => {});
       }
     }
