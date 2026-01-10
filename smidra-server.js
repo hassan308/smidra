@@ -48,7 +48,7 @@ function findRegion(location) {
   return null;
 }
 
-async function searchJobsSingle(query, location, limit = 25, offset = 0) {
+async function searchJobsSingle(query, location, limit = 100, offset = 0) {
   const params = new URLSearchParams();
   params.set("q", query);
   params.set("limit", limit.toString());
@@ -57,7 +57,6 @@ async function searchJobsSingle(query, location, limit = 25, offset = 0) {
   if (regionCode) params.set("region", regionCode);
 
   const url = `${AF_API_BASE}/search?${params.toString()}`;
-  console.log(`🔍 Searching: ${url}`);
 
   try {
     const response = await fetch(url);
@@ -68,44 +67,60 @@ async function searchJobsSingle(query, location, limit = 25, offset = 0) {
   }
 }
 
-// Parallel search - splits into multiple concurrent requests for speed
-async function searchJobs(query, location, limit = 50) {
-  const BATCH_SIZE = 25; // Max per request for speed
-  const numBatches = Math.ceil(limit / BATCH_SIZE);
-
-  if (numBatches <= 1) {
-    // Small request - single call
-    return searchJobsSingle(query, location, limit, 0);
-  }
-
-  console.log(`⚡ Parallel search: ${numBatches} batches of ${BATCH_SIZE}`);
+// Parallel search - fetches ALL jobs using concurrent requests
+async function searchJobs(query, location, limit = 0) {
+  const BATCH_SIZE = 100; // Jobs per request
+  const MAX_CONCURRENT = 10; // Max parallel requests at once
   const startTime = Date.now();
 
-  // Create parallel requests
-  const requests = [];
-  for (let i = 0; i < numBatches; i++) {
-    const offset = i * BATCH_SIZE;
-    const batchLimit = Math.min(BATCH_SIZE, limit - offset);
-    requests.push(searchJobsSingle(query, location, batchLimit, offset));
+  // First, get total count with a small request
+  console.log(`🔍 Getting total count for "${query}"...`);
+  const initial = await searchJobsSingle(query, location, 1, 0);
+  const totalAvailable = initial.total?.value || 0;
+
+  if (totalAvailable === 0) {
+    console.log(`❌ No jobs found for "${query}"`);
+    return { total: { value: 0 }, hits: [] };
   }
 
-  // Execute all in parallel
-  const results = await Promise.all(requests);
+  // Determine how many to fetch (0 = all)
+  const targetCount = limit > 0 ? Math.min(limit, totalAvailable) : totalAvailable;
+  const numBatches = Math.ceil(targetCount / BATCH_SIZE);
 
-  // Merge results
+  console.log(`⚡ Fetching ALL ${targetCount} jobs in ${numBatches} parallel batches...`);
+
+  // Create all batch requests
+  const batchRequests = [];
+  for (let i = 0; i < numBatches; i++) {
+    const offset = i * BATCH_SIZE;
+    const batchLimit = Math.min(BATCH_SIZE, targetCount - offset);
+    batchRequests.push({ offset, limit: batchLimit });
+  }
+
+  // Execute in waves of MAX_CONCURRENT to avoid overwhelming the API
   const allHits = [];
-  let total = 0;
-  for (const result of results) {
-    if (result.hits) allHits.push(...result.hits);
-    if (result.total?.value) total = result.total.value; // Use the total from API
+  for (let wave = 0; wave < batchRequests.length; wave += MAX_CONCURRENT) {
+    const waveBatches = batchRequests.slice(wave, wave + MAX_CONCURRENT);
+    const waveNum = Math.floor(wave / MAX_CONCURRENT) + 1;
+    const totalWaves = Math.ceil(batchRequests.length / MAX_CONCURRENT);
+
+    console.log(`   Wave ${waveNum}/${totalWaves}: ${waveBatches.length} requests`);
+
+    const waveResults = await Promise.all(
+      waveBatches.map(b => searchJobsSingle(query, location, b.limit, b.offset))
+    );
+
+    for (const result of waveResults) {
+      if (result.hits) allHits.push(...result.hits);
+    }
   }
 
   const elapsed = Date.now() - startTime;
-  console.log(`⚡ Parallel complete: ${allHits.length} jobs in ${elapsed}ms`);
+  console.log(`⚡ Complete: ${allHits.length}/${totalAvailable} jobs in ${elapsed}ms`);
 
   return {
-    total: { value: total },
-    hits: allHits.slice(0, limit) // Ensure we don't exceed requested limit
+    total: { value: totalAvailable },
+    hits: allHits
   };
 }
 
@@ -303,7 +318,7 @@ Swedish keywords: utvecklare, sjuksköterska, kock, lärare, städare, lokalvår
     inputSchema: {
       query: z.string().describe("Search query IN SWEDISH"),
       location: z.string().optional().describe("City/region in Sweden"),
-      limit: z.number().optional().default(50).describe("Number of jobs to fetch (default 50)"),
+      limit: z.number().optional().default(0).describe("Number of jobs (0 = ALL available jobs)"),
       language: z.string().describe("User's language code (e.g., 'so', 'ar', 'sv')"),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
       loadingText: z.string().describe("'Searching for jobs...' in user's language"),
@@ -744,7 +759,7 @@ const httpServer = http.createServer(async (req, res) => {
   if (url.pathname === "/api/search") {
     const q = url.searchParams.get("q") || "utvecklare";
     const loc = url.searchParams.get("location");
-    const lim = parseInt(url.searchParams.get("limit") || "50");
+    const lim = parseInt(url.searchParams.get("limit") || "0"); // 0 = all jobs
     const data = await searchJobs(q, loc, lim);
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ total: data.total?.value || 0, jobs: data.hits.map(formatJob) }));
