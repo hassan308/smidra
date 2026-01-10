@@ -426,7 +426,7 @@ Swedish keywords: utvecklare, sjuksköterska, kock, lärare, städare, lokalvår
       jobLanguage: z.string().optional().describe("Job language requirement (e.g., 'sv', 'en', 'ar')")
     },
     _meta: {
-      "openai/outputTemplate": "ui://widget/job-list.html"  // Show widget immediately with loading state
+      // No widget here - ChatGPT must call display_jobs to show results
     }
   },
   async ({ query, location, limit, language, direction, loadingText, translatingText, remote, fulltime, parttime, drivingLicense, trainee, abroad, jobLanguage }) => {
@@ -467,7 +467,7 @@ Swedish keywords: utvecklare, sjuksköterska, kock, lärare, städare, lokalvår
     });
     const total = data.total?.value || 0;
 
-    console.log(`📤 Found ${jobs.length} jobs - showing loading widget, waiting for display_jobs`);
+    console.log(`📤 Found ${jobs.length} jobs (minimal data) - must call display_jobs next`);
 
     // Return structured JSON with clear next_action
     const response = {
@@ -494,20 +494,6 @@ Swedish keywords: utvecklare, sjuksköterska, kock, lärare, städare, lokalvår
     };
 
     return {
-      // Show widget with loading state immediately
-      structuredContent: {
-        loading: true,
-        loadingText: loadingText || "Söker jobb...",
-        translatingText: translatingText || "Översätter...",
-        language,
-        direction,
-        total,
-        query: query,
-        querySwedish: query,
-        location: location || "Sverige",
-        locationSwedish: location || "",
-        jobs: [] // Empty - waiting for translated data from display_jobs
-      },
       content: [{
         type: "text",
         text: `${JSON.stringify(response, null, 2)}

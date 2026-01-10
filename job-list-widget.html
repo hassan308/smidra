@@ -1111,17 +1111,6 @@
       const handleData = useCallback((data, shouldLoadMore = false) => {
         if (!data) return;
 
-        // If loading state from search_jobs, just show spinner
-        if (data.loading === true) {
-          console.log('Received loading state - showing spinner');
-          setLoading(true);
-          setQuery(data.query || '');
-          setLocation(data.location || '');
-          setTotalAvailable(data.total || 0);
-          window.openai?.notifyIntrinsicHeight?.(200);
-          return;
-        }
-
         // Increment search ID to cancel any ongoing progressive loading
         searchIdRef.current += 1;
         const currentSearchId = searchIdRef.current;
