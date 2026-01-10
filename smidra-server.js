@@ -411,7 +411,7 @@ Swedish keywords: utvecklare, sjuksköterska, kock, lärare, städare, lokalvår
     inputSchema: {
       query: z.string().describe("Search query IN SWEDISH"),
       location: z.string().optional().describe("City/region in Sweden"),
-      limit: z.number().optional().default(100).describe("First batch size (more loads progressively)"),
+      limit: z.number().optional().default(10).describe("Number of jobs to return (max 20 for MCP)"),
       language: z.string().describe("User's language code (e.g., 'so', 'ar', 'sv')"),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
       loadingText: z.string().describe("'Searching for jobs...' in user's language"),
@@ -443,12 +443,31 @@ Swedish keywords: utvecklare, sjuksköterska, kock, lärare, städare, lokalvår
     const activeFilters = Object.keys(filters).length > 0 ? ` [filters: ${Object.keys(filters).join(', ')}]` : '';
     console.log(`🔧 search_jobs called: "${query}" in ${location || 'Sweden'} (${language})${activeFilters}`);
 
-    // Search for jobs with filters
-    const data = await searchJobs(query, location, limit || 5, filters);
-    const jobs = data.hits.map(formatJob);
+    // Search for jobs with filters - limit to 10 for MCP to avoid overwhelming ChatGPT
+    const effectiveLimit = Math.min(limit || 10, 20); // Max 20 jobs for MCP response
+    const data = await searchJobs(query, location, effectiveLimit, filters);
+
+    // Strip descriptions to reduce response size - widget fetches details on demand
+    const jobs = data.hits.map(job => {
+      const formatted = formatJob(job);
+      // Only keep minimal fields for list view
+      return {
+        id: formatted.id,
+        title: formatted.title,
+        employer: formatted.employer,
+        location: formatted.location,
+        region: formatted.region,
+        deadline: formatted.deadline,
+        url: formatted.url,
+        logoUrl: formatted.logoUrl,
+        lat: formatted.lat,
+        lng: formatted.lng
+        // description and fullDescription loaded on demand via /api/job/:id
+      };
+    });
     const total = data.total?.value || 0;
 
-    console.log(`📤 Found ${jobs.length} jobs - must call display_jobs next`);
+    console.log(`📤 Found ${jobs.length} jobs (minimal data) - must call display_jobs next`);
 
     // Return structured JSON with clear next_action
     const response = {
@@ -468,9 +487,9 @@ Swedish keywords: utvecklare, sjuksköterska, kock, lärare, städare, lokalvår
         jobs
       },
       instructions: {
-        translate: ["title", "description", "location", "deadline", "employmentType", "salaryType"],
-        keep_original: ["id", "url", "employer", "logoUrl"],
-        ui_labels_needed: ["results", "found", "details", "hide", "apply", "noJobs", "tryAgain", "location", "deadline", "type", "salary", "daysLeft", "today"]
+        translate: ["title", "location", "deadline"],
+        keep_original: ["id", "url", "employer", "logoUrl", "lat", "lng", "region"],
+        ui_labels_needed: ["results", "found", "details", "hide", "apply", "noJobs", "tryAgain", "location", "deadline", "type", "salary", "daysLeft", "today", "loading"]
       }
     };
 
@@ -519,7 +538,8 @@ ALWAYS call this after search_jobs - for EVERY search in the conversation!`,
         type: z.string().describe("'Type'"),
         salary: z.string().describe("'Salary'"),
         daysLeft: z.string().describe("'days left'"),
-        today: z.string().describe("'Today!'")
+        today: z.string().describe("'Today!'"),
+        loading: z.string().optional().describe("'Loading...'")
       }),
       jobs: z.array(z.object({
         id: z.string().describe("KEEP ORIGINAL - do not change"),
@@ -527,13 +547,12 @@ ALWAYS call this after search_jobs - for EVERY search in the conversation!`,
         employer: z.string().describe("KEEP ORIGINAL employer name"),
         location: z.string().describe("TRANSLATED location"),
         region: z.string().optional(),
+        lat: z.number().optional(),
+        lng: z.number().optional(),
         deadline: z.string().describe("TRANSLATED deadline"),
-        description: z.string().describe("TRANSLATED description"),
-        fullDescription: z.string().optional(),
         url: z.string().describe("KEEP ORIGINAL URL - do not modify!"),
-        logoUrl: z.string().optional().describe("KEEP ORIGINAL - company logo URL"),
-        employmentType: z.string().optional().describe("TRANSLATED"),
-        salaryType: z.string().optional().describe("TRANSLATED")
+        logoUrl: z.string().optional().describe("KEEP ORIGINAL - company logo URL")
+        // description loaded on demand via /api/job/:id
       }))
     },
     _meta: {
@@ -914,6 +933,26 @@ const httpServer = http.createServer(async (req, res) => {
       hasMore: (data.total?.value || 0) > lim,
       jobs: data.hits.map(formatJob)
     }));
+    return;
+  }
+
+  // Single job details endpoint - for widget lazy loading
+  if (url.pathname.startsWith("/api/job/")) {
+    const jobId = url.pathname.split("/api/job/")[1];
+    if (!jobId) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end('{"error":"Missing job ID"}');
+      return;
+    }
+    console.log(`📋 API: Fetching job ${jobId}`);
+    const job = await getJobById(jobId);
+    if (!job) {
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end('{"error":"Job not found"}');
+      return;
+    }
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(formatJob(job)));
     return;
   }
 

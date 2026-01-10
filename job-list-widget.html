@@ -715,7 +715,7 @@
       </svg>
     );
 
-    // Job Card component
+    // Job Card component - minimal view, details loaded on click
     const JobCard = ({ job, isSaved, onSave, onClick }) => (
       <div className="job-card" onClick={() => onClick(job)}>
         <div className="job-card-header">
@@ -740,8 +740,13 @@
             )}
           </div>
         </div>
-        <div className="job-card-desc">{job.description}</div>
         <div className="job-card-footer">
+          <button
+            className="btn btn-secondary"
+            onClick={(e) => { e.stopPropagation(); onClick(job); }}
+          >
+            Visa mer
+          </button>
           <button
             className="btn btn-primary"
             onClick={(e) => { e.stopPropagation(); window.openai?.openExternal?.({ href: job.url }); }}
@@ -800,23 +805,53 @@
       );
     };
 
-    // Modal component
+    // Modal component - fetches job details on demand
     const Modal = ({ job, onClose, showToast }) => {
+      const [details, setDetails] = useState(null);
+      const [loadingDetails, setLoadingDetails] = useState(false);
+
+      // Fetch job details when modal opens
+      useEffect(() => {
+        if (!job || details?.id === job.id) return;
+
+        // If we already have description, use it
+        if (job.fullDescription || job.description) {
+          setDetails(job);
+          return;
+        }
+
+        // Fetch from API
+        setLoadingDetails(true);
+        fetch(`https://api.smidra.se/api/job/${job.id}`)
+          .then(r => r.json())
+          .then(data => {
+            setDetails({ ...job, ...data });
+            setLoadingDetails(false);
+          })
+          .catch(err => {
+            console.error('Failed to fetch job details:', err);
+            setDetails(job);
+            setLoadingDetails(false);
+          });
+      }, [job]);
+
       if (!job) return null;
+
+      const displayJob = details || job;
 
       const handleAction = (action) => {
         onClose();
 
         if (action === 'apply') {
-          window.openai?.openExternal?.({ href: job.url });
+          window.openai?.openExternal?.({ href: displayJob.url });
           return;
         }
 
         let msg = '';
         if (action === 'salary') {
-          msg = `Visa lönestatistik för: ${job.title} i ${job.location || 'Sverige'}. Sök på nätet och anropa display_salary.`;
+          msg = `Visa lönestatistik för: ${displayJob.title} i ${displayJob.location || 'Sverige'}. Sök på nätet och anropa display_salary.`;
         } else if (action === 'help') {
-          msg = `Hjälp mig skriva personligt brev för: ${job.title} hos ${job.employer}. Beskriving: ${(job.description || '').substring(0, 200)}`;
+          msg = `Hjälp mig skriva personligt brev för: ${displayJob.title} hos ${displayJob.employer}. Beskriving: ${(displayJob.description || '').substring(0, 200)}`;
         }
 
         if (msg && window.openai?.sendFollowUpMessage) {
@@ -830,8 +865,8 @@
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <div className="job-card-title">{job.title}</div>
-                <div className="company-name">{job.employer}</div>
+                <div className="job-card-title">{displayJob.title}</div>
+                <div className="company-name">{displayJob.employer}</div>
               </div>
               <button className="modal-close" onClick={onClose}>
                 <CloseIcon />
@@ -841,16 +876,23 @@
               <div className="job-card-meta" style={{ marginBottom: 16 }}>
                 <span className="job-meta-item">
                   <MapIcon />
-                  {job.location || 'Sverige'}
+                  {displayJob.location || 'Sverige'}
                 </span>
-                {job.deadline && (
+                {displayJob.deadline && (
                   <span className="job-meta-item">
                     <ClockIcon />
-                    {job.deadline}
+                    {displayJob.deadline}
                   </span>
                 )}
               </div>
-              <div className="modal-desc">{job.fullDescription || job.description}</div>
+              {loadingDetails ? (
+                <div style={{ textAlign: 'center', padding: '20px' }}>
+                  <div className="spinner-large" style={{ margin: '0 auto 12px' }}></div>
+                  <div style={{ color: '#65676b' }}>Laddar beskrivning...</div>
+                </div>
+              ) : (
+                <div className="modal-desc">{displayJob.fullDescription || displayJob.description || 'Ingen beskrivning tillgänglig.'}</div>
+              )}
               <div className="modal-actions">
                 <button className="btn btn-primary" onClick={() => handleAction('apply')}>Ansök nu</button>
                 <button className="btn btn-secondary" onClick={() => handleAction('salary')}>Löneinfo</button>
