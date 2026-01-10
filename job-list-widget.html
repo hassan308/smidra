@@ -423,16 +423,33 @@
       'default': [62.0, 15.0]
     };
 
-    // Get coordinates for a location
-    const getCoords = (location) => {
-      if (!location) return cityCoords.default;
+    // Deterministic hash from string (for consistent positioning)
+    const hashCode = (str) => {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        hash |= 0;
+      }
+      return hash;
+    };
+
+    // Get coordinates for a location - deterministic based on jobId
+    const getCoords = (location, jobId = '') => {
+      const hash = hashCode(jobId || location || 'default');
+      const offsetLat = ((hash % 1000) / 1000 - 0.5) * 0.05;
+      const offsetLng = (((hash >> 10) % 1000) / 1000 - 0.5) * 0.05;
+
+      if (!location) {
+        return [cityCoords.default[0] + offsetLat * 40, cityCoords.default[1] + offsetLng * 80];
+      }
+
       const loc = location.toLowerCase().replace(/[åä]/g, 'a').replace(/ö/g, 'o');
       for (const [city, coords] of Object.entries(cityCoords)) {
         if (loc.includes(city)) {
-          return [coords[0] + (Math.random() - 0.5) * 0.03, coords[1] + (Math.random() - 0.5) * 0.03];
+          return [coords[0] + offsetLat, coords[1] + offsetLng];
         }
       }
-      return [cityCoords.default[0] + (Math.random() - 0.5) * 2, cityCoords.default[1] + (Math.random() - 0.5) * 4];
+      return [cityCoords.default[0] + offsetLat * 40, cityCoords.default[1] + offsetLng * 80];
     };
 
     // Get company initials
@@ -736,19 +753,28 @@
         }).addTo(mapInstanceRef.current);
       }, []);
 
-      // Update markers when jobs change
+      // Track which job IDs have markers
+      const markerJobIds = useRef(new Set());
+
+      // Update markers when jobs change - only add NEW markers
       useEffect(() => {
         if (!mapInstanceRef.current || !showMap) return;
+        if (filteredJobs.length === 0) {
+          // Clear all if no jobs
+          markersRef.current.forEach(m => mapInstanceRef.current.removeLayer(m));
+          markersRef.current = [];
+          markerJobIds.current.clear();
+          return;
+        }
 
-        // Clear old markers
-        markersRef.current.forEach(m => mapInstanceRef.current.removeLayer(m));
-        markersRef.current = [];
+        // Only add markers for jobs we haven't added yet
+        const newJobs = filteredJobs.filter(job => !markerJobIds.current.has(job.id));
 
-        if (filteredJobs.length === 0) return;
+        if (newJobs.length === 0) return;
 
         const bounds = [];
-        filteredJobs.forEach(job => {
-          const coords = getCoords(job.location);
+        newJobs.forEach(job => {
+          const coords = getCoords(job.location, job.id);
           bounds.push(coords);
 
           const marker = L.circleMarker(coords, {
@@ -767,13 +793,28 @@
             </div>
           `);
 
+          marker.jobId = job.id;
           markersRef.current.push(marker);
+          markerJobIds.current.add(job.id);
         });
 
-        if (bounds.length > 0) {
+        // Fit bounds only on first load (when we go from 0 to some markers)
+        if (markersRef.current.length === newJobs.length && bounds.length > 0) {
           mapInstanceRef.current.fitBounds(bounds, { padding: [40, 40], maxZoom: 7 });
         }
       }, [filteredJobs, showMap]);
+
+      // Handle filter change - need to rebuild markers
+      const prevFilterRef = useRef(filter);
+      useEffect(() => {
+        if (prevFilterRef.current !== filter) {
+          // Filter changed - clear all markers and rebuild
+          markersRef.current.forEach(m => mapInstanceRef.current?.removeLayer(m));
+          markersRef.current = [];
+          markerJobIds.current.clear();
+          prevFilterRef.current = filter;
+        }
+      }, [filter]);
 
       // Handle map visibility
       useEffect(() => {
@@ -831,6 +872,13 @@
       // Handle incoming data
       const handleData = useCallback((data, shouldLoadMore = false) => {
         if (!data) return;
+
+        // Clear markers for new search
+        if (mapInstanceRef.current) {
+          markersRef.current.forEach(m => mapInstanceRef.current.removeLayer(m));
+          markersRef.current = [];
+          markerJobIds.current.clear();
+        }
 
         setJobs(data.jobs || []);
         setQuery(data.querySwedish || data.query || '');
