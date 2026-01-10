@@ -599,14 +599,21 @@
       return hash;
     };
 
-    // Get coordinates for a location - deterministic based on jobId
-    const getCoords = (location, jobId = '') => {
-      const hash = hashCode(jobId || location || 'default');
-      const offsetLat = ((hash % 1000) / 1000 - 0.5) * 0.05;
-      const offsetLng = (((hash >> 10) % 1000) / 1000 - 0.5) * 0.05;
+    // Get coordinates - use API coords if available, fallback to city lookup
+    const getCoords = (job) => {
+      // Use real coordinates from API if available
+      if (job.lat && job.lng) {
+        return [job.lat, job.lng];
+      }
 
+      // Fallback: lookup by city name with small offset
+      const hash = hashCode(job.id || job.location || 'default');
+      const offsetLat = ((hash % 1000) / 1000 - 0.5) * 0.03;
+      const offsetLng = (((hash >> 10) % 1000) / 1000 - 0.5) * 0.03;
+
+      const location = job.location;
       if (!location) {
-        return [cityCoords.default[0] + offsetLat * 40, cityCoords.default[1] + offsetLng * 80];
+        return [cityCoords.default[0] + offsetLat, cityCoords.default[1] + offsetLng];
       }
 
       const loc = location.toLowerCase().replace(/[åä]/g, 'a').replace(/ö/g, 'o');
@@ -615,7 +622,7 @@
           return [coords[0] + offsetLat, coords[1] + offsetLng];
         }
       }
-      return [cityCoords.default[0] + offsetLat * 40, cityCoords.default[1] + offsetLng * 80];
+      return [cityCoords.default[0] + offsetLat, cityCoords.default[1] + offsetLng];
     };
 
     // Get company initials
@@ -943,7 +950,7 @@
 
         const bounds = [];
         newJobs.forEach(job => {
-          const coords = getCoords(job.location, job.id);
+          const coords = getCoords(job);
           bounds.push(coords);
 
           const marker = L.circleMarker(coords, {

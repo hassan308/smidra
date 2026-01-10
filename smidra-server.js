@@ -144,12 +144,22 @@ async function getJobById(jobId) {
 }
 
 function formatJob(job) {
+  // API returns coordinates as [longitude, latitude]
+  const coords = job.workplace_address?.coordinates;
+  let lat = null, lng = null;
+  if (coords && coords.length === 2) {
+    lng = coords[0];
+    lat = coords[1];
+  }
+
   return {
     id: job.id,
     title: job.headline,
     employer: job.employer?.name || "Okänd arbetsgivare",
     location: job.workplace_address?.municipality || job.workplace_address?.region || "Sverige",
     region: job.workplace_address?.region || "",
+    lat,
+    lng,
     deadline: job.application_deadline ? new Date(job.application_deadline).toLocaleDateString("sv-SE") : "Löpande",
     description: job.description?.text?.substring(0, 300) + "..." || "",
     fullDescription: job.description?.text || "",
