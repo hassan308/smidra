@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Smidra - Jobsearch</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     * {
       margin: 0;
@@ -12,159 +14,248 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: #f8fafc;
-      padding: 0;
-      color: #1a1a2e;
+      color: #1e293b;
     }
 
     .container {
-      max-width: 700px;
+      max-width: 900px;
       margin: 0 auto;
-    }
-
-    /* Glass card */
-    .glass-card {
-      background: #ffffff;
-      border-radius: 16px;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-      overflow: hidden;
     }
 
     /* Header */
     .header {
-      padding: 24px 28px;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      padding: 20px;
+      background: #fff;
+      border-bottom: 1px solid #e2e8f0;
     }
 
     .header-top {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
+      align-items: center;
       margin-bottom: 4px;
     }
 
     .header-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: #6366f1;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      font-size: 24px;
+      font-weight: 700;
+      color: #0f172a;
     }
 
     .header-count {
-      font-size: 13px;
+      font-size: 14px;
       color: #64748b;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
     }
 
     .header-loading {
-      width: 12px;
-      height: 12px;
-      border: 2px solid rgba(99, 102, 241, 0.2);
+      width: 14px;
+      height: 14px;
+      border: 2px solid #e2e8f0;
       border-top-color: #6366f1;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
 
-    .search-info {
-      font-size: 22px;
-      font-weight: 700;
-      color: #0f172a;
-      margin-top: 4px;
-    }
-
-    .search-location {
-      font-size: 15px;
+    .header-subtitle {
+      font-size: 14px;
       color: #64748b;
-      margin-top: 2px;
     }
 
-    /* Filter tabs */
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* View Toggle */
+    .view-toggle {
+      display: flex;
+      gap: 8px;
+      padding: 12px 20px;
+      background: #fff;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .view-btn {
+      padding: 8px 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      color: #64748b;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .view-btn:hover {
+      border-color: #6366f1;
+      color: #6366f1;
+    }
+
+    .view-btn.active {
+      background: #6366f1;
+      border-color: #6366f1;
+      color: #fff;
+    }
+
+    .view-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Map */
+    .map-container {
+      height: 280px;
+      background: #e2e8f0;
+      position: relative;
+      display: none;
+    }
+
+    .map-container.show {
+      display: block;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    .map-overlay {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      background: rgba(255,255,255,0.95);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #64748b;
+      z-index: 1000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    /* Filters */
     .filters {
       display: flex;
       gap: 8px;
-      padding: 16px 28px;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-      background: rgba(0, 0, 0, 0.02);
+      padding: 12px 20px;
+      background: #fff;
+      border-bottom: 1px solid #e2e8f0;
+      overflow-x: auto;
     }
 
     .filter-btn {
-      padding: 8px 16px;
+      padding: 6px 14px;
       border: none;
       border-radius: 20px;
       font-size: 13px;
       font-weight: 500;
       cursor: pointer;
-      transition: all 0.2s ease;
-      background: transparent;
+      transition: all 0.2s;
+      background: #f1f5f9;
       color: #64748b;
+      white-space: nowrap;
     }
 
     .filter-btn:hover {
-      background: rgba(99, 102, 241, 0.1);
-      color: #6366f1;
+      background: #e2e8f0;
     }
 
     .filter-btn.active {
-      background: #6366f1;
-      color: white;
+      background: #0f172a;
+      color: #fff;
     }
 
-    /* Job list */
-    .job-list {
-      padding: 8px 0;
-    }
-
-    .job-item {
-      padding: 20px 28px;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-      cursor: pointer;
-      transition: background 0.15s ease;
-    }
-
-    .job-item:last-child {
-      border-bottom: none;
-    }
-
-    .job-item:hover {
-      background: rgba(99, 102, 241, 0.04);
-    }
-
-    .job-item.expanded {
-      background: rgba(99, 102, 241, 0.06);
-    }
-
-    .job-main {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
+    /* Card Grid */
+    .job-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 16px;
+      padding: 20px;
     }
 
-    .job-content {
+    /* Job Card */
+    .job-card {
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .job-card:hover {
+      border-color: #6366f1;
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.15);
+      transform: translateY(-2px);
+    }
+
+    .job-card-header {
+      padding: 16px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .job-card-company {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .company-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .company-info {
       flex: 1;
       min-width: 0;
     }
 
-    .job-title {
+    .company-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #0f172a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .job-type-badge {
+      font-size: 11px;
+      color: #6366f1;
+      background: #eef2ff;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .job-card-title {
       font-size: 16px;
       font-weight: 600;
       color: #0f172a;
-      margin-bottom: 4px;
       line-height: 1.4;
-    }
-
-    .job-company {
-      font-size: 14px;
-      color: #475569;
       margin-bottom: 8px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
-    .job-meta {
+    .job-card-meta {
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
@@ -178,97 +269,50 @@
       gap: 4px;
     }
 
-    .job-meta-icon {
+    .job-meta-item svg {
       width: 14px;
       height: 14px;
       opacity: 0.6;
     }
 
-    .job-actions {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 8px;
+    .job-card-body {
+      padding: 16px;
     }
 
-    .job-type {
-      font-size: 11px;
-      font-weight: 600;
-      padding: 4px 10px;
-      border-radius: 12px;
-      background: rgba(99, 102, 241, 0.1);
-      color: #6366f1;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-    }
-
-    .save-btn {
-      width: 36px;
-      height: 36px;
-      border: none;
-      border-radius: 50%;
-      background: transparent;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-    }
-
-    .save-btn:hover {
-      background: rgba(0, 0, 0, 0.05);
-    }
-
-    .save-btn.saved {
-      color: #ef4444;
-    }
-
-    .save-btn svg {
-      width: 20px;
-      height: 20px;
-    }
-
-    /* Expanded job details */
-    .job-details {
-      display: none;
-      margin-top: 16px;
-      padding-top: 16px;
-      border-top: 1px solid rgba(0, 0, 0, 0.06);
-    }
-
-    .job-item.expanded .job-details {
-      display: block;
-    }
-
-    .job-description {
-      font-size: 14px;
-      line-height: 1.6;
-      color: #475569;
+    .job-card-desc {
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
       margin-bottom: 16px;
     }
 
-    .job-buttons {
+    .job-card-actions {
       display: flex;
-      flex-wrap: wrap;
       gap: 8px;
     }
 
     .btn {
-      padding: 10px 18px;
+      flex: 1;
+      padding: 10px 16px;
       border: none;
-      border-radius: 10px;
+      border-radius: 8px;
       font-size: 13px;
       font-weight: 500;
       cursor: pointer;
-      transition: all 0.2s ease;
-      display: inline-flex;
+      transition: all 0.2s;
+      display: flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
     }
 
     .btn-primary {
       background: #6366f1;
-      color: white;
+      color: #fff;
     }
 
     .btn-primary:hover {
@@ -276,17 +320,23 @@
     }
 
     .btn-secondary {
-      background: rgba(0, 0, 0, 0.05);
+      background: #f1f5f9;
       color: #475569;
     }
 
     .btn-secondary:hover {
-      background: rgba(0, 0, 0, 0.1);
+      background: #e2e8f0;
     }
 
     .btn svg {
       width: 16px;
       height: 16px;
+    }
+
+    .btn-icon {
+      width: 40px;
+      flex: none;
+      padding: 10px;
     }
 
     /* Pagination */
@@ -295,31 +345,36 @@
       justify-content: center;
       align-items: center;
       gap: 4px;
-      padding: 20px 28px;
-      border-top: 1px solid rgba(0, 0, 0, 0.06);
+      padding: 20px;
+      background: #fff;
+      border-top: 1px solid #e2e8f0;
     }
 
     .page-btn {
-      width: 36px;
+      min-width: 36px;
       height: 36px;
-      border: none;
-      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #fff;
       font-size: 14px;
       font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      background: transparent;
       color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .page-btn:hover {
-      background: rgba(99, 102, 241, 0.1);
+    .page-btn:hover:not(:disabled) {
+      border-color: #6366f1;
       color: #6366f1;
     }
 
     .page-btn.active {
       background: #6366f1;
-      color: white;
+      border-color: #6366f1;
+      color: #fff;
     }
 
     .page-btn:disabled {
@@ -328,13 +383,13 @@
     }
 
     .page-dots {
-      padding: 0 4px;
+      padding: 0 8px;
       color: #94a3b8;
     }
 
-    /* Empty state */
+    /* Empty State */
     .empty-state {
-      padding: 60px 28px;
+      padding: 60px 20px;
       text-align: center;
     }
 
@@ -353,7 +408,29 @@
     }
 
     .empty-text {
-      font-size: 14px;
+      color: #64748b;
+    }
+
+    /* Loading */
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 20px;
+      gap: 16px;
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid #e2e8f0;
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .loading-text {
       color: #64748b;
     }
 
@@ -364,15 +441,14 @@
       left: 50%;
       transform: translateX(-50%) translateY(100px);
       background: #0f172a;
-      color: white;
+      color: #fff;
       padding: 12px 24px;
       border-radius: 12px;
       font-size: 14px;
       font-weight: 500;
       opacity: 0;
-      transition: all 0.3s ease;
+      transition: all 0.3s;
       z-index: 1000;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
     }
 
     .toast.show {
@@ -380,152 +456,205 @@
       opacity: 1;
     }
 
-    /* Loading */
-    .loading {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 60px;
-      gap: 12px;
-    }
-
-    .spinner {
-      width: 24px;
-      height: 24px;
-      border: 3px solid rgba(99, 102, 241, 0.2);
-      border-top-color: #6366f1;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .loading-text {
-      font-size: 15px;
-      color: #64748b;
-    }
-
-    /* Action loading indicator */
-    .action-loading {
+    /* Job Detail Modal */
+    .modal-overlay {
       display: none;
-      flex-direction: column;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 2000;
       align-items: center;
       justify-content: center;
       padding: 20px;
-      margin-top: 8px;
-      background: #ffffff;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal {
+      background: #fff;
+      border-radius: 20px;
+      max-width: 600px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .modal-close {
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 8px;
+      background: #f1f5f9;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close:hover {
+      background: #e2e8f0;
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .modal-desc {
+      font-size: 14px;
+      line-height: 1.7;
+      color: #475569;
+      margin-bottom: 20px;
+      white-space: pre-wrap;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* Leaflet custom */
+    .leaflet-popup-content-wrapper {
       border-radius: 12px;
-      border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .map-popup {
+      min-width: 200px;
+    }
+
+    .map-popup-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .map-popup-company {
+      color: #64748b;
+      font-size: 13px;
+    }
+
+    /* Action Loading */
+    .action-loading {
+      display: none;
+      padding: 20px;
+      background: #fff;
+      border-top: 1px solid #e2e8f0;
+      text-align: center;
     }
 
     .action-loading.show {
-      display: flex;
-      animation: fadeIn 0.2s ease;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+      display: block;
     }
 
     .action-loading-content {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 10px;
-      margin-bottom: 12px;
+      color: #6366f1;
+      font-weight: 500;
     }
 
     .action-spinner {
-      width: 18px;
-      height: 18px;
-      border: 2px solid rgba(99, 102, 241, 0.2);
+      width: 16px;
+      height: 16px;
+      border: 2px solid #e2e8f0;
       border-top-color: #6366f1;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
 
-    .action-loading-text {
-      font-size: 14px;
-      font-weight: 500;
-      color: #6366f1;
-    }
-
-    .action-arrow {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      animation: bounce 1.5s ease-in-out infinite;
-    }
-
-    .action-arrow svg {
-      width: 24px;
-      height: 24px;
-      color: #6366f1;
-      opacity: 0.7;
-    }
-
-    .action-arrow svg:first-child {
-      opacity: 0.4;
-    }
-
-    .action-arrow-hint {
-      font-size: 12px;
-      color: #94a3b8;
-      margin-top: 4px;
-    }
-
-    @keyframes bounce {
-      0%, 100% {
-        transform: translateY(0);
+    /* Responsive */
+    @media (max-width: 640px) {
+      .job-grid {
+        grid-template-columns: 1fr;
       }
-      50% {
-        transform: translateY(6px);
+
+      .map-container {
+        height: 200px;
       }
     }
-
-    /* RTL Support */
-    [dir="rtl"] .job-main { flex-direction: row-reverse; }
-    [dir="rtl"] .job-meta { flex-direction: row-reverse; }
-    [dir="rtl"] .job-actions { align-items: flex-start; }
-    [dir="rtl"] .header-top { flex-direction: row-reverse; }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="glass-card" id="app">
+    <div id="app">
       <div class="loading">
         <div class="spinner"></div>
         <span class="loading-text">Laddar jobb...</span>
       </div>
     </div>
+  </div>
 
-    <!-- Action loading indicator -->
-    <div class="action-loading" id="actionLoading">
-      <div class="action-loading-content">
-        <div class="action-spinner"></div>
-        <span class="action-loading-text" id="actionLoadingText">ChatGPT svarar...</span>
+  <div class="modal-overlay" id="modal" onclick="closeModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <div class="job-card-title" id="modal-title"></div>
+          <div class="company-name" id="modal-company"></div>
+        </div>
+        <button class="modal-close" onclick="closeModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
       </div>
-      <div class="action-arrow">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
+      <div class="modal-body">
+        <div class="job-card-meta" style="margin-bottom: 16px;">
+          <span class="job-meta-item" id="modal-location"></span>
+          <span class="job-meta-item" id="modal-deadline"></span>
+        </div>
+        <div class="modal-desc" id="modal-desc"></div>
+        <div class="modal-actions" id="modal-actions"></div>
       </div>
-      <span class="action-arrow-hint">Svar kommer nedan</span>
     </div>
   </div>
+
   <div class="toast" id="toast"></div>
 
   <script>
-    const JOBS_PER_PAGE = 10;
+    const JOBS_PER_PAGE = 12;
     const BATCH_SIZE = 100;
+    let map = null;
+    let markers = [];
     let actionLoadingTimeout = null;
-    let loadingMoreJobs = false;
+
+    // Swedish city coordinates
+    const cityCoords = {
+      'stockholm': [59.3293, 18.0686],
+      'göteborg': [57.7089, 11.9746],
+      'gothenburg': [57.7089, 11.9746],
+      'malmö': [55.6050, 13.0038],
+      'uppsala': [59.8586, 17.6389],
+      'linköping': [58.4108, 15.6214],
+      'örebro': [59.2753, 15.2134],
+      'västerås': [59.6099, 16.5448],
+      'helsingborg': [56.0465, 12.6945],
+      'norrköping': [58.5877, 16.1924],
+      'jönköping': [57.7826, 14.1618],
+      'lund': [55.7047, 13.1910],
+      'umeå': [63.8258, 20.2630],
+      'gävle': [60.6749, 17.1413],
+      'borås': [57.7210, 12.9401],
+      'södertälje': [59.1955, 17.6253],
+      'eskilstuna': [59.3666, 16.5077],
+      'karlstad': [59.4022, 13.5115],
+      'täby': [59.4439, 18.0687],
+      'sundsvall': [62.3908, 17.3069],
+      'luleå': [65.5848, 22.1547],
+      'halmstad': [56.6745, 12.8578],
+      'växjö': [56.8777, 14.8091],
+      'kalmar': [56.6634, 16.3566],
+      'default': [62.0, 15.0] // Center of Sweden
+    };
 
     const state = {
       data: null,
@@ -535,39 +664,37 @@
       expandedJob: null,
       savedJobs: [],
       filter: 'all',
-      actionLoading: false,
+      showMap: true,
       totalAvailable: 0,
       loadedCount: 0,
       isLoadingMore: false,
       searchQuery: '',
-      searchLocation: ''
+      searchLocation: '',
+      selectedJob: null
     };
 
-    const defaultLabels = {
-      results: 'Sökresultat',
+    const labels = {
+      results: 'Lediga jobb',
       jobs: 'jobb',
-      inLocation: 'i',
       allJobs: 'Alla',
       fullTime: 'Heltid',
       partTime: 'Deltid',
-      location: 'Plats',
-      deadline: 'Sök senast',
-      apply: 'Ansök nu',
-      salary: 'Lönestatistik',
-      coverLetter: 'Personligt brev',
-      market: 'Marknadsanalys',
-      share: 'Dela',
-      saved: 'Sparad',
+      remote: 'Distans',
+      apply: 'Ansök',
+      salary: 'Lön',
+      letter: 'Brev',
       save: 'Spara',
+      saved: 'Sparad',
       noJobs: 'Inga jobb hittades',
       tryAgain: 'Försök med andra sökord',
-      page: 'Sida',
-      previous: 'Föregående',
-      next: 'Nästa'
+      showMap: 'Karta',
+      showGrid: 'Kort',
+      showList: 'Lista',
+      jobsOnMap: 'jobb på kartan'
     };
 
     function t(key) {
-      return state.data?.labels?.[key] || defaultLabels[key] || key;
+      return state.data?.labels?.[key] || labels[key] || key;
     }
 
     function esc(str) {
@@ -577,225 +704,260 @@
       return div.innerHTML;
     }
 
-    function showToast(message) {
+    function showToast(msg) {
       const toast = document.getElementById('toast');
-      toast.textContent = message;
+      toast.textContent = msg;
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 2500);
     }
 
-    function showActionLoading(actionText) {
-      // Clear any existing timeout
-      if (actionLoadingTimeout) {
-        clearTimeout(actionLoadingTimeout);
-      }
+    function getCoords(location) {
+      if (!location) return cityCoords.default;
+      const loc = location.toLowerCase()
+        .replace(/å/g, 'a').replace(/ä/g, 'a').replace(/ö/g, 'o');
 
-      state.actionLoading = true;
-      const loader = document.getElementById('actionLoading');
-      const text = document.getElementById('actionLoadingText');
-
-      if (text) text.textContent = actionText || 'ChatGPT svarar...';
-      if (loader) loader.classList.add('show');
-
-      notifyHeight();
-
-      // Auto-hide after 15 seconds
-      actionLoadingTimeout = setTimeout(() => {
-        hideActionLoading();
-      }, 15000);
-    }
-
-    function hideActionLoading() {
-      if (actionLoadingTimeout) {
-        clearTimeout(actionLoadingTimeout);
-        actionLoadingTimeout = null;
-      }
-
-      state.actionLoading = false;
-      const loader = document.getElementById('actionLoading');
-      if (loader) loader.classList.remove('show');
-      notifyHeight();
-    }
-
-    // Progressive loading - fetch more jobs in background
-    async function loadMoreJobs() {
-      if (state.isLoadingMore || !state.data?.jobs) return;
-      if (state.loadedCount >= state.totalAvailable) return;
-
-      state.isLoadingMore = true;
-      const offset = state.loadedCount;
-
-      console.log(`Loading more jobs: offset=${offset}, have=${state.loadedCount}/${state.totalAvailable}`);
-
-      try {
-        const params = new URLSearchParams({
-          q: state.searchQuery || 'jobb',
-          limit: BATCH_SIZE.toString(),
-          offset: offset.toString()
-        });
-        if (state.searchLocation) params.set('location', state.searchLocation);
-
-        const response = await fetch(`/api/search?${params}`);
-        const data = await response.json();
-
-        if (data.jobs && data.jobs.length > 0) {
-          // Add new jobs to existing list
-          state.data.jobs.push(...data.jobs);
-          state.loadedCount = state.data.jobs.length;
-
-          console.log(`Loaded ${data.jobs.length} more jobs. Total: ${state.loadedCount}/${state.totalAvailable}`);
-
-          // Update UI
-          render();
-
-          // Continue loading if there's more
-          if (state.loadedCount < state.totalAvailable) {
-            setTimeout(loadMoreJobs, 100); // Small delay between batches
-          }
+      for (const [city, coords] of Object.entries(cityCoords)) {
+        if (loc.includes(city) || city.includes(loc)) {
+          // Add small random offset to prevent overlapping markers
+          return [
+            coords[0] + (Math.random() - 0.5) * 0.05,
+            coords[1] + (Math.random() - 0.5) * 0.05
+          ];
         }
-      } catch (error) {
-        console.error('Error loading more jobs:', error);
-      } finally {
-        state.isLoadingMore = false;
+      }
+      return cityCoords.default;
+    }
+
+    function getInitials(name) {
+      if (!name) return '?';
+      return name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+    }
+
+    function initMap() {
+      if (map) return;
+
+      const mapEl = document.getElementById('map');
+      if (!mapEl) return;
+
+      map = L.map('map').setView([62.0, 15.0], 5);
+
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
+        maxZoom: 19
+      }).addTo(map);
+    }
+
+    function updateMapMarkers(jobs) {
+      if (!map) return;
+
+      // Clear existing markers
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+
+      // Add new markers
+      const bounds = [];
+      jobs.forEach(job => {
+        const coords = getCoords(job.location);
+        bounds.push(coords);
+
+        const marker = L.circleMarker(coords, {
+          radius: 8,
+          fillColor: '#6366f1',
+          color: '#fff',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.8
+        }).addTo(map);
+
+        marker.bindPopup(`
+          <div class="map-popup">
+            <div class="map-popup-title">${esc(job.title)}</div>
+            <div class="map-popup-company">${esc(job.employer)}</div>
+          </div>
+        `);
+
+        marker.on('click', () => openJobDetail(job));
+        markers.push(marker);
+      });
+
+      // Fit bounds if we have markers
+      if (bounds.length > 0) {
+        map.fitBounds(bounds, { padding: [30, 30], maxZoom: 8 });
       }
     }
 
-    function notifyHeight() {
-      setTimeout(() => {
-        window.openai?.notifyIntrinsicHeight?.(document.body.scrollHeight);
-      }, 50);
-    }
-
-    function saveState() {
-      window.openai?.setWidgetState?.({ savedJobs: state.savedJobs });
-    }
-
-    function toggleSave(jobId, e) {
-      e.stopPropagation();
-      const idx = state.savedJobs.indexOf(jobId);
-      if (idx >= 0) {
-        state.savedJobs.splice(idx, 1);
-      } else {
-        state.savedJobs.push(jobId);
+    function toggleMap() {
+      state.showMap = !state.showMap;
+      render();
+      if (state.showMap) {
+        setTimeout(() => {
+          initMap();
+          updateMapMarkers(getFilteredJobs());
+        }, 100);
       }
-      saveState();
-      render();
-    }
-
-    function toggleExpand(jobId) {
-      state.expandedJob = state.expandedJob === jobId ? null : jobId;
-      render();
-      notifyHeight();
     }
 
     function setFilter(filter) {
       state.filter = filter;
       state.currentPage = 1;
       render();
+      if (state.showMap && map) {
+        updateMapMarkers(getFilteredJobs());
+      }
     }
 
     function setPage(page) {
       state.currentPage = page;
-      state.expandedJob = null;
       render();
-      notifyHeight();
-      // Scroll to top of widget
-      document.querySelector('.glass-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.querySelector('.header')?.scrollIntoView({ behavior: 'smooth' });
     }
 
     function getFilteredJobs() {
       let jobs = state.data?.jobs || [];
       if (state.filter === 'fulltime') {
-        jobs = jobs.filter(j => {
-          const type = (j.employmentType || '').toLowerCase();
-          return type.includes('heltid') || type.includes('full');
-        });
+        jobs = jobs.filter(j => (j.employmentType || '').toLowerCase().includes('heltid'));
       } else if (state.filter === 'parttime') {
-        jobs = jobs.filter(j => {
-          const type = (j.employmentType || '').toLowerCase();
-          return type.includes('deltid') || type.includes('part');
-        });
+        jobs = jobs.filter(j => (j.employmentType || '').toLowerCase().includes('deltid'));
       }
       return jobs;
     }
 
+    function openJobDetail(job) {
+      state.selectedJob = job;
+      document.getElementById('modal-title').textContent = job.title;
+      document.getElementById('modal-company').textContent = job.employer;
+      document.getElementById('modal-location').innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+          <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        ${esc(job.location || 'Sverige')}
+      `;
+      document.getElementById('modal-deadline').innerHTML = job.deadline ? `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        ${esc(job.deadline)}
+      ` : '';
+      document.getElementById('modal-desc').textContent = job.fullDescription || job.description || '';
+      document.getElementById('modal-actions').innerHTML = `
+        <button class="btn btn-primary" onclick="requestAction('apply', state.selectedJob)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+            <polyline points="15 3 21 3 21 9"/>
+            <line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+          ${t('apply')}
+        </button>
+        <button class="btn btn-secondary" onclick="requestAction('salary', state.selectedJob)">
+          ${t('salary')}
+        </button>
+        <button class="btn btn-secondary" onclick="requestAction('help', state.selectedJob)">
+          ${t('letter')}
+        </button>
+      `;
+      document.getElementById('modal').classList.add('show');
+    }
+
+    function closeModal(e) {
+      if (e && e.target !== e.currentTarget) return;
+      document.getElementById('modal').classList.remove('show');
+      state.selectedJob = null;
+    }
+
+    function toggleSave(jobId, e) {
+      e?.stopPropagation();
+      const idx = state.savedJobs.indexOf(jobId);
+      if (idx >= 0) {
+        state.savedJobs.splice(idx, 1);
+        showToast('Borttagen');
+      } else {
+        state.savedJobs.push(jobId);
+        showToast('Sparad!');
+      }
+      render();
+    }
+
     function requestAction(action, job, e) {
       e?.stopPropagation();
+      closeModal();
 
       if (action === 'apply') {
         window.openai?.openExternal?.({ href: job.url });
         return;
       }
 
-      if (action === 'share') {
-        const text = `${job.title} - ${job.employer}\n${job.url}`;
-        if (navigator.share) {
-          navigator.share({ title: job.title, text: text, url: job.url });
-        } else {
-          showToast('Länk: ' + job.url);
-        }
-        return;
-      }
-
       const lang = state.language || 'sv';
       let message = '';
 
-      switch (action) {
-        case 'salary':
-          message = `Användaren vill se lönestatistik för denna tjänst:
+      if (action === 'salary') {
+        message = `Användaren vill se lönestatistik för denna tjänst:
 
-TJÄNST:
-- Titel: ${job.title}
-- Företag: ${job.employer}
-- Plats: ${job.location || 'Sverige'}
-- Typ: ${job.employmentType || 'Ej angivet'}
+TJÄNST: ${job.title}
+FÖRETAG: ${job.employer}
+PLATS: ${job.location || 'Sverige'}
 
-INSTRUKTION:
-1. Sök på nätet efter aktuell lönestatistik för "${job.title}" i ${job.location || 'Sverige'}
-2. Hitta: genomsnittslön, lönespann (min/max), junior vs senior nivåer
-3. När du hittat informationen, anropa display_salary verktyget med datan
-4. Inkludera källor och förhandlingstips
+Sök på nätet efter aktuell lönestatistik för "${job.title}" i ${job.location || 'Sverige'}.
+Hitta genomsnittslön, lönespann, och anropa sedan display_salary verktyget.
+Svara på ${lang}.`;
+      } else if (action === 'help') {
+        message = `Hjälp mig skriva ett personligt brev för:
 
-Svara på användarens språk (${lang}).`;
-          break;
+TJÄNST: ${job.title}
+FÖRETAG: ${job.employer}
+BESKRIVNING: ${(job.description || '').substring(0, 300)}
 
-        case 'help':
-          message = `Användaren vill ha hjälp att skriva ett personligt brev för denna tjänst:
-
-TJÄNST:
-- Titel: ${job.title}
-- Företag: ${job.employer}
-- Plats: ${job.location || 'Sverige'}
-- Beskrivning: ${job.description?.substring(0, 300) || 'Ej angivet'}
-
-Skriv ett professionellt, engagerande personligt brev. Fråga användaren om deras bakgrund och erfarenhet för att anpassa brevet bättre.
-
-Svara på användarens språk (${lang}).`;
-          break;
-
-        case 'market':
-          message = `Ge mig arbetsmarknadsanalys för yrket "${job.title}" i ${job.location || 'Sverige'}.
-
-Sök på nätet och inkludera:
-- Antal lediga tjänster just nu
-- Efterfrågan och trender
-- Framtidsutsikter
-- Vilka kompetenser som efterfrågas
-- Tips för att sticka ut
-
-Svara på användarens språk (${lang}).`;
-          break;
+Skriv ett professionellt brev. Fråga om min bakgrund om det behövs.
+Svara på ${lang}.`;
       }
 
       if (message && window.openai?.sendFollowUpMessage) {
-        // Show loading indicator with contextual text
-        const loadingTexts = {
-          salary: 'Hämtar lönestatistik...',
-          help: 'Förbereder personligt brev...',
-          market: 'Analyserar arbetsmarknaden...'
-        };
-        showActionLoading(loadingTexts[action] || 'ChatGPT svarar...');
+        showToast('Skickar...');
         window.openai.sendFollowUpMessage({ prompt: message });
+      }
+    }
+
+    function notifyHeight() {
+      setTimeout(() => {
+        window.openai?.notifyIntrinsicHeight?.(document.body.scrollHeight);
+      }, 100);
+    }
+
+    async function loadMoreJobs() {
+      if (state.isLoadingMore || state.loadedCount >= state.totalAvailable) return;
+      state.isLoadingMore = true;
+
+      try {
+        const params = new URLSearchParams({
+          q: state.searchQuery || 'jobb',
+          limit: BATCH_SIZE.toString(),
+          offset: state.loadedCount.toString()
+        });
+        if (state.searchLocation) params.set('location', state.searchLocation);
+
+        const res = await fetch(`/api/search?${params}`);
+        const data = await res.json();
+
+        if (data.jobs?.length > 0) {
+          state.data.jobs.push(...data.jobs);
+          state.loadedCount = state.data.jobs.length;
+          render();
+
+          if (state.showMap && map) {
+            updateMapMarkers(getFilteredJobs());
+          }
+
+          if (state.loadedCount < state.totalAvailable) {
+            setTimeout(loadMoreJobs, 200);
+          }
+        }
+      } catch (err) {
+        console.error('Load more error:', err);
+      } finally {
+        state.isLoadingMore = false;
       }
     }
 
@@ -822,17 +984,15 @@ Svara på användarens språk (${lang}).`;
         app.innerHTML = `
           <div class="header">
             <div class="header-top">
-              <span class="header-title">${esc(t('results'))}</span>
+              <div class="header-title">${esc(d.query || t('results'))}</div>
             </div>
-            <div class="search-info">${esc(d.query || 'Jobb')}</div>
-            ${d.location ? `<div class="search-location">${t('inLocation')} ${esc(d.location)}</div>` : ''}
           </div>
           <div class="empty-state">
             <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
-            <div class="empty-title">${esc(t('noJobs'))}</div>
-            <div class="empty-text">${esc(t('tryAgain'))}</div>
+            <div class="empty-title">${t('noJobs')}</div>
+            <div class="empty-text">${t('tryAgain')}</div>
           </div>
         `;
         notifyHeight();
@@ -842,19 +1002,25 @@ Svara på användarens språk (${lang}).`;
       app.innerHTML = `
         <div class="header">
           <div class="header-top">
-            <span class="header-title">${esc(t('results'))}</span>
-            <span class="header-count">
+            <div class="header-title">${esc(d.query || t('results'))}</div>
+            <div class="header-count">
               ${state.loadedCount < state.totalAvailable
-                ? `${state.loadedCount}/${state.totalAvailable} ${t('jobs')}`
-                : `${filteredJobs.length} ${t('jobs')}`}
+                ? `${state.loadedCount}/${state.totalAvailable}`
+                : filteredJobs.length} ${t('jobs')}
               ${state.isLoadingMore ? '<span class="header-loading"></span>' : ''}
-            </span>
+            </div>
           </div>
-          <div class="search-info">${esc(d.query || 'Jobb')}</div>
-          ${d.location ? `<div class="search-location">${t('inLocation')} ${esc(d.location)}</div>` : ''}
+          ${d.location ? `<div class="header-subtitle">${esc(d.location)}</div>` : ''}
         </div>
 
-        <div class="filters">
+        <div class="view-toggle">
+          <button class="view-btn ${state.showMap ? 'active' : ''}" onclick="toggleMap()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+              <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            ${t('showMap')}
+          </button>
           <button class="filter-btn ${state.filter === 'all' ? 'active' : ''}" onclick="setFilter('all')">
             ${t('allJobs')}
           </button>
@@ -866,67 +1032,54 @@ Svara på användarens språk (${lang}).`;
           </button>
         </div>
 
-        <div class="job-list">
-          ${pageJobs.map(job => {
-            const isExpanded = state.expandedJob === job.id;
-            const isSaved = state.savedJobs.includes(job.id);
+        <div class="map-container ${state.showMap ? 'show' : ''}">
+          <div id="map"></div>
+          <div class="map-overlay">${markers.length || filteredJobs.length} ${t('jobsOnMap')}</div>
+        </div>
 
+        <div class="job-grid">
+          ${pageJobs.map(job => {
+            const isSaved = state.savedJobs.includes(job.id);
             return `
-              <div class="job-item ${isExpanded ? 'expanded' : ''}" onclick="toggleExpand('${job.id}')">
-                <div class="job-main">
-                  <div class="job-content">
-                    <div class="job-title">${esc(job.title)}</div>
-                    <div class="job-company">${esc(job.employer)}</div>
-                    <div class="job-meta">
-                      <span class="job-meta-item">
-                        <svg class="job-meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                          <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        </svg>
-                        ${esc(job.location || 'Sverige')}
-                      </span>
-                      ${job.deadline ? `
-                        <span class="job-meta-item">
-                          <svg class="job-meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                            <line x1="16" y1="2" x2="16" y2="6"/>
-                            <line x1="8" y1="2" x2="8" y2="6"/>
-                            <line x1="3" y1="10" x2="21" y2="10"/>
-                          </svg>
-                          ${esc(job.deadline)}
-                        </span>
-                      ` : ''}
+              <div class="job-card" onclick="openJobDetail(${JSON.stringify(job).replace(/"/g, '&quot;')})">
+                <div class="job-card-header">
+                  <div class="job-card-company">
+                    <div class="company-avatar">${getInitials(job.employer)}</div>
+                    <div class="company-info">
+                      <div class="company-name">${esc(job.employer)}</div>
+                      ${job.employmentType ? `<span class="job-type-badge">${esc(job.employmentType)}</span>` : ''}
                     </div>
                   </div>
-                  <div class="job-actions">
-                    ${job.employmentType ? `<span class="job-type">${esc(job.employmentType)}</span>` : ''}
-                    <button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSave('${job.id}', event)" title="${isSaved ? t('saved') : t('save')}">
+                  <div class="job-card-title">${esc(job.title)}</div>
+                  <div class="job-card-meta">
+                    <span class="job-meta-item">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      </svg>
+                      ${esc(job.location || 'Sverige')}
+                    </span>
+                    ${job.deadline ? `
+                      <span class="job-meta-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <circle cx="12" cy="12" r="10"/>
+                          <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        ${esc(job.deadline)}
+                      </span>
+                    ` : ''}
+                  </div>
+                </div>
+                <div class="job-card-body">
+                  <div class="job-card-desc">${esc(job.description)}</div>
+                  <div class="job-card-actions">
+                    <button class="btn btn-primary" onclick="requestAction('apply', ${JSON.stringify(job).replace(/"/g, '&quot;')}, event)">
+                      ${t('apply')}
+                    </button>
+                    <button class="btn btn-secondary btn-icon ${isSaved ? 'saved' : ''}" onclick="toggleSave('${job.id}', event)">
                       <svg viewBox="0 0 24 24" fill="${isSaved ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
                         <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
                       </svg>
-                    </button>
-                  </div>
-                </div>
-
-                <div class="job-details">
-                  <p class="job-description">${esc(job.description)}</p>
-                  <div class="job-buttons">
-                    <button class="btn btn-primary" onclick="requestAction('apply', ${JSON.stringify(job).replace(/"/g, '&quot;')}, event)">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
-                        <polyline points="15 3 21 3 21 9"/>
-                        <line x1="10" y1="14" x2="21" y2="3"/>
-                      </svg>
-                      ${t('apply')}
-                    </button>
-                    <button class="btn btn-secondary" onclick="requestAction('salary', ${JSON.stringify(job).replace(/"/g, '&quot;')}, event)">
-                      ${t('salary')}
-                    </button>
-                    <button class="btn btn-secondary" onclick="requestAction('help', ${JSON.stringify(job).replace(/"/g, '&quot;')}, event)">
-                      ${t('coverLetter')}
-                    </button>
-                    <button class="btn btn-secondary" onclick="requestAction('share', ${JSON.stringify(job).replace(/"/g, '&quot;')}, event)">
-                      ${t('share')}
                     </button>
                   </div>
                 </div>
@@ -942,9 +1095,7 @@ Svara på användarens språk (${lang}).`;
                 <polyline points="15 18 9 12 15 6"/>
               </svg>
             </button>
-
             ${generatePagination(state.currentPage, totalPages)}
-
             <button class="page-btn" onclick="setPage(${state.currentPage + 1})" ${state.currentPage === totalPages ? 'disabled' : ''}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                 <polyline points="9 18 15 12 9 6"/>
@@ -954,31 +1105,31 @@ Svara på användarens språk (${lang}).`;
         ` : ''}
       `;
 
+      // Init map after render
+      if (state.showMap) {
+        setTimeout(() => {
+          initMap();
+          updateMapMarkers(filteredJobs);
+        }, 100);
+      }
+
       notifyHeight();
     }
 
     function generatePagination(current, total) {
       const pages = [];
-      const maxVisible = 5;
-
-      if (total <= maxVisible) {
-        for (let i = 1; i <= total; i++) {
-          pages.push(i);
-        }
+      if (total <= 5) {
+        for (let i = 1; i <= total; i++) pages.push(i);
+      } else if (current <= 3) {
+        pages.push(1, 2, 3, 4, '...', total);
+      } else if (current >= total - 2) {
+        pages.push(1, '...', total - 3, total - 2, total - 1, total);
       } else {
-        if (current <= 3) {
-          pages.push(1, 2, 3, 4, '...', total);
-        } else if (current >= total - 2) {
-          pages.push(1, '...', total - 3, total - 2, total - 1, total);
-        } else {
-          pages.push(1, '...', current - 1, current, current + 1, '...', total);
-        }
+        pages.push(1, '...', current - 1, current, current + 1, '...', total);
       }
 
       return pages.map(p => {
-        if (p === '...') {
-          return '<span class="page-dots">...</span>';
-        }
+        if (p === '...') return '<span class="page-dots">...</span>';
         return `<button class="page-btn ${p === current ? 'active' : ''}" onclick="setPage(${p})">${p}</button>`;
       }).join('');
     }
@@ -997,7 +1148,6 @@ Svara på användarens språk (${lang}).`;
 
       state.data = data;
       state.currentPage = 1;
-      state.expandedJob = null;
       state.totalAvailable = data.total || data.jobs?.length || 0;
       state.loadedCount = data.jobs?.length || 0;
       state.searchQuery = data.querySwedish || data.query || '';
@@ -1005,46 +1155,33 @@ Svara på användarens språk (${lang}).`;
 
       render();
 
-      // Start progressive loading if there are more jobs
       if (startProgressiveLoad && state.loadedCount < state.totalAvailable) {
-        console.log(`Starting progressive load: ${state.loadedCount}/${state.totalAvailable}`);
         setTimeout(loadMoreJobs, 500);
       }
     }
 
     function init() {
-      // Restore saved jobs
       const saved = window.openai?.widgetState;
-      if (saved?.savedJobs) {
-        state.savedJobs = saved.savedJobs;
-      }
+      if (saved?.savedJobs) state.savedJobs = saved.savedJobs;
 
-      // Listen for data updates
       window.addEventListener('openai:set_globals', () => {
-        // Hide loading indicator when new data arrives
-        hideActionLoading();
-
         if (window.openai?.toolOutput) {
           handleData(window.openai.toolOutput);
         }
       });
 
-      // Initial data
       if (window.openai?.toolOutput) {
         handleData(window.openai.toolOutput);
       } else {
-        // Preview mode - fetch first batch quickly, then load more progressively
         fetch('/api/search?q=utvecklare&limit=100')
           .then(r => r.json())
-          .then(d => {
-            handleData({
-              query: 'Utvecklare',
-              querySwedish: 'utvecklare',
-              location: 'Sverige',
-              total: d.total,
-              jobs: d.jobs
-            }, true); // Start progressive loading
-          })
+          .then(d => handleData({
+            query: 'Utvecklare',
+            querySwedish: 'utvecklare',
+            location: 'Sverige',
+            total: d.total,
+            jobs: d.jobs
+          }, true))
           .catch(() => {});
       }
     }
