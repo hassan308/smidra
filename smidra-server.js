@@ -109,11 +109,11 @@ async function searchJobsSingle(query, location, limit = 100, offset = 0, filter
     console.log(`🏠 Filter: Remote/distans`);
   }
   if (filters.fulltime) {
-    params.set("worktime-extent", "947z_JGS_Uk5"); // Heltid code
+    params.set("worktime-extent", "6YE1_gAC_R2G"); // Heltid code
     console.log(`⏰ Filter: Heltid`);
   }
   if (filters.parttime) {
-    params.set("worktime-extent", "YHsN_BWq_fkh"); // Deltid code
+    params.set("worktime-extent", "947z_JGS_Uk2"); // Deltid code
     console.log(`⏰ Filter: Deltid`);
   }
   if (filters.drivingLicense) {
