@@ -914,13 +914,13 @@
       console.log('Message:', message);
       showToast('Skickar...');
 
-      // METHOD 1: Try sendFollowUpMessage FIRST (must be synchronous from click!)
+      // METHOD 1: sendFollowUpMessage with { prompt: message } - CORRECT API!
       if (typeof window.openai?.sendFollowUpMessage === 'function') {
         try {
-          console.log('Trying sendFollowUpMessage...');
-          const result = window.openai.sendFollowUpMessage(message);
+          console.log('Trying sendFollowUpMessage with prompt object...');
+          const result = window.openai.sendFollowUpMessage({ prompt: message });
           console.log('sendFollowUpMessage result:', result);
-          showToast('Skickat!');
+          showToast('Skickat till ChatGPT!');
           return;
         } catch (e) {
           console.log('sendFollowUpMessage error:', e);
