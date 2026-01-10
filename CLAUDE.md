@@ -31,13 +31,14 @@ Användare → ChatGPT → MCP Server (api.smidra.se) → Arbetsförmedlingen AP
 
 ```
 smidra/
-├── smidra-server.js      # MCP-server med alla tools
-├── job-list-widget.html  # Huvudwidget för jobblista
+├── smidra-server.js       # MCP-server med alla tools
+├── job-list-widget.html   # Huvudwidget för jobblista
 ├── job-detail-widget.html # Widget för jobbdetaljer
-├── package.json          # Dependencies
-├── Dockerfile            # Docker-konfiguration
-├── docker-compose.yml    # Docker Compose
-└── CLAUDE.md             # Denna fil
+├── salary-widget.html     # Widget för lönestatistik
+├── package.json           # Dependencies
+├── Dockerfile             # Docker-konfiguration
+├── docker-compose.yml     # Docker Compose
+└── CLAUDE.md              # Denna fil
 ```
 
 ---
@@ -363,6 +364,142 @@ ChatGPT svarar med sin kunskap - INGEN MCP-anrop behövs!
 
 ---
 
+## 🚀 MÖNSTER: Widget → Webbsökning → Display Widget
+
+### Konceptet
+Låt ChatGPT söka på webben och visa resultatet i en snygg widget!
+
+### Flödet
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 1. ANVÄNDARE KLICKAR KNAPP I WIDGET                         │
+│    [💰 Visa lön] på en specifik jobbannons                 │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 2. WIDGET SKICKAR MEDDELANDE MED ALL INFO                   │
+│                                                             │
+│    sendFollowUpMessage({                                    │
+│      prompt: `Sök lönestatistik för denna tjänst:          │
+│                                                             │
+│        Titel: Systemutvecklare                              │
+│        Företag: Tech AB                                     │
+│        Plats: Stockholm                                     │
+│                                                             │
+│        När du hittat info, anropa display_salary.`          │
+│    })                                                       │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 3. CHATGPT SÖKER PÅ WEBBEN                                  │
+│    - Använder sin webbsökning                               │
+│    - Hittar lönedata från SCB, Glassdoor, etc.             │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 4. CHATGPT ANROPAR DISPLAY-VERKTYGET                        │
+│                                                             │
+│    display_salary({                                         │
+│      job: { title: "Systemutvecklare", employer: "Tech AB"},│
+│      salary: { avg: 52000, min: 42000, max: 65000 },       │
+│      tips: ["Förhandlingstips 1", "Tips 2"],               │
+│      sources: ["SCB", "Glassdoor"]                         │
+│    })                                                       │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 5. SNYGG WIDGET VISAS MED ALL DATA! 🎉                     │
+│    - Anpassad för just den annonsen                        │
+│    - Visuellt tilltalande                                   │
+│    - Interaktiva knappar för fler åtgärder                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Kod-exempel: Widget-knappen
+
+```javascript
+function requestAction(action, job) {
+  if (action === 'salary') {
+    const message = `Sök lönestatistik för denna tjänst:
+
+TJÄNST:
+- Titel: ${job.title}
+- Företag: ${job.employer}
+- Plats: ${job.location}
+- Beskrivning: ${job.description?.substring(0, 150)}
+
+INSTRUKTION:
+1. Sök på nätet efter aktuell lönestatistik
+2. Hitta: genomsnittslön, lönespann, junior vs senior
+3. Anropa display_salary verktyget med datan
+4. Inkludera källor och förhandlingstips`;
+
+    window.openai.sendFollowUpMessage({ prompt: message });
+  }
+}
+```
+
+### Kod-exempel: MCP Display-verktyget
+
+```javascript
+server.registerTool(
+  "display_salary",
+  {
+    title: "Display Salary Statistics",
+    description: `Show salary in widget. Call AFTER web search.`,
+    inputSchema: {
+      job: z.object({
+        title: z.string(),
+        employer: z.string(),
+        location: z.string().optional()
+      }),
+      salary: z.object({
+        avg: z.number(),
+        min: z.number(),
+        max: z.number()
+      }),
+      tips: z.array(z.string()).optional(),
+      sources: z.array(z.string()).optional()
+    },
+    _meta: {
+      "openai/outputTemplate": "ui://widget/salary.html"
+    }
+  },
+  async (params) => {
+    return {
+      structuredContent: params,  // Skickas till widget
+      content: [{ type: "text", text: `Salary: ${params.salary.avg} kr` }]
+    };
+  }
+);
+```
+
+### Fördelar med detta mönster
+
+| Fördel | Beskrivning |
+|--------|-------------|
+| 🌐 **Färsk data** | ChatGPT söker på nätet = aktuell info |
+| 🎨 **Snygg presentation** | Widget visar data professionellt |
+| 🎯 **Kontextanpassad** | All info från ursprungsannonsen följer med |
+| 🔄 **Interaktivt** | Widget kan ha knappar för fler åtgärder |
+| 🌍 **Flerspråkigt** | ChatGPT översätter, widget visar |
+
+### Använd detta mönster för:
+
+- 💰 **Lönestatistik** - display_salary
+- 📊 **Marknadsanalys** - display_market_analysis
+- ✍️ **Personliga brev** - display_cover_letter
+- ⚖️ **Jobbjämförelse** - display_comparison
+- 📈 **Trendrapporter** - display_trends
+- 🏢 **Företagsinfo** - display_company_info
+
+---
+
 ## Lärdomar för framtida ChatGPT-appar
 
 ### ✅ Vad fungerar för två-stegs tool-flöden:
@@ -388,7 +525,7 @@ ChatGPT svarar med sin kunskap - INGEN MCP-anrop behövs!
 - [x] Översätta jobbinnehåll (två-stegs flöde)
 - [x] RTL-stöd för arabiska
 - [x] Widget-knappar som triggar ChatGPT-svar (sendFollowUpMessage)
-- [x] Lönestatistik-knapp
+- [x] Lönestatistik med webbsökning + display_salary widget
 - [x] Ansökningshjälp-knapp (personligt brev)
 - [x] Arbetsmarknadsanalys-knapp
 - [x] Jämför jobb-funktion
@@ -396,3 +533,240 @@ ChatGPT svarar med sin kunskap - INGEN MCP-anrop behövs!
 - [x] Filter heltid/deltid
 - [ ] Notifikationer för nya jobb
 - [ ] CV-matchning
+- [ ] display_cover_letter widget
+- [ ] display_market_analysis widget
+
+---
+
+## 🎯 SNABBSTART: Ny ChatGPT-app
+
+### Steg 1: Skapa projektstruktur
+
+```bash
+mkdir my-chatgpt-app && cd my-chatgpt-app
+npm init -y
+npm install @modelcontextprotocol/sdk zod
+```
+
+### Steg 2: Skapa server (my-server.js)
+
+```javascript
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import { z } from "zod";
+import { readFileSync } from "fs";
+import http from "http";
+
+const PORT = 8002;
+
+// Ladda widgets
+const mainWidgetHTML = readFileSync("./main-widget.html", "utf-8");
+
+// Skapa server
+const server = new McpServer({ name: "my-app", version: "1.0.0" });
+
+// Registrera widget-resurs
+server.registerResource("main-widget", "ui://widget/main.html", {}, async () => ({
+  contents: [{ uri: "ui://widget/main.html", mimeType: "text/html+skybridge", text: mainWidgetHTML }]
+}));
+
+// Registrera verktyg
+server.registerTool(
+  "my_tool",
+  {
+    title: "My Tool",
+    description: "Does something useful",
+    inputSchema: {
+      query: z.string().describe("Search query")
+    },
+    _meta: {
+      "openai/outputTemplate": "ui://widget/main.html"
+    }
+  },
+  async ({ query }) => {
+    // Din logik här
+    return {
+      structuredContent: { query, results: [] },
+      content: [{ type: "text", text: `Results for: ${query}` }]
+    };
+  }
+);
+
+// HTTP-server med SSE
+const transports = new Map();
+
+http.createServer(async (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "*");
+
+  if (req.method === "OPTIONS") { res.writeHead(204); res.end(); return; }
+
+  const url = new URL(req.url, `http://localhost:${PORT}`);
+
+  if (url.pathname === "/health") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end('{"status":"ok"}');
+    return;
+  }
+
+  if (url.pathname === "/widget") {
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end(mainWidgetHTML);
+    return;
+  }
+
+  if (url.pathname === "/mcp") {
+    if (req.method === "GET") {
+      const transport = new SSEServerTransport("/mcp", res);
+      transports.set(transport.sessionId, transport);
+      res.on("close", () => transports.delete(transport.sessionId));
+      await server.connect(transport);
+      return;
+    }
+    if (req.method === "POST") {
+      const sessionId = url.searchParams.get("sessionId");
+      if (!sessionId || !transports.has(sessionId)) {
+        res.writeHead(400); res.end('{"error":"Invalid session"}'); return;
+      }
+      let body = "";
+      for await (const chunk of req) body += chunk.toString();
+      await transports.get(sessionId).handlePostMessage(req, res, body);
+      return;
+    }
+  }
+
+  res.writeHead(404); res.end("Not found");
+}).listen(PORT, () => console.log(`Server: http://localhost:${PORT}`));
+```
+
+### Steg 3: Skapa widget (main-widget.html)
+
+```html
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; padding: 16px; }
+    .card { background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 20px; }
+    .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; }
+    .btn-primary { background: #2563eb; color: white; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    const state = { data: null };
+
+    function render() {
+      const app = document.getElementById('app');
+      const d = state.data;
+
+      app.innerHTML = `
+        <div class="card">
+          <h2>${d?.title || 'Loading...'}</h2>
+          <p>${d?.description || ''}</p>
+          <button class="btn btn-primary" onclick="handleAction()">
+            Do Something
+          </button>
+        </div>
+      `;
+
+      window.openai?.notifyIntrinsicHeight?.(document.body.scrollHeight);
+    }
+
+    function handleAction() {
+      // Skicka meddelande till ChatGPT
+      window.openai?.sendFollowUpMessage?.({
+        prompt: "Användaren klickade på knappen. Hjälp dem med nästa steg."
+      });
+    }
+
+    function init() {
+      if (window.openai?.theme) {
+        document.body.style.background = window.openai.theme === 'dark' ? '#1a1a1a' : '#fff';
+      }
+
+      window.addEventListener('openai:set_globals', () => {
+        if (window.openai?.toolOutput) {
+          state.data = window.openai.toolOutput;
+          render();
+        }
+      });
+
+      if (window.openai?.toolOutput) {
+        state.data = window.openai.toolOutput;
+      }
+      render();
+    }
+
+    init();
+  </script>
+</body>
+</html>
+```
+
+### Steg 4: Dockerfile
+
+```dockerfile
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY *.js ./
+COPY *.html ./
+EXPOSE 8002
+HEALTHCHECK --interval=30s --timeout=3s CMD wget --spider http://localhost:8002/health || exit 1
+CMD ["node", "my-server.js"]
+```
+
+### Steg 5: docker-compose.yml
+
+```yaml
+services:
+  my-app:
+    build: .
+    container_name: my-app
+    restart: always
+    ports:
+      - "127.0.0.1:8002:8002"
+```
+
+### Steg 6: Deploya
+
+```bash
+# Lokalt test
+node my-server.js
+
+# VPS deploy
+git push && ssh vps "cd /path/to/app && git pull && docker-compose up -d --build"
+```
+
+### Steg 7: Registrera i ChatGPT
+1. Gå till ChatGPT → Plugins/Apps
+2. Lägg till MCP endpoint: `https://your-domain.com/mcp`
+3. Testa!
+
+---
+
+## 📚 Sammanfattning av alla mönster
+
+| Mönster | När | Hur |
+|---------|-----|-----|
+| **Enkel widget** | Visa data direkt | Tool returnerar `structuredContent` + `outputTemplate` |
+| **Två-stegs flöde** | Data behöver bearbetas | Tool 1 returnerar TEXT, Tool 2 visar widget |
+| **Widget → ChatGPT** | Knapp triggar svar | `sendFollowUpMessage({ prompt })` |
+| **Widget → Webbsök → Widget** | Visa sökresultat snyggt | sendFollowUpMessage med instruktioner → ChatGPT söker → display_X tool |
+| **Widget → MCP direkt** | Anropa backend från widget | `callTool(name, args)` |
+
+---
+
+## 🔗 Viktiga länkar
+
+- **MCP SDK:** https://github.com/modelcontextprotocol/sdk
+- **ChatGPT Apps SDK:** https://developers.openai.com/apps-sdk/
+- **Arbetsförmedlingen API:** https://jobtechdev.se
+- **Smidra repo:** https://github.com/hassan308/smidra
