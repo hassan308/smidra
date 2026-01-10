@@ -714,6 +714,9 @@
       const mapInstanceRef = useRef(null);
       const markersRef = useRef([]);
       const loadingMoreRef = useRef(false);
+      const loadedCountRef = useRef(0);
+      const totalAvailableRef = useRef(0);
+      const searchParamsRef = useRef({ query: '', location: '' });
 
       // Toast helper
       const showToast = useCallback((msg) => {
@@ -832,32 +835,39 @@
         return () => { delete window.openJobFromMap; };
       }, [jobs]);
 
-      // Load more jobs progressively
+      // Load more jobs progressively - uses refs to avoid stale closures
       const loadMoreJobs = useCallback(async () => {
-        if (loadingMoreRef.current || loadedCount >= totalAvailable) return;
+        if (loadingMoreRef.current) return;
+        if (loadedCountRef.current >= totalAvailableRef.current) return;
+
         loadingMoreRef.current = true;
         setIsLoadingMore(true);
 
         try {
+          const currentOffset = loadedCountRef.current;
           const params = new URLSearchParams({
-            q: query || 'jobb',
+            q: searchParamsRef.current.query || 'jobb',
             limit: BATCH_SIZE.toString(),
-            offset: loadedCount.toString()
+            offset: currentOffset.toString()
           });
-          if (location) params.set('location', location);
+          if (searchParamsRef.current.location) {
+            params.set('location', searchParamsRef.current.location);
+          }
 
+          console.log(`Fetching offset ${currentOffset}...`);
           const res = await fetch(`/api/search?${params}`);
           const data = await res.json();
 
           if (data.jobs?.length > 0) {
             setJobs(prev => [...prev, ...data.jobs]);
-            setLoadedCount(prev => prev + data.jobs.length);
+            loadedCountRef.current += data.jobs.length;
+            setLoadedCount(loadedCountRef.current);
 
-            if (loadedCount + data.jobs.length < totalAvailable) {
-              setTimeout(() => {
-                loadingMoreRef.current = false;
-                loadMoreJobs();
-              }, 150);
+            console.log(`Loaded ${loadedCountRef.current}/${totalAvailableRef.current}`);
+
+            if (loadedCountRef.current < totalAvailableRef.current) {
+              loadingMoreRef.current = false;
+              setTimeout(loadMoreJobs, 150);
               return;
             }
           }
@@ -867,7 +877,7 @@
 
         loadingMoreRef.current = false;
         setIsLoadingMore(false);
-      }, [loadedCount, totalAvailable, query, location]);
+      }, []); // No dependencies - uses refs
 
       // Handle incoming data
       const handleData = useCallback((data, shouldLoadMore = false) => {
@@ -880,16 +890,26 @@
           markerJobIds.current.clear();
         }
 
+        // Update refs for loadMoreJobs
+        const initialCount = data.jobs?.length || 0;
+        const total = data.total || initialCount;
+        loadedCountRef.current = initialCount;
+        totalAvailableRef.current = total;
+        searchParamsRef.current = {
+          query: data.querySwedish || data.query || '',
+          location: data.locationSwedish || ''
+        };
+
         setJobs(data.jobs || []);
         setQuery(data.querySwedish || data.query || '');
         setLocation(data.locationSwedish || data.location || '');
-        setTotalAvailable(data.total || data.jobs?.length || 0);
-        setLoadedCount(data.jobs?.length || 0);
+        setTotalAvailable(total);
+        setLoadedCount(initialCount);
         setCurrentPage(1);
         setLoading(false);
 
-        if (shouldLoadMore && data.jobs?.length < (data.total || 0)) {
-          setTimeout(() => loadMoreJobs(), 500);
+        if (shouldLoadMore && initialCount < total) {
+          setTimeout(loadMoreJobs, 500);
         }
       }, [loadMoreJobs]);
 
