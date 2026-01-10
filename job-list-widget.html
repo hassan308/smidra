@@ -399,6 +399,87 @@
       color: #64748b;
     }
 
+    /* Action loading indicator */
+    .action-loading {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 28px;
+      margin-top: 12px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 16px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .action-loading.show {
+      display: flex;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .action-loading-content {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .action-spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(99, 102, 241, 0.2);
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .action-loading-text {
+      font-size: 14px;
+      font-weight: 500;
+      color: #6366f1;
+    }
+
+    .action-arrow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      animation: bounce 1.5s ease-in-out infinite;
+    }
+
+    .action-arrow svg {
+      width: 24px;
+      height: 24px;
+      color: #6366f1;
+      opacity: 0.7;
+    }
+
+    .action-arrow svg:first-child {
+      opacity: 0.4;
+    }
+
+    .action-arrow-hint {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+
+    @keyframes bounce {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(6px);
+      }
+    }
+
     /* RTL Support */
     [dir="rtl"] .job-main { flex-direction: row-reverse; }
     [dir="rtl"] .job-meta { flex-direction: row-reverse; }
@@ -414,11 +495,29 @@
         <span class="loading-text">Laddar jobb...</span>
       </div>
     </div>
+
+    <!-- Action loading indicator -->
+    <div class="action-loading" id="actionLoading">
+      <div class="action-loading-content">
+        <div class="action-spinner"></div>
+        <span class="action-loading-text" id="actionLoadingText">ChatGPT svarar...</span>
+      </div>
+      <div class="action-arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </div>
+      <span class="action-arrow-hint">Svar kommer nedan</span>
+    </div>
   </div>
   <div class="toast" id="toast"></div>
 
   <script>
     const JOBS_PER_PAGE = 10;
+    let actionLoadingTimeout = null;
 
     const state = {
       data: null,
@@ -427,7 +526,8 @@
       currentPage: 1,
       expandedJob: null,
       savedJobs: [],
-      filter: 'all'
+      filter: 'all',
+      actionLoading: false
     };
 
     const defaultLabels = {
@@ -469,6 +569,39 @@
       toast.textContent = message;
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    function showActionLoading(actionText) {
+      // Clear any existing timeout
+      if (actionLoadingTimeout) {
+        clearTimeout(actionLoadingTimeout);
+      }
+
+      state.actionLoading = true;
+      const loader = document.getElementById('actionLoading');
+      const text = document.getElementById('actionLoadingText');
+
+      if (text) text.textContent = actionText || 'ChatGPT svarar...';
+      if (loader) loader.classList.add('show');
+
+      notifyHeight();
+
+      // Auto-hide after 15 seconds
+      actionLoadingTimeout = setTimeout(() => {
+        hideActionLoading();
+      }, 15000);
+    }
+
+    function hideActionLoading() {
+      if (actionLoadingTimeout) {
+        clearTimeout(actionLoadingTimeout);
+        actionLoadingTimeout = null;
+      }
+
+      state.actionLoading = false;
+      const loader = document.getElementById('actionLoading');
+      if (loader) loader.classList.remove('show');
+      notifyHeight();
     }
 
     function notifyHeight() {
@@ -599,7 +732,13 @@ Svara på användarens språk (${lang}).`;
       }
 
       if (message && window.openai?.sendFollowUpMessage) {
-        showToast('Skickar...');
+        // Show loading indicator with contextual text
+        const loadingTexts = {
+          salary: 'Hämtar lönestatistik...',
+          help: 'Förbereder personligt brev...',
+          market: 'Analyserar arbetsmarknaden...'
+        };
+        showActionLoading(loadingTexts[action] || 'ChatGPT svarar...');
         window.openai.sendFollowUpMessage({ prompt: message });
       }
     }
@@ -810,6 +949,9 @@ Svara på användarens språk (${lang}).`;
 
       // Listen for data updates
       window.addEventListener('openai:set_globals', () => {
+        // Hide loading indicator when new data arrives
+        hideActionLoading();
+
         if (window.openai?.toolOutput) {
           handleData(window.openai.toolOutput);
         }
