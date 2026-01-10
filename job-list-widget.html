@@ -932,6 +932,7 @@
       const loadedCountRef = useRef(0);
       const totalAvailableRef = useRef(0);
       const searchParamsRef = useRef({ query: '', location: '' });
+      const searchIdRef = useRef(0); // To cancel old progressive loading
 
       // Toast helper
       const showToast = useCallback((msg) => {
@@ -1051,9 +1052,14 @@
       }, [jobs]);
 
       // Load more jobs progressively - uses refs to avoid stale closures
-      const loadMoreJobs = useCallback(async () => {
+      const loadMoreJobs = useCallback(async (mySearchId) => {
         if (loadingMoreRef.current) return;
         if (loadedCountRef.current >= totalAvailableRef.current) return;
+        // Cancel if new search started
+        if (mySearchId !== searchIdRef.current) {
+          console.log('Cancelling old progressive load');
+          return;
+        }
 
         loadingMoreRef.current = true;
         setIsLoadingMore(true);
@@ -1069,9 +1075,16 @@
             params.set('location', searchParamsRef.current.location);
           }
 
-          console.log(`Fetching offset ${currentOffset}...`);
+          console.log(`Fetching offset ${currentOffset} for search #${mySearchId}...`);
           const res = await fetch(`https://api.smidra.se/api/search?${params}`);
           const data = await res.json();
+
+          // Check again after fetch - might have been cancelled
+          if (mySearchId !== searchIdRef.current) {
+            console.log('Search cancelled during fetch');
+            loadingMoreRef.current = false;
+            return;
+          }
 
           if (data.jobs?.length > 0) {
             setJobs(prev => [...prev, ...data.jobs]);
@@ -1082,7 +1095,7 @@
 
             if (loadedCountRef.current < totalAvailableRef.current) {
               loadingMoreRef.current = false;
-              setTimeout(loadMoreJobs, 150);
+              setTimeout(() => loadMoreJobs(mySearchId), 150);
               return;
             }
           }
@@ -1097,6 +1110,11 @@
       // Handle incoming data
       const handleData = useCallback((data, shouldLoadMore = false) => {
         if (!data) return;
+
+        // Increment search ID to cancel any ongoing progressive loading
+        searchIdRef.current += 1;
+        const currentSearchId = searchIdRef.current;
+        loadingMoreRef.current = false; // Reset loading flag
 
         // Clear markers for new search
         if (mapInstanceRef.current) {
@@ -1115,6 +1133,8 @@
           location: data.locationSwedish || ''
         };
 
+        console.log(`New search #${currentSearchId}: "${searchParamsRef.current.query}" in "${searchParamsRef.current.location}" - ${initialCount}/${total} jobs`);
+
         setJobs(data.jobs || []);
         setQuery(data.querySwedish || data.query || '');
         setLocation(data.locationSwedish || data.location || '');
@@ -1124,7 +1144,7 @@
         setLoading(false);
 
         if (shouldLoadMore && initialCount < total) {
-          setTimeout(loadMoreJobs, 500);
+          setTimeout(() => loadMoreJobs(currentSearchId), 500);
         }
       }, [loadMoreJobs]);
 
