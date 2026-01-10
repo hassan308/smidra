@@ -1163,19 +1163,8 @@
 
         if (window.openai?.toolOutput) {
           handleData(window.openai.toolOutput, true);
-        } else {
-          // Preview mode
-          fetch('https://api.smidra.se/api/search?q=utvecklare&limit=100')
-            .then(r => r.json())
-            .then(d => handleData({
-              query: 'Utvecklare',
-              querySwedish: 'utvecklare',
-              location: 'Sverige',
-              total: d.total,
-              jobs: d.jobs
-            }, true))
-            .catch(console.error);
         }
+        // No preview mode - just wait for ChatGPT data with loading spinner
 
         return () => window.removeEventListener('openai:set_globals', handleGlobals);
       }, [handleData]);
