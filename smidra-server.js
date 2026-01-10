@@ -85,7 +85,7 @@ function findRegion(location) {
   return null;
 }
 
-async function searchJobsSingle(query, location, limit = 100, offset = 0) {
+async function searchJobsSingle(query, location, limit = 100, offset = 0, filters = {}) {
   const params = new URLSearchParams();
   params.set("q", query);
   params.set("limit", limit.toString());
@@ -103,6 +103,36 @@ async function searchJobsSingle(query, location, limit = 100, offset = 0) {
     console.log(`🗺️ Searching in region: ${location} (${regionCode})`);
   }
 
+  // Apply filters
+  if (filters.remote) {
+    params.set("remote", "true");
+    console.log(`🏠 Filter: Remote/distans`);
+  }
+  if (filters.fulltime) {
+    params.set("worktime-extent", "947z_JGS_Uk5"); // Heltid code
+    console.log(`⏰ Filter: Heltid`);
+  }
+  if (filters.parttime) {
+    params.set("worktime-extent", "YHsN_BWq_fkh"); // Deltid code
+    console.log(`⏰ Filter: Deltid`);
+  }
+  if (filters.drivingLicense) {
+    params.set("driving-license-required", "true");
+    console.log(`🚗 Filter: Körkort krävs`);
+  }
+  if (filters.trainee) {
+    params.set("trainee", "true");
+    console.log(`🎓 Filter: Praktik/trainee`);
+  }
+  if (filters.abroad) {
+    params.set("abroad", "true");
+    console.log(`✈️ Filter: Utomlands`);
+  }
+  if (filters.language) {
+    params.set("language", filters.language);
+    console.log(`🗣️ Filter: Språk ${filters.language}`);
+  }
+
   const url = `${AF_API_BASE}/search?${params.toString()}`;
 
   try {
@@ -115,11 +145,11 @@ async function searchJobsSingle(query, location, limit = 100, offset = 0) {
 }
 
 // Quick search - returns first batch immediately with total count
-async function searchJobsQuick(query, location, limit = 100) {
+async function searchJobsQuick(query, location, limit = 100, filters = {}) {
   const startTime = Date.now();
   console.log(`🚀 Quick search: "${query}" (first ${limit} jobs)`);
 
-  const result = await searchJobsSingle(query, location, limit, 0);
+  const result = await searchJobsSingle(query, location, limit, 0, filters);
   const elapsed = Date.now() - startTime;
 
   console.log(`🚀 Quick complete: ${result.hits?.length || 0}/${result.total?.value || 0} jobs in ${elapsed}ms`);
@@ -127,14 +157,14 @@ async function searchJobsQuick(query, location, limit = 100) {
 }
 
 // Parallel search - fetches ALL jobs using concurrent requests
-async function searchJobsAll(query, location) {
+async function searchJobsAll(query, location, filters = {}) {
   const BATCH_SIZE = 100;
   const MAX_CONCURRENT = 10;
   const startTime = Date.now();
 
   // First, get total count
   console.log(`🔍 Getting total count for "${query}"...`);
-  const initial = await searchJobsSingle(query, location, 1, 0);
+  const initial = await searchJobsSingle(query, location, 1, 0, filters);
   const totalAvailable = initial.total?.value || 0;
 
   if (totalAvailable === 0) {
@@ -155,7 +185,7 @@ async function searchJobsAll(query, location) {
     console.log(`   Wave ${Math.floor(wave / MAX_CONCURRENT) + 1}: ${waveBatches.length} requests`);
 
     const waveResults = await Promise.all(
-      waveBatches.map(b => searchJobsSingle(query, location, b.limit, b.offset))
+      waveBatches.map(b => searchJobsSingle(query, location, b.limit, b.offset, filters))
     );
 
     for (const result of waveResults) {
@@ -170,11 +200,11 @@ async function searchJobsAll(query, location) {
 }
 
 // Main search function - quick by default, all if specified
-async function searchJobs(query, location, limit = 100) {
+async function searchJobs(query, location, limit = 100, filters = {}) {
   if (limit === 0) {
-    return searchJobsAll(query, location);
+    return searchJobsAll(query, location, filters);
   }
-  return searchJobsQuick(query, location, limit);
+  return searchJobsQuick(query, location, limit, filters);
 }
 
 async function getJobById(jobId) {
@@ -385,17 +415,36 @@ Swedish keywords: utvecklare, sjuksköterska, kock, lärare, städare, lokalvår
       language: z.string().describe("User's language code (e.g., 'so', 'ar', 'sv')"),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
       loadingText: z.string().describe("'Searching for jobs...' in user's language"),
-      translatingText: z.string().describe("'Translating results...' in user's language")
+      translatingText: z.string().describe("'Translating results...' in user's language"),
+      // Filter options
+      remote: z.boolean().optional().describe("Only remote/distansarbete jobs"),
+      fulltime: z.boolean().optional().describe("Only fulltime/heltid jobs"),
+      parttime: z.boolean().optional().describe("Only parttime/deltid jobs"),
+      drivingLicense: z.boolean().optional().describe("Only jobs that require driving license"),
+      trainee: z.boolean().optional().describe("Only trainee/praktik positions"),
+      abroad: z.boolean().optional().describe("Only jobs abroad/utomlands"),
+      jobLanguage: z.string().optional().describe("Job language requirement (e.g., 'sv', 'en', 'ar')")
     },
     _meta: {
       // No widget - forces ChatGPT to call display_jobs
     }
   },
-  async ({ query, location, limit, language, direction, loadingText, translatingText }) => {
-    console.log(`🔧 search_jobs called: "${query}" in ${location || 'Sweden'} (${language})`);
+  async ({ query, location, limit, language, direction, loadingText, translatingText, remote, fulltime, parttime, drivingLicense, trainee, abroad, jobLanguage }) => {
+    // Build filters object
+    const filters = {};
+    if (remote) filters.remote = true;
+    if (fulltime) filters.fulltime = true;
+    if (parttime) filters.parttime = true;
+    if (drivingLicense) filters.drivingLicense = true;
+    if (trainee) filters.trainee = true;
+    if (abroad) filters.abroad = true;
+    if (jobLanguage) filters.language = jobLanguage;
 
-    // Search for jobs
-    const data = await searchJobs(query, location, limit || 5);
+    const activeFilters = Object.keys(filters).length > 0 ? ` [filters: ${Object.keys(filters).join(', ')}]` : '';
+    console.log(`🔧 search_jobs called: "${query}" in ${location || 'Sweden'} (${language})${activeFilters}`);
+
+    // Search for jobs with filters
+    const data = await searchJobs(query, location, limit || 5, filters);
     const jobs = data.hits.map(formatJob);
     const total = data.total?.value || 0;
 
@@ -830,10 +879,22 @@ const httpServer = http.createServer(async (req, res) => {
     const lim = parseInt(url.searchParams.get("limit") || "100");
     const offset = parseInt(url.searchParams.get("offset") || "0");
 
+    // Parse filter parameters
+    const filters = {};
+    if (url.searchParams.get("remote") === "true") filters.remote = true;
+    if (url.searchParams.get("fulltime") === "true") filters.fulltime = true;
+    if (url.searchParams.get("parttime") === "true") filters.parttime = true;
+    if (url.searchParams.get("drivingLicense") === "true") filters.drivingLicense = true;
+    if (url.searchParams.get("trainee") === "true") filters.trainee = true;
+    if (url.searchParams.get("abroad") === "true") filters.abroad = true;
+    if (url.searchParams.get("language")) filters.language = url.searchParams.get("language");
+
+    const activeFilters = Object.keys(filters).length > 0 ? ` [filters: ${Object.keys(filters).join(', ')}]` : '';
+
     // If offset > 0, fetch specific page
     if (offset > 0) {
-      console.log(`📄 Fetching page: offset=${offset}, limit=${lim}`);
-      const data = await searchJobsSingle(q, loc, lim, offset);
+      console.log(`📄 Fetching page: offset=${offset}, limit=${lim}${activeFilters}`);
+      const data = await searchJobsSingle(q, loc, lim, offset, filters);
       console.log(`📄 Got ${data.hits?.length || 0} jobs at offset ${offset}`);
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({
@@ -845,7 +906,7 @@ const httpServer = http.createServer(async (req, res) => {
     }
 
     // First page - quick response
-    const data = await searchJobsQuick(q, loc, lim);
+    const data = await searchJobsQuick(q, loc, lim, filters);
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({
       total: data.total?.value || 0,
