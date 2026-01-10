@@ -955,8 +955,8 @@ Svara på användarens språk (${lang}).`;
       if (window.openai?.toolOutput) {
         handleData(window.openai.toolOutput);
       } else {
-        // Preview mode - fetch sample data
-        fetch('/api/search?q=utvecklare&limit=25')
+        // Preview mode - fetch sample data (uses parallel fetching on server)
+        fetch('/api/search?q=utvecklare&limit=50')
           .then(r => r.json())
           .then(d => handleData({
             query: 'Utvecklare',
