@@ -363,7 +363,7 @@ Swedish keywords: utvecklare, sjuksköterska, kock, lärare, städare, lokalvår
       },
       instructions: {
         translate: ["title", "description", "location", "deadline", "employmentType", "salaryType"],
-        keep_original: ["id", "url", "employer"],
+        keep_original: ["id", "url", "employer", "logoUrl"],
         ui_labels_needed: ["results", "found", "details", "hide", "apply", "noJobs", "tryAgain", "location", "deadline", "type", "salary", "daysLeft", "today"]
       }
     };
@@ -425,6 +425,7 @@ ALWAYS call this after search_jobs - for EVERY search in the conversation!`,
         description: z.string().describe("TRANSLATED description"),
         fullDescription: z.string().optional(),
         url: z.string().describe("KEEP ORIGINAL URL - do not modify!"),
+        logoUrl: z.string().optional().describe("KEEP ORIGINAL - company logo URL"),
         employmentType: z.string().optional().describe("TRANSLATED"),
         salaryType: z.string().optional().describe("TRANSLATED")
       }))
