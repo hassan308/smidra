@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 8002;
 // Arbetsformedlingen JobSearch API
 const AF_API_BASE = "https://jobsearch.api.jobtechdev.se";
 
-// Swedish regions mapping
+// Swedish regions mapping (län)
 const regions = {
   "stockholm": "01", "uppsala": "03", "sodermanland": "04", "ostergotland": "05",
   "jonkoping": "06", "kronoberg": "07", "kalmar": "08", "gotland": "09",
@@ -24,7 +24,32 @@ const regions = {
   "norrbotten": "25"
 };
 
-// City to region mapping
+// Municipality codes (kommun) - for exact city matching
+const municipalities = {
+  // Stockholm region
+  "stockholm": "0180", "solna": "0184", "sundbyberg": "0183", "nacka": "0182",
+  "huddinge": "0126", "botkyrka": "0127", "haninge": "0136", "taby": "0160",
+  "sollentuna": "0163", "jarfalla": "0123", "lidingo": "0186", "norrtälje": "0188",
+  "norrtalje": "0188", "sodertälje": "0181", "sodertalje": "0181",
+  // Västra Götaland
+  "goteborg": "1480", "gothenburg": "1480", "molndal": "1481", "partille": "1402",
+  "kungalv": "1482", "trollhattan": "1488", "uddevalla": "1485", "boras": "1490",
+  "skovde": "1496", "lidkoping": "1494", "vanersborg": "1487", "kungsbacka": "1384",
+  // Skåne
+  "malmo": "1280", "lund": "1281", "helsingborg": "1283", "kristianstad": "1290",
+  "landskrona": "1282", "trelleborg": "1287", "angelholm": "1292", "eslöv": "1285",
+  "eslov": "1285", "ystad": "1286", "hassleholm": "1293",
+  // Other major cities
+  "uppsala": "0380", "linkoping": "0580", "norrkoping": "0581", "vasteras": "1980",
+  "orebro": "1880", "helsingborg": "1283", "jonkoping": "0680", "umea": "2480",
+  "lulea": "2580", "gavle": "2180", "sundsvall": "2281", "ostersund": "2380",
+  "karlstad": "1780", "vaxjo": "0780", "kalmar": "0880", "halmstad": "1380",
+  "eskilstuna": "0484", "falun": "2080", "borlange": "2081", "karlskrona": "1080",
+  "skelleftea": "2482", "pitea": "2581", "kiruna": "2584", "visby": "0980",
+  "nykoping": "0480", "katrineholm": "0483", "motala": "0583", "trollhattan": "1488"
+};
+
+// City to region mapping (fallback if municipality not found)
 const cityToRegion = {
   "goteborg": "14", "gothenburg": "14", "malmo": "12", "lund": "12",
   "helsingborg": "12", "norrkoping": "05", "linkoping": "05", "orebro": "18",
@@ -37,6 +62,18 @@ function normalizeSwedish(str) {
   return str.toLowerCase().replace(/å/g, 'a').replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/é/g, 'e').trim();
 }
 
+// Find municipality code for exact city matching
+function findMunicipality(location) {
+  if (!location) return null;
+  const loc = normalizeSwedish(location);
+  if (municipalities[loc]) return municipalities[loc];
+  for (const [name, code] of Object.entries(municipalities)) {
+    if (loc.includes(name) || name.includes(loc)) return code;
+  }
+  return null;
+}
+
+// Find region code (fallback for broader search)
 function findRegion(location) {
   if (!location) return null;
   const loc = normalizeSwedish(location);
@@ -53,8 +90,18 @@ async function searchJobsSingle(query, location, limit = 100, offset = 0) {
   params.set("q", query);
   params.set("limit", limit.toString());
   params.set("offset", offset.toString());
+
+  // Try municipality first (exact city match), then region (broader)
+  const municipalityCode = findMunicipality(location);
   const regionCode = findRegion(location);
-  if (regionCode) params.set("region", regionCode);
+
+  if (municipalityCode) {
+    params.set("municipality", municipalityCode);
+    console.log(`🏙️ Searching in municipality: ${location} (${municipalityCode})`);
+  } else if (regionCode) {
+    params.set("region", regionCode);
+    console.log(`🗺️ Searching in region: ${location} (${regionCode})`);
+  }
 
   const url = `${AF_API_BASE}/search?${params.toString()}`;
 
