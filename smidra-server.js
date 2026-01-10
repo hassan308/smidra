@@ -775,7 +775,9 @@ const httpServer = http.createServer(async (req, res) => {
 
     // If offset > 0, fetch specific page
     if (offset > 0) {
+      console.log(`📄 Fetching page: offset=${offset}, limit=${lim}`);
       const data = await searchJobsSingle(q, loc, lim, offset);
+      console.log(`📄 Got ${data.hits?.length || 0} jobs at offset ${offset}`);
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({
         total: data.total?.value || 0,
