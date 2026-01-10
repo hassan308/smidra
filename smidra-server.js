@@ -101,6 +101,7 @@ function formatJob(job) {
 // Load widget HTML
 const jobListHTML = readFileSync(join(__dirname, "job-list-widget.html"), "utf-8");
 const jobDetailHTML = readFileSync(join(__dirname, "job-detail-widget.html"), "utf-8");
+const salaryWidgetHTML = readFileSync(join(__dirname, "salary-widget.html"), "utf-8");
 
 // Create MCP server
 const server = new McpServer({
@@ -226,6 +227,10 @@ server.registerResource("job-list-widget", "ui://widget/job-list.html", {}, asyn
 
 server.registerResource("job-detail-widget", "ui://widget/job-detail.html", {}, async () => ({
   contents: [{ uri: "ui://widget/job-detail.html", mimeType: "text/html+skybridge", text: jobDetailHTML }]
+}));
+
+server.registerResource("salary-widget", "ui://widget/salary.html", {}, async () => ({
+  contents: [{ uri: "ui://widget/salary.html", mimeType: "text/html+skybridge", text: salaryWidgetHTML }]
 }));
 
 // ============================================================
@@ -578,7 +583,85 @@ Respond in ${language}.`
   }
 );
 
-console.log("✅ Tools: search_jobs → display_jobs, get_job_details, get_salary_info, write_cover_letter, analyze_job_market, compare_jobs");
+// ============================================================
+// DISPLAY TOOLS - Show data in beautiful widgets
+// ============================================================
+
+// Display salary statistics widget
+server.registerTool(
+  "display_salary",
+  {
+    title: "Display Salary Statistics",
+    description: `Show salary statistics in a beautiful widget.
+
+Call this AFTER you have searched the web for salary information.
+Pass the job details AND the salary data you found.
+
+The widget will display:
+- Average salary with visual range bar
+- Min/max salary range
+- Comparison to regional average
+- Tips for salary negotiation
+- Sources of the data`,
+    inputSchema: {
+      language: z.string().default("sv"),
+      direction: z.enum(["ltr", "rtl"]).default("ltr"),
+      job: z.object({
+        title: z.string().describe("Job title"),
+        employer: z.string().describe("Company name"),
+        location: z.string().optional().describe("Location")
+      }),
+      salary: z.object({
+        avg: z.number().describe("Average salary per month in SEK"),
+        min: z.number().describe("Minimum salary (entry level)"),
+        max: z.number().describe("Maximum salary (senior level)"),
+        entryLevel: z.number().optional().describe("Typical entry level salary"),
+        experienced: z.number().optional().describe("Typical senior salary")
+      }),
+      comparison: z.object({
+        percentDiff: z.number().describe("Percentage difference from regional average (positive = above)"),
+        description: z.string().optional().describe("Comparison description")
+      }).optional(),
+      industry: z.string().optional().describe("Industry sector"),
+      demandLevel: z.string().optional().describe("Job market demand level"),
+      tips: z.array(z.string()).optional().describe("Salary negotiation tips"),
+      sources: z.array(z.string()).optional().describe("Data sources"),
+      labels: z.object({
+        avgSalary: z.string().optional(),
+        perMonth: z.string().optional(),
+        salaryRange: z.string().optional(),
+        min: z.string().optional(),
+        max: z.string().optional(),
+        entryLevel: z.string().optional(),
+        senior: z.string().optional(),
+        comparison: z.string().optional(),
+        aboveAvg: z.string().optional(),
+        belowAvg: z.string().optional(),
+        inRegion: z.string().optional(),
+        sources: z.string().optional(),
+        tips: z.string().optional(),
+        backToJob: z.string().optional(),
+        negotiate: z.string().optional()
+      }).optional()
+    },
+    _meta: {
+      "openai/outputTemplate": "ui://widget/salary.html"
+    }
+  },
+  async (params) => {
+    console.log(`💰 display_salary: ${params.job.title} - avg ${params.salary.avg} kr`);
+
+    return {
+      structuredContent: params,
+      content: [{
+        type: "text",
+        text: `Salary statistics for ${params.job.title}: ${params.salary.avg} kr/month (range: ${params.salary.min}-${params.salary.max} kr)`
+      }]
+    };
+  }
+);
+
+console.log("✅ Tools: search_jobs → display_jobs, get_job_details, display_salary");
 
 // HTTP Server
 const transports = new Map();
@@ -601,6 +684,12 @@ const httpServer = http.createServer(async (req, res) => {
   if (url.pathname === "/widget/detail") {
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
     res.end(jobDetailHTML);
+    return;
+  }
+
+  if (url.pathname === "/widget/salary") {
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(salaryWidgetHTML);
     return;
   }
 

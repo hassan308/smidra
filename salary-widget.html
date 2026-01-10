@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smidra - Salary Statistics</title>
+  <style>
+    :root {
+      --background: 0 0% 100%;
+      --foreground: 222.2 84% 4.9%;
+      --card: 0 0% 100%;
+      --card-foreground: 222.2 84% 4.9%;
+      --primary: 142.1 76.2% 36.3%;
+      --primary-foreground: 355.7 100% 97.3%;
+      --secondary: 210 40% 96.1%;
+      --secondary-foreground: 222.2 47.4% 11.2%;
+      --muted: 210 40% 96.1%;
+      --muted-foreground: 215.4 16.3% 46.9%;
+      --accent: 210 40% 96.1%;
+      --accent-foreground: 222.2 47.4% 11.2%;
+      --border: 214.3 31.8% 91.4%;
+      --radius: 0.5rem;
+      --success: 142.1 76.2% 36.3%;
+      --warning: 45.4 93.4% 47.5%;
+    }
+
+    [data-theme="dark"] {
+      --background: 222.2 84% 4.9%;
+      --foreground: 210 40% 98%;
+      --card: 222.2 84% 4.9%;
+      --card-foreground: 210 40% 98%;
+      --primary: 142.1 70.6% 45.3%;
+      --primary-foreground: 144.9 80.4% 10%;
+      --secondary: 217.2 32.6% 17.5%;
+      --secondary-foreground: 210 40% 98%;
+      --muted: 217.2 32.6% 17.5%;
+      --muted-foreground: 215 20.2% 65.1%;
+      --accent: 217.2 32.6% 17.5%;
+      --accent-foreground: 210 40% 98%;
+      --border: 217.2 32.6% 17.5%;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: hsl(var(--background));
+      color: hsl(var(--foreground));
+      line-height: 1.5;
+      padding: 16px;
+    }
+
+    .salary-card {
+      background: hsl(var(--card));
+      border: 1px solid hsl(var(--border));
+      border-radius: calc(var(--radius) * 2);
+      overflow: hidden;
+      max-width: 500px;
+    }
+
+    .salary-header {
+      background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(142.1 76.2% 30%) 100%);
+      color: white;
+      padding: 20px;
+    }
+
+    .salary-header-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .salary-icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .salary-job-info {
+      flex: 1;
+    }
+
+    .salary-job-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .salary-job-meta {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .salary-main {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .salary-amount {
+      font-size: 36px;
+      font-weight: 700;
+    }
+
+    .salary-period {
+      font-size: 16px;
+      opacity: 0.8;
+    }
+
+    .salary-body {
+      padding: 20px;
+    }
+
+    .salary-range {
+      background: hsl(var(--secondary));
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .salary-range-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 14px;
+      color: hsl(var(--muted-foreground));
+    }
+
+    .salary-range-bar {
+      height: 8px;
+      background: hsl(var(--border));
+      border-radius: 4px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .salary-range-fill {
+      position: absolute;
+      height: 100%;
+      background: linear-gradient(90deg, hsl(var(--warning)) 0%, hsl(var(--primary)) 100%);
+      border-radius: 4px;
+    }
+
+    .salary-range-marker {
+      position: absolute;
+      top: -4px;
+      width: 16px;
+      height: 16px;
+      background: hsl(var(--primary));
+      border: 3px solid white;
+      border-radius: 50%;
+      transform: translateX(-50%);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .salary-range-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .salary-comparison {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: hsl(142.1 76.2% 95%);
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+    }
+
+    [data-theme="dark"] .salary-comparison {
+      background: hsl(142.1 76.2% 15%);
+    }
+
+    .comparison-icon {
+      width: 40px;
+      height: 40px;
+      background: hsl(var(--primary));
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .comparison-text {
+      flex: 1;
+    }
+
+    .comparison-title {
+      font-weight: 600;
+      font-size: 15px;
+      color: hsl(var(--primary));
+    }
+
+    .comparison-desc {
+      font-size: 13px;
+      color: hsl(var(--muted-foreground));
+    }
+
+    .salary-details {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .salary-detail-item {
+      background: hsl(var(--secondary));
+      padding: 12px;
+      border-radius: var(--radius);
+    }
+
+    .salary-detail-label {
+      font-size: 12px;
+      color: hsl(var(--muted-foreground));
+      margin-bottom: 4px;
+    }
+
+    .salary-detail-value {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .salary-sources {
+      font-size: 12px;
+      color: hsl(var(--muted-foreground));
+      padding-top: 12px;
+      border-top: 1px solid hsl(var(--border));
+    }
+
+    .salary-sources-title {
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .salary-actions {
+      display: flex;
+      gap: 8px;
+      padding: 16px;
+      border-top: 1px solid hsl(var(--border));
+      background: hsl(var(--secondary) / 0.3);
+    }
+
+    .salary-action {
+      flex: 1;
+      padding: 10px 16px;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+
+    .salary-action.secondary {
+      background: hsl(var(--secondary));
+      color: hsl(var(--foreground));
+    }
+
+    .salary-action.secondary:hover {
+      background: hsl(var(--border));
+    }
+
+    .salary-action.primary {
+      background: hsl(var(--primary));
+      color: white;
+    }
+
+    .salary-action.primary:hover {
+      opacity: 0.9;
+    }
+
+    .salary-tips {
+      margin-top: 16px;
+      padding: 16px;
+      background: hsl(45.4 93.4% 95%);
+      border-radius: var(--radius);
+      border-left: 4px solid hsl(var(--warning));
+    }
+
+    [data-theme="dark"] .salary-tips {
+      background: hsl(45.4 93.4% 15%);
+    }
+
+    .salary-tips-title {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .salary-tips-list {
+      font-size: 13px;
+      color: hsl(var(--muted-foreground));
+      padding-left: 20px;
+    }
+
+    .salary-tips-list li {
+      margin-bottom: 4px;
+    }
+
+    /* RTL Support */
+    [dir="rtl"] .salary-header-top { flex-direction: row-reverse; }
+    [dir="rtl"] .salary-range-labels { flex-direction: row-reverse; }
+    [dir="rtl"] .salary-tips { border-left: none; border-right: 4px solid hsl(var(--warning)); }
+    [dir="rtl"] .salary-tips-list { padding-left: 0; padding-right: 20px; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script>
+    const state = {
+      data: null,
+      language: 'sv'
+    };
+
+    const defaultLabels = {
+      avgSalary: 'Genomsnittlig lön',
+      perMonth: '/månad',
+      salaryRange: 'Lönespann',
+      min: 'Min',
+      max: 'Max',
+      entryLevel: 'Junior',
+      senior: 'Senior',
+      comparison: 'Jämförelse',
+      aboveAvg: 'över genomsnittet',
+      belowAvg: 'under genomsnittet',
+      inRegion: 'i regionen',
+      experience: 'Erfarenhet',
+      industry: 'Bransch',
+      sources: 'Källor',
+      tips: 'Tips för löneförhandling',
+      backToJob: 'Tillbaka till annonsen',
+      negotiate: 'Be om förhandlingstips'
+    };
+
+    function t(key) {
+      return state.data?.labels?.[key] || defaultLabels[key] || key;
+    }
+
+    function formatSalary(amount) {
+      if (!amount) return '-';
+      return new Intl.NumberFormat(state.language, {
+        style: 'decimal',
+        maximumFractionDigits: 0
+      }).format(amount) + ' kr';
+    }
+
+    function notifyHeight() {
+      setTimeout(() => {
+        window.openai?.notifyIntrinsicHeight?.(document.body.scrollHeight);
+      }, 100);
+    }
+
+    function render() {
+      const app = document.getElementById('app');
+      const d = state.data;
+
+      if (!d) {
+        app.innerHTML = '<p>Loading...</p>';
+        return;
+      }
+
+      const job = d.job || {};
+      const salary = d.salary || {};
+      const comparison = d.comparison || {};
+      const tips = d.tips || [];
+
+      // Calculate marker position (where avg falls in range)
+      const range = (salary.max || 60000) - (salary.min || 30000);
+      const avgPosition = range > 0 ? ((salary.avg || 45000) - (salary.min || 30000)) / range * 100 : 50;
+
+      // Comparison icon and text
+      const isAbove = comparison.percentDiff > 0;
+      const compIcon = isAbove ? '📈' : (comparison.percentDiff < 0 ? '📉' : '➡️');
+      const compText = isAbove ? t('aboveAvg') : t('belowAvg');
+
+      app.innerHTML = `
+        <div class="salary-card">
+          <div class="salary-header">
+            <div class="salary-header-top">
+              <div class="salary-icon">💰</div>
+              <div class="salary-job-info">
+                <div class="salary-job-title">${job.title || 'Tjänst'}</div>
+                <div class="salary-job-meta">${job.employer || ''} ${job.location ? '• ' + job.location : ''}</div>
+              </div>
+            </div>
+            <div class="salary-main">
+              <span class="salary-amount">${formatSalary(salary.avg)}</span>
+              <span class="salary-period">${t('perMonth')}</span>
+            </div>
+          </div>
+
+          <div class="salary-body">
+            <div class="salary-range">
+              <div class="salary-range-header">
+                <span>${t('salaryRange')}</span>
+                <span>${t('entryLevel')} → ${t('senior')}</span>
+              </div>
+              <div class="salary-range-bar">
+                <div class="salary-range-fill" style="left: 0; right: 0;"></div>
+                <div class="salary-range-marker" style="left: ${avgPosition}%;"></div>
+              </div>
+              <div class="salary-range-labels">
+                <span>${formatSalary(salary.min)}</span>
+                <span>${formatSalary(salary.max)}</span>
+              </div>
+            </div>
+
+            ${comparison.percentDiff !== undefined ? `
+              <div class="salary-comparison">
+                <div class="comparison-icon">${compIcon}</div>
+                <div class="comparison-text">
+                  <div class="comparison-title">${Math.abs(comparison.percentDiff)}% ${compText}</div>
+                  <div class="comparison-desc">${comparison.description || t('inRegion')}</div>
+                </div>
+              </div>
+            ` : ''}
+
+            <div class="salary-details">
+              ${salary.entryLevel ? `
+                <div class="salary-detail-item">
+                  <div class="salary-detail-label">${t('entryLevel')} (0-2 år)</div>
+                  <div class="salary-detail-value">${formatSalary(salary.entryLevel)}</div>
+                </div>
+              ` : ''}
+              ${salary.experienced ? `
+                <div class="salary-detail-item">
+                  <div class="salary-detail-label">${t('senior')} (5+ år)</div>
+                  <div class="salary-detail-value">${formatSalary(salary.experienced)}</div>
+                </div>
+              ` : ''}
+              ${d.industry ? `
+                <div class="salary-detail-item">
+                  <div class="salary-detail-label">${t('industry')}</div>
+                  <div class="salary-detail-value">${d.industry}</div>
+                </div>
+              ` : ''}
+              ${d.demandLevel ? `
+                <div class="salary-detail-item">
+                  <div class="salary-detail-label">Efterfrågan</div>
+                  <div class="salary-detail-value">${d.demandLevel}</div>
+                </div>
+              ` : ''}
+            </div>
+
+            ${tips.length > 0 ? `
+              <div class="salary-tips">
+                <div class="salary-tips-title">💡 ${t('tips')}</div>
+                <ul class="salary-tips-list">
+                  ${tips.map(tip => `<li>${tip}</li>`).join('')}
+                </ul>
+              </div>
+            ` : ''}
+
+            ${d.sources?.length > 0 ? `
+              <div class="salary-sources">
+                <div class="salary-sources-title">${t('sources')}:</div>
+                <span>${d.sources.join(', ')}</span>
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="salary-actions">
+            <button class="salary-action secondary" onclick="goBack()">
+              ← ${t('backToJob')}
+            </button>
+            <button class="salary-action primary" onclick="askNegotiate()">
+              💬 ${t('negotiate')}
+            </button>
+          </div>
+        </div>
+      `;
+
+      notifyHeight();
+    }
+
+    function goBack() {
+      // Could close widget or navigate back
+      if (window.openai?.requestClose) {
+        window.openai.requestClose();
+      }
+    }
+
+    function askNegotiate() {
+      const job = state.data?.job || {};
+      const salary = state.data?.salary || {};
+
+      const message = `Ge mig tips för löneförhandling för tjänsten "${job.title}" hos ${job.employer}.
+Genomsnittslönen är ${salary.avg} kr/mån.
+Hur kan jag argumentera för en högre lön? Vilka frågor bör jag ställa?`;
+
+      if (window.openai?.sendFollowUpMessage) {
+        window.openai.sendFollowUpMessage({ prompt: message });
+      }
+    }
+
+    function handleData(data) {
+      if (!data) return;
+
+      if (data.language) {
+        state.language = data.language;
+        document.documentElement.lang = data.language;
+      }
+      if (data.direction) {
+        document.documentElement.dir = data.direction;
+      }
+
+      state.data = data;
+      render();
+    }
+
+    function init() {
+      // Apply theme
+      if (window.openai?.theme) {
+        document.documentElement.setAttribute('data-theme', window.openai.theme);
+      }
+
+      // Listen for updates
+      window.addEventListener('openai:set_globals', () => {
+        if (window.openai?.theme) {
+          document.documentElement.setAttribute('data-theme', window.openai.theme);
+        }
+        if (window.openai?.toolOutput) {
+          handleData(window.openai.toolOutput);
+        }
+      });
+
+      // Check for data
+      if (window.openai?.toolOutput) {
+        handleData(window.openai.toolOutput);
+      } else {
+        // Preview mode
+        handleData({
+          job: {
+            title: 'Systemutvecklare',
+            employer: 'Tech Company AB',
+            location: 'Stockholm'
+          },
+          salary: {
+            avg: 52000,
+            min: 42000,
+            max: 65000,
+            entryLevel: 38000,
+            experienced: 62000
+          },
+          comparison: {
+            percentDiff: 12,
+            description: 'för Systemutvecklare i Stockholm'
+          },
+          industry: 'IT & Tech',
+          demandLevel: 'Mycket hög',
+          tips: [
+            'Lyft fram specifika projekt och resultat',
+            'Jämför med marknadslön i din region',
+            'Var beredd att motivera ditt löneanspråk'
+          ],
+          sources: ['SCB', 'Glassdoor', 'LinkedIn']
+        });
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

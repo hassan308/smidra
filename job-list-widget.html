@@ -895,13 +895,46 @@
 
       switch (action) {
         case 'salary':
-          message = `Visa lönestatistik för "${job.title}" i ${job.location || 'Sverige'}. Ge mig snittlön, lönespann och jämför med andra regioner.`;
+          message = `Användaren vill se lönestatistik för denna tjänst:
+
+TJÄNST:
+- Titel: ${job.title}
+- Företag: ${job.employer}
+- Plats: ${job.location || 'Sverige'}
+- Beskrivning: ${job.description?.substring(0, 150) || 'Ej angivet'}
+
+INSTRUKTION:
+1. Sök på nätet efter aktuell lönestatistik för "${job.title}" i ${job.location || 'Sverige'}
+2. Hitta: genomsnittslön, lönespann (min/max), junior vs senior nivåer
+3. När du hittat informationen, anropa display_salary verktyget med datan
+4. Inkludera källor och förhandlingstips
+
+Svara på användarens språk (${lang}).`;
           break;
         case 'help':
-          message = `Hjälp mig skriva ett personligt brev för tjänsten "${job.title}" hos ${job.employer}. Jobbet är i ${job.location}. Beskriving: ${job.description?.substring(0, 200)}`;
+          message = `Användaren vill ha hjälp att skriva ett personligt brev för denna tjänst:
+
+TJÄNST:
+- Titel: ${job.title}
+- Företag: ${job.employer}
+- Plats: ${job.location || 'Sverige'}
+- Beskrivning: ${job.description?.substring(0, 300) || 'Ej angivet'}
+
+Skriv ett professionellt, engagerande personligt brev. Fråga användaren om deras bakgrund och erfarenhet för att anpassa brevet bättre.
+
+Svara på användarens språk (${lang}).`;
           break;
         case 'market':
-          message = `Ge mig arbetsmarknadsanalys för yrket "${job.title}". Hur ser efterfrågan ut? Framtidsutsikter? Tips för att sticka ut?`;
+          message = `Ge mig arbetsmarknadsanalys för yrket "${job.title}" i ${job.location || 'Sverige'}.
+
+Sök på nätet och inkludera:
+- Antal lediga tjänster just nu
+- Efterfrågan och trender
+- Framtidsutsikter
+- Vilka kompetenser som efterfrågas
+- Tips för att sticka ut
+
+Svara på användarens språk (${lang}).`;
           break;
         case 'compare':
           const jobs = state.selectedJobs.map(id => state.data?.jobs?.find(x => x.id === id)).filter(Boolean);
