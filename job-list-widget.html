@@ -3,50 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smidra - Job Search</title>
+  <title>Smidra - Jobsearch</title>
   <style>
-    :root {
-      --background: 0 0% 100%;
-      --foreground: 222.2 84% 4.9%;
-      --card: 0 0% 100%;
-      --card-foreground: 222.2 84% 4.9%;
-      --popover: 0 0% 100%;
-      --popover-foreground: 222.2 84% 4.9%;
-      --primary: 221.2 83.2% 53.3%;
-      --primary-foreground: 210 40% 98%;
-      --secondary: 210 40% 96.1%;
-      --secondary-foreground: 222.2 47.4% 11.2%;
-      --muted: 210 40% 96.1%;
-      --muted-foreground: 215.4 16.3% 46.9%;
-      --accent: 210 40% 96.1%;
-      --accent-foreground: 222.2 47.4% 11.2%;
-      --destructive: 0 84.2% 60.2%;
-      --destructive-foreground: 210 40% 98%;
-      --border: 214.3 31.8% 91.4%;
-      --input: 214.3 31.8% 91.4%;
-      --ring: 221.2 83.2% 53.3%;
-      --radius: 0.5rem;
-      --success: 142.1 76.2% 36.3%;
-      --warning: 45.4 93.4% 47.5%;
-    }
-
-    [data-theme="dark"] {
-      --background: 222.2 84% 4.9%;
-      --foreground: 210 40% 98%;
-      --card: 222.2 84% 4.9%;
-      --card-foreground: 210 40% 98%;
-      --primary: 217.2 91.2% 59.8%;
-      --primary-foreground: 222.2 47.4% 11.2%;
-      --secondary: 217.2 32.6% 17.5%;
-      --secondary-foreground: 210 40% 98%;
-      --muted: 217.2 32.6% 17.5%;
-      --muted-foreground: 215 20.2% 65.1%;
-      --accent: 217.2 32.6% 17.5%;
-      --accent-foreground: 210 40% 98%;
-      --border: 217.2 32.6% 17.5%;
-      --input: 217.2 32.6% 17.5%;
-    }
-
     * {
       margin: 0;
       padding: 0;
@@ -54,472 +12,380 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-      background: hsl(var(--background));
-      color: hsl(var(--foreground));
-      line-height: 1.5;
-      -webkit-font-smoothing: antialiased;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #1a1a2e;
     }
 
     .container {
-      max-width: 600px;
+      max-width: 700px;
       margin: 0 auto;
-      padding: 16px;
+    }
+
+    /* Glass card */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 24px;
+      box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.1),
+        0 2px 8px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
     }
 
     /* Header */
     .header {
-      margin-bottom: 16px;
+      padding: 24px 28px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     }
 
     .header-top {
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      margin-bottom: 8px;
+      align-items: flex-start;
+      margin-bottom: 4px;
     }
 
     .header-title {
-      font-size: 24px;
-      font-weight: 700;
-      color: hsl(var(--foreground));
-    }
-
-    .header-badge {
-      background: hsl(var(--primary));
-      color: hsl(var(--primary-foreground));
-      padding: 4px 12px;
-      border-radius: 9999px;
       font-size: 13px;
       font-weight: 600;
+      color: #6366f1;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
-    .header-meta {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      color: hsl(var(--muted-foreground));
-      font-size: 14px;
+    .header-count {
+      font-size: 13px;
+      color: #64748b;
     }
 
-    .header-meta-item {
-      display: flex;
-      align-items: center;
-      gap: 4px;
+    .search-info {
+      font-size: 22px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-top: 4px;
     }
 
-    /* Filters */
+    .search-location {
+      font-size: 15px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    /* Filter tabs */
     .filters {
       display: flex;
       gap: 8px;
-      margin-bottom: 16px;
-      flex-wrap: wrap;
+      padding: 16px 28px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      background: rgba(0, 0, 0, 0.02);
     }
 
     .filter-btn {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 12px;
-      background: hsl(var(--secondary));
-      border: 1px solid hsl(var(--border));
-      border-radius: var(--radius);
+      padding: 8px 16px;
+      border: none;
+      border-radius: 20px;
       font-size: 13px;
-      color: hsl(var(--secondary-foreground));
+      font-weight: 500;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.2s ease;
+      background: transparent;
+      color: #64748b;
     }
 
     .filter-btn:hover {
-      background: hsl(var(--accent));
-      border-color: hsl(var(--primary));
+      background: rgba(99, 102, 241, 0.1);
+      color: #6366f1;
     }
 
     .filter-btn.active {
-      background: hsl(var(--primary));
-      color: hsl(var(--primary-foreground));
-      border-color: hsl(var(--primary));
-    }
-
-    /* Action Bar */
-    .action-bar {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-      padding: 12px;
-      background: hsl(var(--muted));
-      border-radius: var(--radius);
-    }
-
-    .action-btn {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      padding: 10px;
-      background: hsl(var(--background));
-      border: 1px solid hsl(var(--border));
-      border-radius: var(--radius);
-      font-size: 13px;
-      font-weight: 500;
-      color: hsl(var(--foreground));
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .action-btn:hover {
-      border-color: hsl(var(--primary));
-      color: hsl(var(--primary));
-    }
-
-    .action-btn.primary {
-      background: hsl(var(--primary));
-      color: hsl(var(--primary-foreground));
-      border-color: hsl(var(--primary));
-    }
-
-    .action-btn .count {
-      background: hsl(var(--destructive));
+      background: #6366f1;
       color: white;
-      padding: 2px 6px;
-      border-radius: 9999px;
-      font-size: 11px;
     }
 
-    /* Job List */
+    /* Job list */
     .job-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+      padding: 8px 0;
     }
 
-    /* Job Card */
-    .job-card {
-      background: hsl(var(--card));
-      border: 1px solid hsl(var(--border));
-      border-radius: var(--radius);
-      overflow: hidden;
-      transition: all 0.2s;
+    .job-item {
+      padding: 20px 28px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      cursor: pointer;
+      transition: background 0.15s ease;
     }
 
-    .job-card:hover {
-      border-color: hsl(var(--primary) / 0.5);
-      box-shadow: 0 4px 12px hsl(var(--primary) / 0.1);
+    .job-item:last-child {
+      border-bottom: none;
     }
 
-    .job-card.selected {
-      border-color: hsl(var(--primary));
-      background: hsl(var(--primary) / 0.05);
+    .job-item:hover {
+      background: rgba(99, 102, 241, 0.04);
     }
 
-    .job-card.saved {
-      border-left: 3px solid hsl(var(--success));
+    .job-item.expanded {
+      background: rgba(99, 102, 241, 0.06);
     }
 
     .job-main {
-      padding: 16px;
-    }
-
-    .job-header {
       display: flex;
-      gap: 12px;
-      margin-bottom: 12px;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
     }
 
-    .job-logo {
-      width: 48px;
-      height: 48px;
-      border-radius: var(--radius);
-      background: hsl(var(--muted));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 600;
-      font-size: 16px;
-      color: hsl(var(--muted-foreground));
-      flex-shrink: 0;
-      overflow: hidden;
-    }
-
-    .job-logo img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .job-info {
+    .job-content {
       flex: 1;
       min-width: 0;
-    }
-
-    .job-employer {
-      font-size: 13px;
-      color: hsl(var(--muted-foreground));
-      margin-bottom: 2px;
     }
 
     .job-title {
       font-size: 16px;
       font-weight: 600;
-      color: hsl(var(--foreground));
+      color: #0f172a;
       margin-bottom: 4px;
+      line-height: 1.4;
     }
 
-    .job-tags {
+    .job-company {
+      font-size: 14px;
+      color: #475569;
+      margin-bottom: 8px;
+    }
+
+    .job-meta {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 12px;
+      font-size: 13px;
+      color: #64748b;
     }
 
-    .tag {
-      display: inline-flex;
+    .job-meta-item {
+      display: flex;
       align-items: center;
       gap: 4px;
-      padding: 4px 8px;
-      background: hsl(var(--secondary));
-      border-radius: 9999px;
-      font-size: 12px;
-      color: hsl(var(--secondary-foreground));
     }
 
-    .tag.location {
-      background: hsl(var(--primary) / 0.1);
-      color: hsl(var(--primary));
+    .job-meta-icon {
+      width: 14px;
+      height: 14px;
+      opacity: 0.6;
     }
 
-    .tag.urgent {
-      background: hsl(var(--destructive) / 0.1);
-      color: hsl(var(--destructive));
+    .job-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
     }
 
-    .tag.deadline {
-      background: hsl(var(--warning) / 0.1);
-      color: hsl(45 93% 30%);
+    .job-type {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 12px;
+      background: rgba(99, 102, 241, 0.1);
+      color: #6366f1;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
     }
 
-    .job-select {
-      width: 20px;
-      height: 20px;
-      border-radius: 4px;
-      border: 2px solid hsl(var(--border));
+    .save-btn {
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 50%;
+      background: transparent;
       cursor: pointer;
-      transition: all 0.15s;
       display: flex;
       align-items: center;
       justify-content: center;
-      flex-shrink: 0;
+      transition: all 0.2s ease;
     }
 
-    .job-select:hover {
-      border-color: hsl(var(--primary));
+    .save-btn:hover {
+      background: rgba(0, 0, 0, 0.05);
     }
 
-    .job-select.checked {
-      background: hsl(var(--primary));
-      border-color: hsl(var(--primary));
-      color: white;
+    .save-btn.saved {
+      color: #ef4444;
+    }
+
+    .save-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* Expanded job details */
+    .job-details {
+      display: none;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .job-item.expanded .job-details {
+      display: block;
     }
 
     .job-description {
       font-size: 14px;
-      color: hsl(var(--muted-foreground));
-      margin-bottom: 12px;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    /* Job Actions */
-    .job-actions {
-      display: flex;
-      gap: 8px;
-      padding-top: 12px;
-      border-top: 1px solid hsl(var(--border));
-    }
-
-    .job-action {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      padding: 10px 12px;
-      background: transparent;
-      border: 1px solid hsl(var(--border));
-      border-radius: var(--radius);
-      font-size: 13px;
-      font-weight: 500;
-      color: hsl(var(--foreground));
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .job-action:hover {
-      background: hsl(var(--secondary));
-    }
-
-    .job-action.primary {
-      background: hsl(var(--primary));
-      color: hsl(var(--primary-foreground));
-      border-color: hsl(var(--primary));
-    }
-
-    .job-action.primary:hover {
-      background: hsl(var(--primary) / 0.9);
-    }
-
-    .job-action.save {
-      color: hsl(var(--muted-foreground));
-    }
-
-    .job-action.save.saved {
-      color: hsl(var(--destructive));
-      border-color: hsl(var(--destructive) / 0.3);
-      background: hsl(var(--destructive) / 0.05);
-    }
-
-    /* Expanded Details */
-    .job-details {
-      display: none;
-      padding: 16px;
-      background: hsl(var(--muted));
-      border-top: 1px solid hsl(var(--border));
-    }
-
-    .job-card.expanded .job-details {
-      display: block;
-    }
-
-    .detail-section {
+      line-height: 1.6;
+      color: #475569;
       margin-bottom: 16px;
     }
 
-    .detail-section:last-child {
-      margin-bottom: 0;
+    .job-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
-    .detail-title {
+    .btn {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 10px;
       font-size: 13px;
-      font-weight: 600;
-      color: hsl(var(--foreground));
-      margin-bottom: 8px;
-      display: flex;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
       align-items: center;
       gap: 6px;
     }
 
-    .detail-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
+    .btn-primary {
+      background: #6366f1;
+      color: white;
     }
 
-    .detail-item {
-      background: hsl(var(--background));
-      padding: 10px 12px;
-      border-radius: var(--radius);
-      border: 1px solid hsl(var(--border));
+    .btn-primary:hover {
+      background: #4f46e5;
     }
 
-    .detail-label {
-      font-size: 11px;
-      color: hsl(var(--muted-foreground));
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 2px;
+    .btn-secondary {
+      background: rgba(0, 0, 0, 0.05);
+      color: #475569;
     }
 
-    .detail-value {
-      font-size: 14px;
-      font-weight: 500;
-      color: hsl(var(--foreground));
+    .btn-secondary:hover {
+      background: rgba(0, 0, 0, 0.1);
     }
 
-    .detail-description {
-      font-size: 14px;
-      color: hsl(var(--foreground));
-      line-height: 1.6;
-      background: hsl(var(--background));
-      padding: 12px;
-      border-radius: var(--radius);
-      border: 1px solid hsl(var(--border));
-      max-height: 200px;
-      overflow-y: auto;
+    .btn svg {
+      width: 16px;
+      height: 16px;
     }
 
-    /* Detail Actions */
-    .detail-actions {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
-      margin-top: 16px;
-    }
-
-    .detail-action {
+    /* Pagination */
+    .pagination {
       display: flex;
-      align-items: center;
       justify-content: center;
-      gap: 8px;
-      padding: 12px;
-      background: hsl(var(--background));
-      border: 1px solid hsl(var(--border));
-      border-radius: var(--radius);
-      font-size: 13px;
+      align-items: center;
+      gap: 4px;
+      padding: 20px 28px;
+      border-top: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .page-btn {
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
       font-weight: 500;
-      color: hsl(var(--foreground));
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.2s ease;
+      background: transparent;
+      color: #64748b;
     }
 
-    .detail-action:hover {
-      border-color: hsl(var(--primary));
-      color: hsl(var(--primary));
+    .page-btn:hover {
+      background: rgba(99, 102, 241, 0.1);
+      color: #6366f1;
     }
 
-    .detail-action.primary {
-      grid-column: span 2;
-      background: hsl(var(--primary));
-      color: hsl(var(--primary-foreground));
-      border-color: hsl(var(--primary));
+    .page-btn.active {
+      background: #6366f1;
+      color: white;
     }
 
-    /* Empty State */
-    .empty {
+    .page-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .page-dots {
+      padding: 0 4px;
+      color: #94a3b8;
+    }
+
+    /* Empty state */
+    .empty-state {
+      padding: 60px 28px;
       text-align: center;
-      padding: 48px 24px;
     }
 
     .empty-icon {
-      font-size: 48px;
-      margin-bottom: 16px;
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 16px;
+      opacity: 0.3;
     }
 
     .empty-title {
       font-size: 18px;
       font-weight: 600;
+      color: #0f172a;
       margin-bottom: 8px;
     }
 
     .empty-text {
-      color: hsl(var(--muted-foreground));
+      font-size: 14px;
+      color: #64748b;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #0f172a;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 1000;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
     }
 
     /* Loading */
     .loading {
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 48px;
+      padding: 60px;
+      gap: 12px;
     }
 
     .spinner {
-      width: 32px;
-      height: 32px;
-      border: 3px solid hsl(var(--border));
-      border-top-color: hsl(var(--primary));
+      width: 24px;
+      height: 24px;
+      border: 3px solid rgba(99, 102, 241, 0.2);
+      border-top-color: #6366f1;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
@@ -529,292 +395,75 @@
     }
 
     .loading-text {
-      margin-top: 12px;
-      color: hsl(var(--muted-foreground));
-      font-size: 14px;
-    }
-
-    /* Toast */
-    .toast {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%) translateY(100px);
-      background: hsl(var(--foreground));
-      color: hsl(var(--background));
-      padding: 12px 20px;
-      border-radius: var(--radius);
-      font-size: 14px;
-      font-weight: 500;
-      opacity: 0;
-      transition: all 0.3s;
-      z-index: 1000;
-    }
-
-    /* Message Dialog */
-    .message-dialog {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: 2000;
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
-
-    .message-dialog.open {
-      opacity: 1;
-    }
-
-    .dialog-backdrop {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-    }
-
-    .dialog-content {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) scale(0.95);
-      background: hsl(var(--card));
-      border-radius: calc(var(--radius) * 2);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-      width: calc(100% - 32px);
-      max-width: 400px;
-      max-height: 80vh;
-      overflow: hidden;
-      transition: transform 0.2s;
-    }
-
-    .message-dialog.open .dialog-content {
-      transform: translate(-50%, -50%) scale(1);
-    }
-
-    .dialog-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 20px;
-      border-bottom: 1px solid hsl(var(--border));
-      font-weight: 600;
-      font-size: 16px;
-    }
-
-    .dialog-close {
-      background: none;
-      border: none;
-      font-size: 18px;
-      cursor: pointer;
-      color: hsl(var(--muted-foreground));
-      padding: 4px 8px;
-      border-radius: var(--radius);
-      transition: background 0.15s;
-    }
-
-    .dialog-close:hover {
-      background: hsl(var(--secondary));
-    }
-
-    .dialog-body {
-      padding: 20px;
-    }
-
-    .dialog-instruction {
-      margin: 0 0 12px 0;
-      font-size: 14px;
-      color: hsl(var(--muted-foreground));
-    }
-
-    .dialog-message {
-      width: 100%;
-      min-height: 120px;
-      padding: 12px;
-      border: 1px solid hsl(var(--border));
-      border-radius: var(--radius);
-      font-size: 13px;
-      font-family: inherit;
-      resize: none;
-      background: hsl(var(--secondary));
-      color: hsl(var(--foreground));
-    }
-
-    .dialog-footer {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      padding: 16px 20px;
-      border-top: 1px solid hsl(var(--border));
-      background: hsl(var(--secondary) / 0.5);
-    }
-
-    .dialog-btn {
-      padding: 10px 20px;
-      border-radius: var(--radius);
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.15s;
-      border: none;
-    }
-
-    .dialog-btn.secondary {
-      background: hsl(var(--secondary));
-      color: hsl(var(--foreground));
-    }
-
-    .dialog-btn.secondary:hover {
-      background: hsl(var(--border));
-    }
-
-    .dialog-btn.primary {
-      background: hsl(var(--primary));
-      color: hsl(var(--primary-foreground));
-    }
-
-    .dialog-btn.primary:hover {
-      opacity: 0.9;
-    }
-
-    .toast.show {
-      transform: translateX(-50%) translateY(0);
-      opacity: 1;
+      font-size: 15px;
+      color: #64748b;
     }
 
     /* RTL Support */
-    [dir="rtl"] {
-      direction: rtl;
-    }
-
-    [dir="rtl"] .job-header,
-    [dir="rtl"] .job-tags,
-    [dir="rtl"] .job-actions,
-    [dir="rtl"] .filters,
-    [dir="rtl"] .action-bar {
-      flex-direction: row-reverse;
-    }
-
-    [dir="rtl"] .job-card.saved {
-      border-left: none;
-      border-right: 3px solid hsl(var(--success));
-    }
-
-    /* Responsive */
-    @media (max-width: 480px) {
-      .detail-grid {
-        grid-template-columns: 1fr;
-      }
-      .detail-actions {
-        grid-template-columns: 1fr;
-      }
-      .detail-action.primary {
-        grid-column: span 1;
-      }
-      .action-bar {
-        flex-wrap: wrap;
-      }
-      .action-btn {
-        flex: 1 1 45%;
-      }
-    }
+    [dir="rtl"] .job-main { flex-direction: row-reverse; }
+    [dir="rtl"] .job-meta { flex-direction: row-reverse; }
+    [dir="rtl"] .job-actions { align-items: flex-start; }
+    [dir="rtl"] .header-top { flex-direction: row-reverse; }
   </style>
 </head>
 <body>
   <div class="container">
-    <div id="app">
+    <div class="glass-card" id="app">
       <div class="loading">
         <div class="spinner"></div>
-        <div class="loading-text">Laddar jobb...</div>
+        <span class="loading-text">Laddar jobb...</span>
       </div>
     </div>
   </div>
   <div class="toast" id="toast"></div>
 
   <script>
-    // State
+    const JOBS_PER_PAGE = 10;
+
     const state = {
-      theme: 'light',
-      direction: 'ltr',
-      language: 'sv',
       data: null,
-      labels: {},
-      savedJobs: [],
-      selectedJobs: [],
+      language: 'sv',
+      direction: 'ltr',
+      currentPage: 1,
       expandedJob: null,
-      filters: {
-        type: null // 'heltid', 'deltid', etc.
-      }
+      savedJobs: [],
+      filter: 'all'
     };
 
-    // Default labels
     const defaultLabels = {
       results: 'Sökresultat',
       jobs: 'jobb',
-      found: 'hittade',
-      save: 'Spara',
-      saved: 'Sparad',
-      details: 'Detaljer',
-      hide: 'Dölj',
-      apply: 'Ansök',
-      share: 'Dela',
-      salary: 'Lönestatistik',
-      help: 'Ansökningshjälp',
-      compare: 'Jämför',
-      viewSaved: 'Sparade',
-      location: 'Plats',
-      deadline: 'Sista ansökningsdag',
-      type: 'Anställning',
-      salaryType: 'Lön',
-      description: 'Beskrivning',
-      noJobs: 'Inga jobb hittades',
-      tryAgain: 'Prova andra sökord',
-      daysLeft: 'dagar kvar',
-      today: 'Idag!',
-      expired: 'Utgången',
+      inLocation: 'i',
+      allJobs: 'Alla',
       fullTime: 'Heltid',
       partTime: 'Deltid',
-      all: 'Alla',
-      selected: 'valda',
-      copied: 'Länk kopierad!',
-      jobSaved: 'Jobb sparat!',
-      jobRemoved: 'Jobb borttaget'
+      location: 'Plats',
+      deadline: 'Sök senast',
+      apply: 'Ansök nu',
+      salary: 'Lönestatistik',
+      coverLetter: 'Personligt brev',
+      market: 'Marknadsanalys',
+      share: 'Dela',
+      saved: 'Sparad',
+      save: 'Spara',
+      noJobs: 'Inga jobb hittades',
+      tryAgain: 'Försök med andra sökord',
+      page: 'Sida',
+      previous: 'Föregående',
+      next: 'Nästa'
     };
 
-    // Get label
     function t(key) {
-      return state.labels[key] || defaultLabels[key] || key;
+      return state.data?.labels?.[key] || defaultLabels[key] || key;
     }
 
-    // Escape HTML
     function esc(str) {
       if (!str) return '';
-      const d = document.createElement('div');
-      d.textContent = str;
-      return d.innerHTML;
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
     }
 
-    // Get initials
-    function initials(name) {
-      if (!name) return '?';
-      return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
-    }
-
-    // Days until deadline
-    function daysUntil(dateStr) {
-      if (!dateStr) return null;
-      const match = dateStr.match(/(\d{4})-(\d{2})-(\d{2})/);
-      if (!match) return null;
-      const date = new Date(match[1], match[2] - 1, match[3]);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      return Math.ceil((date - today) / 86400000);
-    }
-
-    // Show toast
     function showToast(message) {
       const toast = document.getElementById('toast');
       toast.textContent = message;
@@ -822,74 +471,83 @@
       setTimeout(() => toast.classList.remove('show'), 2500);
     }
 
-    // Notify height
     function notifyHeight() {
-      window.openai?.notifyIntrinsicHeight?.(document.body.scrollHeight);
+      setTimeout(() => {
+        window.openai?.notifyIntrinsicHeight?.(document.body.scrollHeight);
+      }, 50);
     }
 
-    // Save state
     function saveState() {
-      window.openai?.setWidgetState?.({
-        savedJobs: state.savedJobs,
-        selectedJobs: state.selectedJobs
-      });
+      window.openai?.setWidgetState?.({ savedJobs: state.savedJobs });
     }
 
-    // Toggle save job
-    function toggleSave(jobId) {
+    function toggleSave(jobId, e) {
+      e.stopPropagation();
       const idx = state.savedJobs.indexOf(jobId);
       if (idx >= 0) {
         state.savedJobs.splice(idx, 1);
-        showToast(t('jobRemoved'));
       } else {
         state.savedJobs.push(jobId);
-        showToast(t('jobSaved'));
       }
       saveState();
       render();
     }
 
-    // Toggle select job (for compare)
-    function toggleSelect(jobId) {
-      const idx = state.selectedJobs.indexOf(jobId);
-      if (idx >= 0) {
-        state.selectedJobs.splice(idx, 1);
-      } else if (state.selectedJobs.length < 3) {
-        state.selectedJobs.push(jobId);
-      }
-      saveState();
-      render();
-    }
-
-    // Toggle expand job
     function toggleExpand(jobId) {
       state.expandedJob = state.expandedJob === jobId ? null : jobId;
       render();
-      setTimeout(notifyHeight, 100);
+      notifyHeight();
     }
 
-    // Set filter
-    function setFilter(type) {
-      state.filters.type = state.filters.type === type ? null : type;
+    function setFilter(filter) {
+      state.filter = filter;
+      state.currentPage = 1;
       render();
     }
 
-    // Request action from ChatGPT
-    async function requestAction(action, job) {
-      console.log('=== SMIDRA: Action ===', action, job?.title);
+    function setPage(page) {
+      state.currentPage = page;
+      state.expandedJob = null;
+      render();
+      notifyHeight();
+      // Scroll to top of widget
+      document.querySelector('.glass-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 
-      // Handle local actions first
-      if (action === 'share') {
-        alert('Länk: ' + job.url);
-        return;
+    function getFilteredJobs() {
+      let jobs = state.data?.jobs || [];
+      if (state.filter === 'fulltime') {
+        jobs = jobs.filter(j => {
+          const type = (j.employmentType || '').toLowerCase();
+          return type.includes('heltid') || type.includes('full');
+        });
+      } else if (state.filter === 'parttime') {
+        jobs = jobs.filter(j => {
+          const type = (j.employmentType || '').toLowerCase();
+          return type.includes('deltid') || type.includes('part');
+        });
       }
+      return jobs;
+    }
+
+    function requestAction(action, job, e) {
+      e?.stopPropagation();
 
       if (action === 'apply') {
         window.openai?.openExternal?.({ href: job.url });
         return;
       }
 
-      // Build message for ChatGPT
+      if (action === 'share') {
+        const text = `${job.title} - ${job.employer}\n${job.url}`;
+        if (navigator.share) {
+          navigator.share({ title: job.title, text: text, url: job.url });
+        } else {
+          showToast('Länk: ' + job.url);
+        }
+        return;
+      }
+
       const lang = state.language || 'sv';
       let message = '';
 
@@ -901,7 +559,7 @@ TJÄNST:
 - Titel: ${job.title}
 - Företag: ${job.employer}
 - Plats: ${job.location || 'Sverige'}
-- Beskrivning: ${job.description?.substring(0, 150) || 'Ej angivet'}
+- Typ: ${job.employmentType || 'Ej angivet'}
 
 INSTRUKTION:
 1. Sök på nätet efter aktuell lönestatistik för "${job.title}" i ${job.location || 'Sverige'}
@@ -911,6 +569,7 @@ INSTRUKTION:
 
 Svara på användarens språk (${lang}).`;
           break;
+
         case 'help':
           message = `Användaren vill ha hjälp att skriva ett personligt brev för denna tjänst:
 
@@ -924,6 +583,7 @@ Skriv ett professionellt, engagerande personligt brev. Fråga användaren om der
 
 Svara på användarens språk (${lang}).`;
           break;
+
         case 'market':
           message = `Ge mig arbetsmarknadsanalys för yrket "${job.title}" i ${job.location || 'Sverige'}.
 
@@ -936,178 +596,50 @@ Sök på nätet och inkludera:
 
 Svara på användarens språk (${lang}).`;
           break;
-        case 'compare':
-          const jobs = state.selectedJobs.map(id => state.data?.jobs?.find(x => x.id === id)).filter(Boolean);
-          message = `Jämför dessa jobb:\n${jobs.map((j, i) => `${i+1}. ${j.title} hos ${j.employer} i ${j.location}`).join('\n')}\n\nVilket rekommenderar du?`;
-          break;
-        default:
-          return;
       }
 
-      console.log('Message:', message);
-      showToast('Skickar...');
-
-      // METHOD 1: sendFollowUpMessage with { prompt: message } - CORRECT API!
-      if (typeof window.openai?.sendFollowUpMessage === 'function') {
-        try {
-          console.log('Trying sendFollowUpMessage with prompt object...');
-          const result = window.openai.sendFollowUpMessage({ prompt: message });
-          console.log('sendFollowUpMessage result:', result);
-          showToast('Skickat till ChatGPT!');
-          return;
-        } catch (e) {
-          console.log('sendFollowUpMessage error:', e);
-        }
+      if (message && window.openai?.sendFollowUpMessage) {
+        showToast('Skickar...');
+        window.openai.sendFollowUpMessage({ prompt: message });
       }
-
-      // METHOD 2: Try callTool with await
-      if (typeof window.openai?.callTool === 'function') {
-        try {
-          console.log('Trying callTool...');
-          const toolName = action === 'salary' ? 'get_salary_info' :
-                          action === 'help' ? 'write_cover_letter' :
-                          action === 'market' ? 'analyze_job_market' : 'compare_jobs';
-
-          const toolArgs = {
-            jobTitle: job?.title || '',
-            location: job?.location || 'Sverige',
-            employer: job?.employer || '',
-            jobDescription: job?.description || '',
-            language: lang
-          };
-
-          if (action === 'compare') {
-            const jobs = state.selectedJobs.map(id => {
-              const j = state.data?.jobs?.find(x => x.id === id);
-              return j ? { title: j.title, employer: j.employer, location: j.location } : null;
-            }).filter(Boolean);
-            toolArgs.jobs = jobs;
-          }
-
-          const result = await window.openai.callTool(toolName, toolArgs);
-          console.log('callTool result:', result);
-          showToast('Skickat!');
-          return;
-        } catch (e) {
-          console.log('callTool error:', e);
-        }
-      }
-
-      // METHOD 3: Try requestTargetedReply
-      if (typeof window.openai?.requestTargetedReply === 'function') {
-        try {
-          console.log('Trying requestTargetedReply...');
-          const result = window.openai.requestTargetedReply({ message });
-          console.log('requestTargetedReply result:', result);
-          showToast('Skickat!');
-          return;
-        } catch (e) {
-          console.log('requestTargetedReply error:', e);
-        }
-      }
-
-      showToast('Kunde inte skicka');
     }
 
-    // Show message dialog for copy
-    function showMessageDialog(message, action) {
-      const titles = {
-        salary: '💰 Lönestatistik',
-        help: '✍️ Ansökningshjälp',
-        market: '📈 Arbetsmarknad',
-        compare: '⚖️ Jämför jobb',
-        cv: '📄 CV-analys'
-      };
-
-      // Remove existing dialog
-      document.querySelector('.message-dialog')?.remove();
-
-      const dialog = document.createElement('div');
-      dialog.className = 'message-dialog';
-      dialog.innerHTML = `
-        <div class="dialog-backdrop" onclick="closeDialog()"></div>
-        <div class="dialog-content">
-          <div class="dialog-header">
-            <span>${titles[action] || 'Fråga ChatGPT'}</span>
-            <button class="dialog-close" onclick="closeDialog()">✕</button>
-          </div>
-          <div class="dialog-body">
-            <p class="dialog-instruction">Kopiera texten nedan och klistra in i chatten:</p>
-            <textarea class="dialog-message" readonly>${message}</textarea>
-          </div>
-          <div class="dialog-footer">
-            <button class="dialog-btn secondary" onclick="closeDialog()">Stäng</button>
-            <button class="dialog-btn primary" onclick="copyMessage()">📋 Kopiera</button>
-          </div>
-        </div>
-      `;
-
-      document.body.appendChild(dialog);
-      setTimeout(() => dialog.classList.add('open'), 10);
-      notifyHeight();
-
-      window.copyMessage = () => {
-        const textarea = dialog.querySelector('.dialog-message');
-        textarea.select();
-        navigator.clipboard?.writeText(message);
-        showToast('Kopierat! Klistra in i chatten.');
-        closeDialog();
-      };
-
-      window.closeDialog = () => {
-        dialog.classList.remove('open');
-        setTimeout(() => dialog.remove(), 200);
-        notifyHeight();
-      };
-    }
-
-    // Filter jobs
-    function getFilteredJobs() {
-      let jobs = state.data?.jobs || [];
-      if (state.filters.type) {
-        jobs = jobs.filter(j => {
-          const type = (j.employmentType || '').toLowerCase();
-          if (state.filters.type === 'heltid') return type.includes('heltid') || type.includes('full');
-          if (state.filters.type === 'deltid') return type.includes('deltid') || type.includes('part');
-          return true;
-        });
-      }
-      return jobs;
-    }
-
-    // Render
     function render() {
       const app = document.getElementById('app');
-      const data = state.data;
+      const d = state.data;
 
-      if (!data) {
+      if (!d || !d.jobs) {
         app.innerHTML = `
           <div class="loading">
             <div class="spinner"></div>
-            <div class="loading-text">${t('results')}...</div>
-          </div>`;
-        notifyHeight();
+            <span class="loading-text">Laddar jobb...</span>
+          </div>
+        `;
         return;
       }
 
-      const jobs = getFilteredJobs();
-      const { query, location, total } = data;
+      const filteredJobs = getFilteredJobs();
+      const totalPages = Math.ceil(filteredJobs.length / JOBS_PER_PAGE);
+      const startIdx = (state.currentPage - 1) * JOBS_PER_PAGE;
+      const pageJobs = filteredJobs.slice(startIdx, startIdx + JOBS_PER_PAGE);
 
-      if (!jobs.length) {
+      if (filteredJobs.length === 0) {
         app.innerHTML = `
           <div class="header">
             <div class="header-top">
-              <h1 class="header-title">${esc(query)}</h1>
+              <span class="header-title">${esc(t('results'))}</span>
             </div>
-            <div class="header-meta">
-              <span class="header-meta-item">📍 ${esc(location)}</span>
-            </div>
+            <div class="search-info">${esc(d.query || 'Jobb')}</div>
+            ${d.location ? `<div class="search-location">${t('inLocation')} ${esc(d.location)}</div>` : ''}
           </div>
-          <div class="empty">
-            <div class="empty-icon">🔍</div>
-            <div class="empty-title">${t('noJobs')}</div>
-            <p class="empty-text">${t('tryAgain')}</p>
-          </div>`;
+          <div class="empty-state">
+            <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <div class="empty-title">${esc(t('noJobs'))}</div>
+            <div class="empty-text">${esc(t('tryAgain'))}</div>
+          </div>
+        `;
         notifyHeight();
         return;
       }
@@ -1115,163 +647,142 @@ Svara på användarens språk (${lang}).`;
       app.innerHTML = `
         <div class="header">
           <div class="header-top">
-            <h1 class="header-title">${esc(query)}</h1>
-            <span class="header-badge">${total} ${t('jobs')}</span>
+            <span class="header-title">${esc(t('results'))}</span>
+            <span class="header-count">${filteredJobs.length} ${t('jobs')}</span>
           </div>
-          <div class="header-meta">
-            <span class="header-meta-item">📍 ${esc(location)}</span>
-            <span class="header-meta-item">✨ ${jobs.length} ${t('found')}</span>
-          </div>
+          <div class="search-info">${esc(d.query || 'Jobb')}</div>
+          ${d.location ? `<div class="search-location">${t('inLocation')} ${esc(d.location)}</div>` : ''}
         </div>
 
         <div class="filters">
-          <button class="filter-btn ${!state.filters.type ? 'active' : ''}" onclick="setFilter(null)">
-            ${t('all')}
+          <button class="filter-btn ${state.filter === 'all' ? 'active' : ''}" onclick="setFilter('all')">
+            ${t('allJobs')}
           </button>
-          <button class="filter-btn ${state.filters.type === 'heltid' ? 'active' : ''}" onclick="setFilter('heltid')">
+          <button class="filter-btn ${state.filter === 'fulltime' ? 'active' : ''}" onclick="setFilter('fulltime')">
             ${t('fullTime')}
           </button>
-          <button class="filter-btn ${state.filters.type === 'deltid' ? 'active' : ''}" onclick="setFilter('deltid')">
+          <button class="filter-btn ${state.filter === 'parttime' ? 'active' : ''}" onclick="setFilter('parttime')">
             ${t('partTime')}
           </button>
         </div>
 
-        <div class="action-bar">
-          <button class="action-btn ${state.savedJobs.length ? '' : 'disabled'}" onclick="showSaved()">
-            ❤️ ${t('viewSaved')} ${state.savedJobs.length ? `<span class="count">${state.savedJobs.length}</span>` : ''}
-          </button>
-          <button class="action-btn ${state.selectedJobs.length >= 2 ? 'primary' : ''}" onclick="compareSelected()" ${state.selectedJobs.length < 2 ? 'disabled' : ''}>
-            ⚖️ ${t('compare')} ${state.selectedJobs.length ? `(${state.selectedJobs.length})` : ''}
-          </button>
-        </div>
-
         <div class="job-list">
-          ${jobs.map(job => {
-            const days = daysUntil(job.deadline);
-            const isUrgent = days !== null && days >= 0 && days <= 3;
-            const isExpired = days !== null && days < 0;
-            const isSaved = state.savedJobs.includes(job.id);
-            const isSelected = state.selectedJobs.includes(job.id);
+          ${pageJobs.map(job => {
             const isExpanded = state.expandedJob === job.id;
+            const isSaved = state.savedJobs.includes(job.id);
 
             return `
-              <article class="job-card ${isSaved ? 'saved' : ''} ${isSelected ? 'selected' : ''} ${isExpanded ? 'expanded' : ''}">
+              <div class="job-item ${isExpanded ? 'expanded' : ''}" onclick="toggleExpand('${job.id}')">
                 <div class="job-main">
-                  <div class="job-header">
-                    <div class="job-select ${isSelected ? 'checked' : ''}" onclick="toggleSelect('${job.id}')">
-                      ${isSelected ? '✓' : ''}
-                    </div>
-                    <div class="job-logo">
-                      ${job.logoUrl ? `<img src="${job.logoUrl}" alt="" onerror="this.parentElement.textContent='${initials(job.employer)}'">` : initials(job.employer)}
-                    </div>
-                    <div class="job-info">
-                      <div class="job-employer">${esc(job.employer)}</div>
-                      <h2 class="job-title">${esc(job.title)}</h2>
-                      <div class="job-tags">
-                        <span class="tag location">📍 ${esc(job.location)}</span>
-                        ${job.employmentType ? `<span class="tag">${esc(job.employmentType)}</span>` : ''}
-                        ${days !== null ? `
-                          <span class="tag ${isExpired ? '' : isUrgent ? 'urgent' : 'deadline'}">
-                            ${isExpired ? t('expired') : days === 0 ? t('today') : `${days} ${t('daysLeft')}`}
-                          </span>
-                        ` : ''}
-                      </div>
+                  <div class="job-content">
+                    <div class="job-title">${esc(job.title)}</div>
+                    <div class="job-company">${esc(job.employer)}</div>
+                    <div class="job-meta">
+                      <span class="job-meta-item">
+                        <svg class="job-meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                          <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        ${esc(job.location || 'Sverige')}
+                      </span>
+                      ${job.deadline ? `
+                        <span class="job-meta-item">
+                          <svg class="job-meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                          </svg>
+                          ${esc(job.deadline)}
+                        </span>
+                      ` : ''}
                     </div>
                   </div>
-
-                  <p class="job-description">${esc(job.description)}</p>
-
                   <div class="job-actions">
-                    <button class="job-action save ${isSaved ? 'saved' : ''}" onclick="toggleSave('${job.id}')">
-                      ${isSaved ? '❤️' : '🤍'} ${isSaved ? t('saved') : t('save')}
-                    </button>
-                    <button class="job-action" onclick="toggleExpand('${job.id}')">
-                      📋 ${isExpanded ? t('hide') : t('details')}
-                    </button>
-                    <button class="job-action primary" onclick="requestAction('apply', ${JSON.stringify(job).replace(/"/g, '&quot;')})">
-                      🚀 ${t('apply')}
+                    ${job.employmentType ? `<span class="job-type">${esc(job.employmentType)}</span>` : ''}
+                    <button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSave('${job.id}', event)" title="${isSaved ? t('saved') : t('save')}">
+                      <svg viewBox="0 0 24 24" fill="${isSaved ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
+                        <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+                      </svg>
                     </button>
                   </div>
                 </div>
 
                 <div class="job-details">
-                  <div class="detail-section">
-                    <div class="detail-title">📊 ${t('description')}</div>
-                    <div class="detail-description">${esc(job.fullDescription || job.description)}</div>
-                  </div>
-
-                  <div class="detail-section">
-                    <div class="detail-grid">
-                      <div class="detail-item">
-                        <div class="detail-label">${t('location')}</div>
-                        <div class="detail-value">${esc(job.region || job.location)}</div>
-                      </div>
-                      <div class="detail-item">
-                        <div class="detail-label">${t('deadline')}</div>
-                        <div class="detail-value">${esc(job.deadline) || '-'}</div>
-                      </div>
-                      ${job.employmentType ? `
-                        <div class="detail-item">
-                          <div class="detail-label">${t('type')}</div>
-                          <div class="detail-value">${esc(job.employmentType)}</div>
-                        </div>
-                      ` : ''}
-                      ${job.salaryType ? `
-                        <div class="detail-item">
-                          <div class="detail-label">${t('salaryType')}</div>
-                          <div class="detail-value">${esc(job.salaryType)}</div>
-                        </div>
-                      ` : ''}
-                    </div>
-                  </div>
-
-                  <div class="detail-actions">
-                    <button class="detail-action" onclick="requestAction('salary', ${JSON.stringify(job).replace(/"/g, '&quot;')})">
-                      💰 ${t('salary')}
+                  <p class="job-description">${esc(job.description)}</p>
+                  <div class="job-buttons">
+                    <button class="btn btn-primary" onclick="requestAction('apply', ${JSON.stringify(job).replace(/"/g, '&quot;')}, event)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+                        <polyline points="15 3 21 3 21 9"/>
+                        <line x1="10" y1="14" x2="21" y2="3"/>
+                      </svg>
+                      ${t('apply')}
                     </button>
-                    <button class="detail-action" onclick="requestAction('help', ${JSON.stringify(job).replace(/"/g, '&quot;')})">
-                      ✍️ ${t('help')}
+                    <button class="btn btn-secondary" onclick="requestAction('salary', ${JSON.stringify(job).replace(/"/g, '&quot;')}, event)">
+                      ${t('salary')}
                     </button>
-                    <button class="detail-action" onclick="requestAction('market', ${JSON.stringify(job).replace(/"/g, '&quot;')})">
-                      📈 Arbetsmarknad
+                    <button class="btn btn-secondary" onclick="requestAction('help', ${JSON.stringify(job).replace(/"/g, '&quot;')}, event)">
+                      ${t('coverLetter')}
                     </button>
-                    <button class="detail-action" onclick="requestAction('share', ${JSON.stringify(job).replace(/"/g, '&quot;')})">
-                      🔗 ${t('share')}
-                    </button>
-                    <button class="detail-action primary" onclick="requestAction('apply', ${JSON.stringify(job).replace(/"/g, '&quot;')})">
-                      🚀 ${t('apply')} hos ${esc(job.employer)}
+                    <button class="btn btn-secondary" onclick="requestAction('share', ${JSON.stringify(job).replace(/"/g, '&quot;')}, event)">
+                      ${t('share')}
                     </button>
                   </div>
                 </div>
-              </article>
+              </div>
             `;
           }).join('')}
         </div>
+
+        ${totalPages > 1 ? `
+          <div class="pagination">
+            <button class="page-btn" onclick="setPage(${state.currentPage - 1})" ${state.currentPage === 1 ? 'disabled' : ''}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <polyline points="15 18 9 12 15 6"/>
+              </svg>
+            </button>
+
+            ${generatePagination(state.currentPage, totalPages)}
+
+            <button class="page-btn" onclick="setPage(${state.currentPage + 1})" ${state.currentPage === totalPages ? 'disabled' : ''}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </button>
+          </div>
+        ` : ''}
       `;
 
       notifyHeight();
     }
 
-    // Show saved jobs
-    function showSaved() {
-      if (state.savedJobs.length === 0) return;
-      const savedJobsList = state.savedJobs.map(id => {
-        const job = state.data?.jobs?.find(j => j.id === id);
-        return job ? `- ${job.title} på ${job.employer}` : '';
-      }).filter(Boolean).join('\n');
+    function generatePagination(current, total) {
+      const pages = [];
+      const maxVisible = 5;
 
-      if (window.openai?.sendMessage) {
-        window.openai.sendMessage(`Här är mina sparade jobb:\n\n${savedJobsList}\n\nHjälp mig välja vilket jobb som passar mig bäst.`);
+      if (total <= maxVisible) {
+        for (let i = 1; i <= total; i++) {
+          pages.push(i);
+        }
+      } else {
+        if (current <= 3) {
+          pages.push(1, 2, 3, 4, '...', total);
+        } else if (current >= total - 2) {
+          pages.push(1, '...', total - 3, total - 2, total - 1, total);
+        } else {
+          pages.push(1, '...', current - 1, current, current + 1, '...', total);
+        }
       }
+
+      return pages.map(p => {
+        if (p === '...') {
+          return '<span class="page-dots">...</span>';
+        }
+        return `<button class="page-btn ${p === current ? 'active' : ''}" onclick="setPage(${p})">${p}</button>`;
+      }).join('');
     }
 
-    // Compare selected jobs
-    function compareSelected() {
-      if (state.selectedJobs.length < 2) return;
-      requestAction('compare', {});
-    }
-
-    // Handle data
     function handleData(data) {
       if (!data) return;
 
@@ -1283,51 +794,39 @@ Svara på användarens språk (${lang}).`;
         state.direction = data.direction;
         document.documentElement.dir = data.direction;
       }
-      if (data.labels) {
-        state.labels = { ...defaultLabels, ...data.labels };
-      }
 
       state.data = data;
+      state.currentPage = 1;
+      state.expandedJob = null;
       render();
     }
 
-    // Initialize
     function init() {
-      // Apply theme
-      if (window.openai?.theme) {
-        document.documentElement.setAttribute('data-theme', window.openai.theme);
-      }
-
-      // Restore state
+      // Restore saved jobs
       const saved = window.openai?.widgetState;
-      if (saved) {
-        state.savedJobs = saved.savedJobs || [];
-        state.selectedJobs = saved.selectedJobs || [];
+      if (saved?.savedJobs) {
+        state.savedJobs = saved.savedJobs;
       }
 
-      // Listen for updates
+      // Listen for data updates
       window.addEventListener('openai:set_globals', () => {
-        if (window.openai?.theme) {
-          document.documentElement.setAttribute('data-theme', window.openai.theme);
-        }
         if (window.openai?.toolOutput) {
           handleData(window.openai.toolOutput);
         }
       });
 
-      // Check for data
+      // Initial data
       if (window.openai?.toolOutput) {
         handleData(window.openai.toolOutput);
       } else {
-        // Preview mode
-        fetch('/api/search?q=utvecklare&limit=5')
+        // Preview mode - fetch sample data
+        fetch('/api/search?q=utvecklare&limit=25')
           .then(r => r.json())
           .then(d => handleData({
             query: 'Utvecklare',
             location: 'Sverige',
             total: d.total,
-            jobs: d.jobs,
-            labels: defaultLabels
+            jobs: d.jobs
           }))
           .catch(() => {});
       }
