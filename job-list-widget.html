@@ -994,83 +994,51 @@
 
     /* Responsive */
     @media (max-width: 640px) {
-      body {
-        min-height: 100vh;
-        min-height: 100dvh; /* Dynamic viewport height for mobile */
-      }
-      .container {
-        min-height: 100vh;
-        min-height: 100dvh;
-        display: flex;
-        flex-direction: column;
-      }
-      .header {
-        padding: 28px 20px 24px;
-        text-align: center;
-      }
-      .header::after { left: 20px; right: 20px; }
-      .header-title { font-size: 28px; }
-      .header-eyebrow {
-        font-size: 10px;
-        justify-content: center;
-      }
-      .header-meta {
-        justify-content: center;
-      }
-      .header-location {
-        justify-content: center;
-      }
-      .controls {
-        padding: 16px 20px;
-        gap: 8px;
-        overflow-x: auto;
-        flex-wrap: nowrap;
-        -webkit-overflow-scrolling: touch;
-        justify-content: center;
-      }
-      .control-btn { padding: 9px 16px; font-size: 12px; flex-shrink: 0; }
-      .map-section { margin: 0 16px 20px; border-radius: var(--radius-lg); }
-      .map-wrapper { height: 200px; }
-      .job-grid {
-        grid-template-columns: 1fr;
-        padding: 0 16px 20px;
-        gap: 16px;
-        flex: 1;
-      }
-      .job-card {
-        max-width: 100%;
-        margin: 0 auto;
-        width: 100%;
-      }
-      .job-card-header { padding: 20px; }
-      .job-card-title { font-size: 18px; text-align: center; }
-      .job-card-company { justify-content: center; }
-      .job-card-meta { justify-content: center; }
-      .job-card-footer { padding: 14px 20px; justify-content: center; }
-      .btn { padding: 11px 16px; }
-      .pagination { padding: 24px 16px 32px; justify-content: center; }
-      .page-btn { min-width: 36px; height: 36px; font-size: 13px; }
-      .empty-state, .loading-state {
-        padding: 60px 20px;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-      }
+      .header { padding: 16px; }
+      .header::after { left: 16px; right: 16px; }
+      .header-title { font-size: 22px; margin-bottom: 4px; }
+      .header-eyebrow { font-size: 9px; margin-bottom: 6px; }
+      .header-meta { gap: 12px; }
+      .header-count { font-size: 12px; }
+      .header-count-num { font-size: 15px; }
+      .controls { padding: 10px 16px; gap: 6px; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+      .control-btn { padding: 8px 12px; font-size: 11px; flex-shrink: 0; }
+      .map-section { margin: 0 12px 12px; border-radius: var(--radius-md); }
+      .map-wrapper { height: 160px; }
+      .job-grid { grid-template-columns: 1fr; padding: 0 12px 16px; gap: 12px; }
+      .job-card-header { padding: 14px; }
+      .job-card-title { font-size: 16px; margin-bottom: 10px; }
+      .job-card-top { margin-bottom: 10px; }
+      .company-logo, .company-logo-fallback { width: 36px; height: 36px; }
+      .company-name { font-size: 12px; }
+      .job-type-badge { font-size: 9px; padding: 3px 8px; }
+      .job-card-meta { gap: 10px; }
+      .job-meta-item { font-size: 11px; gap: 4px; }
+      .job-meta-item svg { width: 12px; height: 12px; }
+      .job-card-footer { padding: 10px 14px; gap: 8px; }
+      .btn { padding: 10px 14px; font-size: 12px; }
+      .save-btn { width: 32px; height: 32px; }
+      .save-btn svg { width: 14px; height: 14px; }
+      .pagination { padding: 16px 12px 20px; }
+      .page-btn { min-width: 32px; height: 32px; font-size: 12px; }
+      .empty-state, .loading-state { padding: 40px 16px; }
+      .empty-icon, .spinner-wrap { width: 60px; height: 60px; margin-bottom: 16px; }
+      .spinner-large { width: 36px; height: 36px; }
+      .empty-title { font-size: 18px; }
+      .empty-text { font-size: 13px; }
       .modal-overlay { padding: 0; align-items: flex-end; }
-      .modal {
-        max-height: 92vh;
-        border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
-        animation: slideUp 0.4s var(--ease-out);
-      }
+      .modal { max-height: 90vh; border-radius: var(--radius-xl) var(--radius-xl) 0 0; animation: slideUp 0.3s var(--ease-out); }
       @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-      .modal-header { padding: 24px 20px 20px; text-align: center; }
-      .modal-title { font-size: 20px; padding-right: 0 !important; }
-      .modal-eyebrow { text-align: center; }
-      .modal-meta { justify-content: center; }
-      .modal-body { padding: 20px; }
-      .modal-actions { padding: 16px 20px 24px; flex-direction: column; }
+      .modal-header { padding: 16px; }
+      .modal-title { font-size: 18px; padding-right: 40px; }
+      .modal-eyebrow { font-size: 10px; margin-bottom: 6px; }
+      .modal-close { top: 12px; right: 12px; width: 32px; height: 32px; }
+      .modal-body { padding: 16px; }
+      .modal-meta { gap: 8px; margin-bottom: 16px; }
+      .modal-meta-item { padding: 8px 12px; font-size: 11px; }
+      .modal-desc { padding: 14px; font-size: 13px; max-height: 200px; }
+      .modal-actions { padding: 12px 16px 20px; gap: 8px; flex-direction: column; }
+      .modal-actions .btn { padding: 12px 16px; }
     }
 
     /* RTL Support */
@@ -1181,34 +1149,158 @@
       }
     }
 
-    /* Mobile fullscreen mode */
+    /* Mobile fullscreen mode - fills entire screen */
     @media (max-width: 640px) {
+      html, body {
+        height: 100%;
+        height: 100dvh;
+        overflow: hidden;
+      }
+
       .fullscreen-mode {
-        min-height: 100vh;
-        min-height: 100dvh;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 100%;
+        height: 100dvh;
         max-width: 100%;
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        background: var(--surface-primary);
       }
 
       .fullscreen-mode .header {
-        padding: 20px 16px 16px;
+        padding: 12px 12px 8px;
+        position: sticky;
+        top: 0;
+        background: var(--surface-primary);
+        z-index: 10;
+      }
+
+      .fullscreen-mode .header::after {
+        display: none;
+      }
+
+      .fullscreen-mode .header-eyebrow {
+        display: none;
+      }
+
+      .fullscreen-mode .header-title {
+        font-size: 18px;
+        margin-bottom: 2px;
+      }
+
+      .fullscreen-mode .header-meta {
+        gap: 8px;
+      }
+
+      .fullscreen-mode .header-location {
+        font-size: 12px;
+      }
+
+      .fullscreen-mode .header-count {
+        font-size: 11px;
+      }
+
+      .fullscreen-mode .header-count-num {
+        font-size: 14px;
       }
 
       .fullscreen-mode .controls {
-        padding: 12px 16px;
+        padding: 8px 12px;
+        gap: 6px;
+        position: sticky;
+        top: 50px;
+        background: var(--surface-primary);
+        z-index: 10;
+      }
+
+      .fullscreen-mode .control-btn {
+        padding: 6px 10px;
+        font-size: 10px;
       }
 
       .fullscreen-mode .map-section {
-        margin: 0 12px 12px;
+        margin: 0 8px 8px;
         min-height: auto;
+        flex: none;
       }
 
       .fullscreen-mode .map-wrapper {
-        height: 180px;
+        height: 140px;
         min-height: auto;
       }
 
+      .fullscreen-mode .map-info {
+        padding: 6px 10px;
+        font-size: 11px;
+        bottom: 8px;
+        left: 8px;
+      }
+
       .fullscreen-mode .job-grid {
-        padding: 0 12px 80px;
+        padding: 0 8px 60px;
+        gap: 10px;
+      }
+
+      .fullscreen-mode .job-card-header {
+        padding: 12px;
+      }
+
+      .fullscreen-mode .job-card-title {
+        font-size: 14px;
+        margin-bottom: 8px;
+        -webkit-line-clamp: 1;
+      }
+
+      .fullscreen-mode .job-card-top {
+        margin-bottom: 8px;
+      }
+
+      .fullscreen-mode .company-logo,
+      .fullscreen-mode .company-logo-fallback {
+        width: 32px;
+        height: 32px;
+      }
+
+      .fullscreen-mode .company-name {
+        font-size: 11px;
+      }
+
+      .fullscreen-mode .job-type-badge {
+        font-size: 8px;
+        padding: 2px 6px;
+      }
+
+      .fullscreen-mode .job-card-meta {
+        gap: 8px;
+      }
+
+      .fullscreen-mode .job-meta-item {
+        font-size: 10px;
+      }
+
+      .fullscreen-mode .job-card-footer {
+        padding: 8px 12px;
+        gap: 6px;
+      }
+
+      .fullscreen-mode .job-card-footer .btn {
+        padding: 8px 10px;
+        font-size: 11px;
+      }
+
+      .fullscreen-mode .pagination {
+        padding: 12px 8px 16px;
+      }
+
+      .fullscreen-mode .page-btn {
+        min-width: 28px;
+        height: 28px;
+        font-size: 11px;
       }
     }
   </style>
@@ -1482,7 +1574,11 @@
       const toggleFullscreen = useCallback(async (forcedMode = null) => {
         const newMode = forcedMode !== null ? forcedMode : !isFullscreen;
         setIsFullscreen(newMode);
-        setShowMap(newMode); // Always show map in fullscreen
+        // Only show map on desktop fullscreen, not mobile
+        const isMobileWidth = window.innerWidth <= 640;
+        if (!isMobileWidth) {
+          setShowMap(newMode);
+        }
         try {
           await window.openai?.requestDisplayMode?.({ mode: newMode ? 'fullscreen' : 'inline' });
         } catch (e) {
@@ -1490,13 +1586,24 @@
         }
       }, [isFullscreen]);
 
-      // Auto-fullscreen on mobile
+      // Auto-fullscreen on mobile - smarter detection
       useEffect(() => {
-        const isMobile = window.innerWidth <= 640 ||
-                         /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        if (isMobile && !isFullscreen) {
+        const checkMobile = () => {
+          const width = window.innerWidth;
+          const height = window.innerHeight;
+          const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+          const isSmallScreen = width <= 480 || (width <= 640 && height <= 900);
+          const isMobileUA = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+          return (isSmallScreen && isTouchDevice) || (isMobileUA && width <= 640);
+        };
+
+        if (checkMobile() && !isFullscreen) {
           console.log('📱 Mobile detected - auto fullscreen');
-          toggleFullscreen(true);
+          // On mobile: fullscreen but NO map by default (saves space)
+          setIsFullscreen(true);
+          setShowMap(false);
+          window.openai?.requestDisplayMode?.({ mode: 'fullscreen' }).catch(() => {});
         }
       }, []);
 
