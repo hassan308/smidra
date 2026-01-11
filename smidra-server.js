@@ -821,6 +821,12 @@ User cannot see salary until you call this tool with the widgetSessionId.`,
       }),
       tips: z.array(z.string()).optional(),
       sources: z.array(z.string()).optional()
+    },
+    // Annotations to avoid approval dialog
+    annotations: {
+      readOnlyHint: true,      // Just displays data, doesn't modify anything
+      openWorldHint: false,    // Only affects our own widget
+      destructiveHint: false   // Not destructive
     }
     // NO _meta.outputTemplate - this tool never shows a widget
   },
@@ -900,6 +906,11 @@ server.registerTool(
         backToJob: z.string().optional(),
         negotiate: z.string().optional()
       }).optional()
+    },
+    annotations: {
+      readOnlyHint: true,      // Just displays data
+      openWorldHint: false,    // Only affects our own widget
+      destructiveHint: false   // Not destructive
     },
     _meta: {
       "openai/outputTemplate": "ui://widget/salary.html"
