@@ -404,12 +404,10 @@ server.registerTool(
 
 The widget automatically translates job titles and locations to the user's language using Google Translate. No need to call any other tool after this - results are shown directly!
 
-⚠️ EXCEPTION - noExperience filter:
-When noExperience=true, this tool returns RAW DATA instead of widget.
-You MUST review the jobs and REMOVE any that seem to require experience:
-- Jobs with "senior", "erfaren", "experienced", "lead", "chef", "manager" in title
-- Jobs mentioning years of experience in description
-Then call display_jobs with the FILTERED list.
+⚠️ noExperience filter (ONLY when user asks for jobs without experience):
+When noExperience=true, returns data for you to filter.
+Simply remove jobs where title contains "senior" (case-insensitive).
+Keep ALL other jobs. Then call display_jobs.
 
 PARAMETERS:
 - query: Search term IN SWEDISH (e.g., 'kock', 'utvecklare', 'sjuksköterska')
@@ -434,7 +432,7 @@ Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), l
       trainee: z.boolean().optional().describe("Only trainee/praktik positions"),
       abroad: z.boolean().optional().describe("Only jobs abroad/utomlands"),
       jobLanguage: z.string().optional().describe("Job language requirement (e.g., 'sv', 'en', 'ar')"),
-      noExperience: z.boolean().optional().describe("Only jobs that do NOT require experience - IMPORTANT: When true, you must verify results and filter out senior/experienced positions before calling display_jobs")
+      noExperience: z.boolean().optional().describe("Only use when user asks for jobs without experience. When true, filter out jobs with 'senior' in title, then call display_jobs")
     },
     _meta: {
       "openai/outputTemplate": "ui://widget/job-list.html"  // Show widget immediately (except noExperience)
@@ -477,19 +475,14 @@ Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), l
     });
     const total = data.total?.value || 0;
 
-    // SPECIAL CASE: noExperience requires verification
-    // Return TEXT so ChatGPT can filter before showing widget
+    // SPECIAL CASE: noExperience - only remove jobs with "senior" in title
     if (noExperience) {
-      console.log(`🔍 noExperience mode: returning ${jobs.length} jobs for ChatGPT verification`);
+      console.log(`🔍 noExperience mode: returning ${jobs.length} jobs for ChatGPT to filter "senior" titles`);
 
       const response = {
         status: "NEEDS_VERIFICATION",
-        message: "Jobs found but need verification. Filter out experienced positions before showing.",
-        filterInstructions: {
-          removeIfTitleContains: ["senior", "erfaren", "lead", "chef", "manager", "principal", "staff", "head of", "director", "experienced"],
-          removeIfDescriptionMentions: ["years of experience", "års erfarenhet", "erfarenhet av", "flerårig erfarenhet"],
-          keepEntryLevel: ["junior", "trainee", "praktik", "nybörjar", "entry", "graduate", "utbildning"]
-        },
+        message: "Filter out jobs with 'senior' in the title, then show results.",
+        filterRule: "ONLY remove jobs where title contains 'senior' (case-insensitive)",
         searchParams: {
           query,
           location: location || 'Sverige',
@@ -502,8 +495,7 @@ Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), l
         jobs,
         nextAction: {
           required: true,
-          tool: "display_jobs",
-          instruction: "Filter the jobs array removing senior/experienced positions, then call display_jobs with filtered list"
+          tool: "display_jobs"
         }
       };
 
@@ -512,13 +504,10 @@ Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), l
           type: "text",
           text: `${JSON.stringify(response, null, 2)}
 
-⚠️ VERIFICATION REQUIRED:
-1. Review each job title above
-2. REMOVE jobs with: senior, erfaren, lead, chef, manager, experienced, principal, staff, director
-3. KEEP jobs with: junior, trainee, praktik, entry-level, graduate
-4. Call display_jobs with the FILTERED jobs array
-
-This ensures users searching for entry-level jobs don't see senior positions.`
+⚠️ SIMPLE FILTER:
+Remove jobs where title contains "senior" (case-insensitive).
+Keep ALL other jobs.
+Then call display_jobs with the filtered list.`
         }]
       };
     }
@@ -555,18 +544,12 @@ server.registerTool(
   "display_jobs",
   {
     title: "Display Jobs",
-    description: `Show filtered job results in widget.
+    description: `Show job results in widget.
 
-⚠️ REQUIRED when search_jobs returns NEEDS_VERIFICATION (noExperience searches):
-1. Review jobs from search_jobs response
-2. FILTER OUT jobs with senior/experienced titles
-3. Call this tool with filtered jobs array
+Only needed when search_jobs returns NEEDS_VERIFICATION (noExperience searches).
+Simply remove jobs with "senior" in title, keep everything else, then call this tool.
 
-For normal searches, search_jobs shows widget directly - no need to call this.
-
-When filtering for noExperience:
-- REMOVE: senior, erfaren, lead, chef, manager, principal, experienced, director
-- KEEP: junior, trainee, praktik, entry-level, graduate, nybörjar`,
+For normal searches, search_jobs shows widget directly - no need to call this.`,
     inputSchema: {
       language: z.string().default("sv"),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
