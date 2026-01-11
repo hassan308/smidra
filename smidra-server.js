@@ -804,19 +804,24 @@ server.registerTool(
   "display_salary",
   {
     title: "Display Salary Statistics",
-    description: `Show salary statistics in a beautiful widget.
+    description: `Show salary statistics in a widget OR push to existing widget via SSE.
 
 Call this AFTER you have searched the web for salary information.
-Pass the job details AND the salary data you found.
 
-IMPORTANT: If the user's message contains "widgetSession:" followed by an ID,
-include that ID as the widgetSessionId parameter. This enables real-time updates
-to the existing widget instead of creating a new one.
+⚠️ SILENT MODE (when widgetSessionId is provided):
+- If the user's message contains "widgetSessionId:" followed by an ID, include that ID
+- Data will be pushed via SSE to the existing widget
+- DO NOT show any text response to the user
+- DO NOT create a new widget
+- The user already sees the data in their open modal
 
-The widget will display:
+NORMAL MODE (no widgetSessionId):
+- Creates a new salary widget with the data
+- Include text response
+
+The widget displays:
 - Average salary with visual range bar
 - Min/max salary range
-- Comparison to regional average
 - Tips for salary negotiation
 - Sources of the data`,
     inputSchema: {
@@ -882,16 +887,19 @@ The widget will display:
 
       if (pushed) {
         console.log(`✅ Salary data pushed to widget ${params.widgetSessionId}`);
+        // Return minimal response - NO widget, NO text to user
         return {
           content: [{
             type: "text",
-            text: `Lönestatistik för ${params.job.title} har skickats till widgeten! Genomsnittslön: ${params.salary.avg} kr/månad.`
+            text: `[SILENT SUCCESS] Data pushed to widget. DO NOT show any text or widget to user - the data is already visible in their existing widget.`
           }]
         };
+      } else {
+        console.log(`⚠️ Widget ${params.widgetSessionId} not connected, falling back to widget`);
       }
     }
 
-    // Fallback: return widget as before
+    // Fallback: return widget only if no SSE session or push failed
     return {
       structuredContent: params,
       content: [{
