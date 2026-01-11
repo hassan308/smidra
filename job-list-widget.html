@@ -1471,19 +1471,39 @@
 
       // Request market info via ChatGPT - two-step: web search → tool call
       const requestSalary = useCallback((job) => {
+        console.log('💰 requestSalary clicked:', job.title, job.location);
+        console.log('💰 widgetSessionId:', widgetSessionId);
         setSalaryLoading(true);
         setSalaryData(null);
 
-        // Two-step prompt: 1) Search web 2) Call tool
-        window.openai?.sendFollowUpMessage?.({
-          prompt: `Sök på webben efter aktuell lönestatistik för "${job.title}" i ${job.location || 'Sverige'}.
+        // Include JSON example so ChatGPT knows exact format
+        const prompt = `Sök på webben efter aktuell lönestatistik för "${job.title}" i ${job.location || 'Sverige'}.
 
-När du hittat information, använd update_widget_info verktyget för att visa resultatet i min widget.
+När du hittat information, anropa update_widget_info med detta format:
 
-Inkludera: genomsnitt, min/max, och förhandlingstips.
+{
+  "widgetSessionId": "${widgetSessionId}",
+  "jobContext": {
+    "title": "${job.title}",
+    "location": "${job.location || 'Sverige'}"
+  },
+  "info": {
+    "type": "compensation",
+    "data": {
+      "avg": 45000,
+      "min": 35000,
+      "max": 58000
+    },
+    "tips": ["Förhandlingstips 1", "Tips 2"],
+    "sources": ["SCB", "Unionen"]
+  }
+}
 
-widget_session: ${widgetSessionId}`
-        });
+Byt ut siffrorna med den data du hittar på webben. Svara INTE med text - anropa bara verktyget.`;
+
+        console.log('💰 Sending prompt:', prompt);
+
+        window.openai?.sendFollowUpMessage?.({ prompt });
       }, [widgetSessionId]);
       useEffect(() => { labelsRef.current = labels; }, [labels]);
 
