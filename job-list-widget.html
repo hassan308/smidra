@@ -1005,7 +1005,8 @@
       .control-btn { padding: 8px 12px; font-size: 11px; flex-shrink: 0; }
       .map-section { margin: 0 12px 12px; border-radius: var(--radius-md); }
       .map-wrapper { height: 160px; }
-      .job-grid { grid-template-columns: 1fr; padding: 0 12px 16px; gap: 12px; }
+      /* Extra padding at bottom for ChatGPT's input bar */
+      .job-grid { grid-template-columns: 1fr; padding: 0 12px 100px; gap: 12px; }
       .job-card-header { padding: 14px; }
       .job-card-title { font-size: 16px; margin-bottom: 10px; }
       .job-card-top { margin-bottom: 10px; }
@@ -1019,25 +1020,48 @@
       .btn { padding: 10px 14px; font-size: 12px; }
       .save-btn { width: 32px; height: 32px; }
       .save-btn svg { width: 14px; height: 14px; }
-      .pagination { padding: 16px 12px 20px; }
+      /* Extra padding for pagination */
+      .pagination { padding: 16px 12px 100px; }
       .page-btn { min-width: 32px; height: 32px; font-size: 12px; }
-      .empty-state, .loading-state { padding: 40px 16px; }
+      .empty-state, .loading-state { padding: 40px 16px 100px; }
       .empty-icon, .spinner-wrap { width: 60px; height: 60px; margin-bottom: 16px; }
       .spinner-large { width: 36px; height: 36px; }
       .empty-title { font-size: 18px; }
       .empty-text { font-size: 13px; }
-      .modal-overlay { padding: 0; align-items: flex-end; }
-      .modal { max-height: 90vh; border-radius: var(--radius-xl) var(--radius-xl) 0 0; animation: slideUp 0.3s var(--ease-out); }
-      @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-      .modal-header { padding: 16px; }
+      /* Modal - CENTERED on mobile, not at bottom */
+      .modal-overlay {
+        padding: 20px;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+      .modal {
+        max-height: 80vh;
+        max-width: 100%;
+        border-radius: var(--radius-xl);
+        animation: modalFadeIn 0.3s var(--ease-out);
+        display: flex;
+        flex-direction: column;
+      }
+      @keyframes modalFadeIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      .modal-header { padding: 16px; flex-shrink: 0; }
       .modal-title { font-size: 18px; padding-right: 40px; }
       .modal-eyebrow { font-size: 10px; margin-bottom: 6px; }
       .modal-close { top: 12px; right: 12px; width: 32px; height: 32px; }
-      .modal-body { padding: 16px; }
+      .modal-body {
+        padding: 16px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        flex: 1;
+        min-height: 0;
+      }
       .modal-meta { gap: 8px; margin-bottom: 16px; }
       .modal-meta-item { padding: 8px 12px; font-size: 11px; }
-      .modal-desc { padding: 14px; font-size: 13px; max-height: 200px; }
-      .modal-actions { padding: 12px 16px 20px; gap: 8px; flex-direction: column; }
+      .modal-desc { padding: 14px; font-size: 13px; max-height: 150px; overflow-y: auto; }
+      .modal-actions { padding: 12px 16px 16px; gap: 8px; flex-direction: column; flex-shrink: 0; }
       .modal-actions .btn { padding: 12px 16px; }
     }
 
@@ -1219,7 +1243,7 @@
       }
 
       .fullscreen-mode .job-grid {
-        padding: 0 8px 24px;
+        padding: 0 8px 100px;
         gap: 10px;
       }
 
@@ -1563,15 +1587,7 @@
         }
       }, [isFullscreen]);
 
-      // Auto-fullscreen on mobile - simple version (just CSS, no API call)
-      useEffect(() => {
-        const isMobile = window.innerWidth <= 500;
-        if (isMobile) {
-          console.log('📱 Mobile detected - enabling fullscreen CSS');
-          setIsFullscreen(true);
-          // Don't call requestDisplayMode - let ChatGPT handle it
-        }
-      }, []);
+      // No auto-fullscreen - user clicks button manually
 
       const defaultLabels = { jobs: 'jobb', map: 'Karta', all: 'Alla', fulltime: 'Heltid', parttime: 'Deltid', showMore: 'Läs mer', apply: 'Ansök', saved: 'Sparad!', noJobs: 'Inga jobb hittades', tryOther: 'Prova att söka efter något annat', loadingDesc: 'Laddar...', noDesc: 'Ingen beskrivning tillgänglig.', applyNow: 'Ansök nu', salaryInfo: 'Löneinfo', sending: 'Skickar...' };
       const [labels, setLabels] = useState(defaultLabels);
