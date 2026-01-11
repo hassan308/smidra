@@ -1589,24 +1589,45 @@ Anropa med denna data:
         if (more && init < total) setTimeout(() => loadMore(sid), 500);
       }, [loadMore]);
 
+      // Merge toolOutput (structuredContent) with toolResponseMetadata (_meta)
+      // _meta contains jobs array - hidden from ChatGPT to prevent "context rot"
+      const getMergedData = () => {
+        const output = window.openai?.toolOutput || {};
+        const meta = window.openai?.toolResponseMetadata || {};
+
+        // If jobs are in _meta (new pattern), merge them
+        // Otherwise fall back to old pattern where jobs are in toolOutput
+        return {
+          ...output,
+          jobs: meta.jobs || output.jobs || [],
+          loadingText: meta.loadingText || output.loadingText,
+          translatingText: meta.translatingText || output.translatingText,
+          querySwedish: meta.querySwedish || output.querySwedish,
+          locationSwedish: meta.locationSwedish || output.locationSwedish
+        };
+      };
+
       useEffect(() => {
         console.log('🚀 Widget initialized');
         console.log('   Theme:', window.openai?.theme);
         console.log('   Locale:', window.openai?.locale);
-        console.log('   Initial toolOutput:', window.openai?.toolOutput ? 'YES' : 'NO');
+        console.log('   toolOutput:', window.openai?.toolOutput ? 'YES' : 'NO');
+        console.log('   toolResponseMetadata:', window.openai?.toolResponseMetadata ? 'YES' : 'NO');
 
         if (window.openai?.widgetState?.savedJobs) setSavedJobs(window.openai.widgetState.savedJobs);
 
         const h = () => {
           console.log('📥 openai:set_globals event received');
-          console.log('   toolOutput:', JSON.stringify(window.openai?.toolOutput, null, 2).substring(0, 500));
-          if (window.openai?.toolOutput) handleData(window.openai.toolOutput, true);
+          const merged = getMergedData();
+          console.log('   Merged data - jobs:', merged.jobs?.length, 'total:', merged.total);
+          if (merged.jobs?.length || merged.total) handleData(merged, true);
         };
 
         window.addEventListener('openai:set_globals', h);
-        if (window.openai?.toolOutput) {
-          console.log('📥 Initial toolOutput:', JSON.stringify(window.openai.toolOutput, null, 2).substring(0, 500));
-          handleData(window.openai.toolOutput, true);
+        const initial = getMergedData();
+        if (initial.jobs?.length || initial.total) {
+          console.log('📥 Initial data - jobs:', initial.jobs?.length, 'total:', initial.total);
+          handleData(initial, true);
         }
         if (window.openai?.theme) document.documentElement.setAttribute('data-theme', window.openai.theme);
         return () => window.removeEventListener('openai:set_globals', h);

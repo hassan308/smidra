@@ -514,21 +514,29 @@ Then call display_jobs with the filtered list.`
 
     console.log(`📤 Found ${jobs.length} jobs - widget will translate to ${language}`);
 
-    // Normal flow: Return widget data directly - NO text response
-    // Empty content array = ChatGPT has nothing to say
+    // Three-layer pattern:
+    // - structuredContent: COMPACT summary (ChatGPT sees this)
+    // - _meta: FULL data (only widget sees this - keeps ChatGPT focused!)
+    // - content: empty (no text response)
     return {
       structuredContent: {
+        // Only summary for ChatGPT - prevents "context rot" with many results
         translateMode: true,
         language: language || 'sv',
         direction: direction || 'ltr',
+        query: query,
+        location: location || 'Sverige',
+        total,
+        jobCount: jobs.length,
+        message: `Found ${jobs.length} jobs. Widget displays results.`
+      },
+      _meta: {
+        // Full data for widget only - ChatGPT never sees this
+        jobs,
         loadingText: loadingText || 'Söker jobb...',
         translatingText: translatingText || 'Översätter...',
-        query: query,
         querySwedish: query,
-        location: location || 'Sverige',
-        locationSwedish: location || '',
-        total,
-        jobs
+        locationSwedish: location || ''
       },
       content: []
     };
