@@ -1425,6 +1425,23 @@
       const labelsRef = useRef(defaultLabels);
 
       const showToastMsg = useCallback(msg => { setToast({ message: msg, visible: true }); setTimeout(() => setToast(t => ({ ...t, visible: false })), 2500); }, []);
+
+      // Helper: Send message to ChatGPT with MCP instruction appended
+      const sendToChatGPT = useCallback((message, toolName = null) => {
+        const mcpSuffix = toolName
+          ? `\n\n[Använd endast ${toolName} verktyget från Smidra MCP]`
+          : '\n\n[Använd verktygen från Smidra MCP]';
+
+        const fullMessage = message + mcpSuffix;
+
+        console.log('📤 sendToChatGPT:');
+        console.log('   Original:', message.substring(0, 100) + '...');
+        console.log('   Tool hint:', toolName || 'any');
+        console.log('   Full message:', fullMessage);
+
+        window.openai?.sendFollowUpMessage?.({ prompt: fullMessage });
+      }, []);
+
       const showActionNotif = useCallback((title, description) => {
         setActionNotif({ visible: true, title, description });
         setTimeout(() => setActionNotif(n => ({ ...n, visible: false })), 8000);
@@ -1476,16 +1493,12 @@
         setSalaryLoading(true);
         setSalaryData(null);
 
-        const prompt = `Visa lönestatistik för "${job.title}" i ${job.location || 'Sverige'}.
+        const message = `Visa lönestatistik för "${job.title}" i ${job.location || 'Sverige'}.
 
-Använd update_widget_info verktyget från Smidra MCP med denna data:
-
+Anropa med denna data:
 {
   "widgetSessionId": "${widgetSessionId}",
-  "jobContext": {
-    "title": "${job.title}",
-    "location": "${job.location || 'Sverige'}"
-  },
+  "jobContext": { "title": "${job.title}", "location": "${job.location || 'Sverige'}" },
   "info": {
     "type": "compensation",
     "data": { "avg": [genomsnitt], "min": [lägsta], "max": [högsta] },
@@ -1494,9 +1507,8 @@ Använd update_widget_info verktyget från Smidra MCP med denna data:
   }
 }`;
 
-        console.log('💰 Sending prompt:', prompt);
-        window.openai?.sendFollowUpMessage?.({ prompt });
-      }, [widgetSessionId]);
+        sendToChatGPT(message, 'update_widget_info');
+      }, [widgetSessionId, sendToChatGPT]);
       useEffect(() => { labelsRef.current = labels; }, [labels]);
 
       const toggleSave = useCallback(id => { setSavedJobs(p => p.includes(id) ? p.filter(x => x !== id) : (showToastMsg(labelsRef.current.saved), [...p, id])); }, [showToastMsg]);
@@ -1578,10 +1590,24 @@ Använd update_widget_info verktyget från Smidra MCP med denna data:
       }, [loadMore]);
 
       useEffect(() => {
+        console.log('🚀 Widget initialized');
+        console.log('   Theme:', window.openai?.theme);
+        console.log('   Locale:', window.openai?.locale);
+        console.log('   Initial toolOutput:', window.openai?.toolOutput ? 'YES' : 'NO');
+
         if (window.openai?.widgetState?.savedJobs) setSavedJobs(window.openai.widgetState.savedJobs);
-        const h = () => window.openai?.toolOutput && handleData(window.openai.toolOutput, true);
+
+        const h = () => {
+          console.log('📥 openai:set_globals event received');
+          console.log('   toolOutput:', JSON.stringify(window.openai?.toolOutput, null, 2).substring(0, 500));
+          if (window.openai?.toolOutput) handleData(window.openai.toolOutput, true);
+        };
+
         window.addEventListener('openai:set_globals', h);
-        if (window.openai?.toolOutput) handleData(window.openai.toolOutput, true);
+        if (window.openai?.toolOutput) {
+          console.log('📥 Initial toolOutput:', JSON.stringify(window.openai.toolOutput, null, 2).substring(0, 500));
+          handleData(window.openai.toolOutput, true);
+        }
         if (window.openai?.theme) document.documentElement.setAttribute('data-theme', window.openai.theme);
         return () => window.removeEventListener('openai:set_globals', h);
       }, [handleData]);
