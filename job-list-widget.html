@@ -6,7 +6,7 @@
   <title>Smidra - Job Search</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -14,124 +14,221 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
     :root {
-      --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      --brand-primary: #6366f1;
-      --brand-primary-light: #818cf8;
-      --brand-secondary: #ec4899;
-      --brand-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
-      --brand-gradient-subtle: linear-gradient(135deg, rgba(99,102,241,0.1) 0%, rgba(139,92,246,0.1) 50%, rgba(236,72,153,0.1) 100%);
-      --success: #10b981;
-      --success-light: #d1fae5;
-      --warning: #f59e0b;
-      --urgent: #ef4444;
-      --urgent-light: #fee2e2;
-      --bg-primary: #fafbfc;
-      --bg-secondary: #ffffff;
-      --bg-tertiary: #f1f5f9;
-      --bg-card: #ffffff;
-      --text-primary: #0f172a;
-      --text-secondary: #475569;
-      --text-muted: #94a3b8;
-      --border: #e2e8f0;
-      --border-light: #f1f5f9;
-      --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
-      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-      --shadow-lg: 0 12px 40px rgba(0,0,0,0.12);
-      --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.15);
-      --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
-      --shadow-card-hover: 0 8px 30px rgba(0,0,0,0.12);
-      --radius-sm: 8px;
-      --radius-md: 12px;
-      --radius-lg: 16px;
-      --radius-xl: 24px;
+      --font-display: 'Fraunces', Georgia, serif;
+      --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+
+      /* Warm, refined palette */
+      --cream: #FDFBF7;
+      --cream-dark: #F5F2ED;
+      --sand: #E8E4DD;
+      --stone: #C9C4BC;
+      --charcoal: #2C2C2C;
+      --charcoal-soft: #4A4A4A;
+      --charcoal-muted: #7A7A7A;
+
+      /* Accent - warm terracotta */
+      --accent: #C85A38;
+      --accent-hover: #B54E2E;
+      --accent-soft: rgba(200, 90, 56, 0.08);
+      --accent-glow: rgba(200, 90, 56, 0.15);
+
+      /* Secondary - sage green */
+      --sage: #7B9E87;
+      --sage-soft: rgba(123, 158, 135, 0.1);
+
+      /* Semantic */
+      --success: #5B8C5A;
+      --warning: #D4A03C;
+      --urgent: #C44536;
+
+      /* Surfaces */
+      --surface-primary: var(--cream);
+      --surface-elevated: #FFFFFF;
+      --surface-sunken: var(--cream-dark);
+
+      /* Text */
+      --text-primary: var(--charcoal);
+      --text-secondary: var(--charcoal-soft);
+      --text-muted: var(--charcoal-muted);
+      --text-inverse: #FFFFFF;
+
+      /* Borders */
+      --border: var(--sand);
+      --border-subtle: rgba(0,0,0,0.06);
+
+      /* Shadows - soft and warm */
+      --shadow-xs: 0 1px 2px rgba(44,44,44,0.04);
+      --shadow-sm: 0 2px 8px rgba(44,44,44,0.06);
+      --shadow-md: 0 4px 20px rgba(44,44,44,0.08);
+      --shadow-lg: 0 12px 40px rgba(44,44,44,0.12);
+      --shadow-card: 0 2px 12px rgba(44,44,44,0.06);
+      --shadow-card-hover: 0 8px 32px rgba(44,44,44,0.12);
+
+      /* Radii */
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 20px;
+      --radius-2xl: 28px;
       --radius-full: 9999px;
+
+      /* Timing */
+      --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
     [data-theme="dark"] {
-      --bg-primary: #0f172a;
-      --bg-secondary: #1e293b;
-      --bg-tertiary: #334155;
-      --bg-card: #1e293b;
-      --text-primary: #f8fafc;
-      --text-secondary: #cbd5e1;
-      --text-muted: #64748b;
-      --border: #334155;
-      --border-light: #1e293b;
-      --shadow-card: 0 1px 3px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.15);
-      --shadow-card-hover: 0 8px 30px rgba(0,0,0,0.4);
+      --cream: #1A1A1F;
+      --cream-dark: #141418;
+      --sand: #2A2A30;
+      --stone: #3A3A42;
+      --charcoal: #F5F5F5;
+      --charcoal-soft: #D0D0D0;
+      --charcoal-muted: #888888;
+      --accent: #E07A5F;
+      --accent-hover: #E8917A;
+      --accent-soft: rgba(224, 122, 95, 0.12);
+      --sage: #8FB396;
+      --sage-soft: rgba(143, 179, 150, 0.12);
+      --surface-primary: var(--cream);
+      --surface-elevated: #222228;
+      --surface-sunken: var(--cream-dark);
+      --text-primary: var(--charcoal);
+      --text-secondary: var(--charcoal-soft);
+      --text-muted: var(--charcoal-muted);
+      --border: var(--sand);
+      --border-subtle: rgba(255,255,255,0.08);
+      --shadow-card: 0 2px 12px rgba(0,0,0,0.2);
+      --shadow-card-hover: 0 8px 32px rgba(0,0,0,0.3);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; height: 100%; }
+    html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
 
     body {
-      font-family: var(--font-main);
-      background: var(--bg-primary);
+      font-family: var(--font-body);
+      background: var(--surface-primary);
       color: var(--text-primary);
       -webkit-font-smoothing: antialiased;
-      min-height: 100%;
-      line-height: 1.5;
+      -moz-osx-font-smoothing: grayscale;
+      line-height: 1.6;
+      letter-spacing: -0.01em;
     }
 
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    /* Subtle grain texture */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      opacity: 0.03;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: var(--stone); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--charcoal-muted); }
 
-    .container { max-width: 960px; margin: 0 auto; }
+    .container { max-width: 1000px; margin: 0 auto; }
 
+    /* Header - Editorial style */
     .header {
-      background: var(--brand-gradient);
-      padding: 24px 20px;
+      padding: 40px 28px 32px;
+      background: var(--surface-primary);
       position: relative;
-      overflow: hidden;
     }
 
-    .header::before {
+    .header::after {
       content: '';
       position: absolute;
-      top: -50%;
-      right: -20%;
-      width: 400px;
-      height: 400px;
-      background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 60%);
+      bottom: 0;
+      left: 28px;
+      right: 28px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
     }
 
-    .header-content { position: relative; z-index: 1; }
-    .header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
-    .header-title { font-size: 24px; font-weight: 800; color: white; line-height: 1.2; }
+    .header-eyebrow {
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-eyebrow::before {
+      content: '';
+      width: 24px;
+      height: 2px;
+      background: var(--accent);
+    }
+
+    .header-title {
+      font-family: var(--font-display);
+      font-size: 36px;
+      font-weight: 500;
+      color: var(--text-primary);
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .header-meta {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .header-location {
+      font-size: 15px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .header-location svg { width: 16px; height: 16px; color: var(--sage); }
 
     .header-count {
       display: flex;
       align-items: center;
       gap: 8px;
-      background: rgba(255,255,255,0.2);
-      backdrop-filter: blur(10px);
-      padding: 8px 14px;
-      border-radius: var(--radius-full);
       font-size: 14px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .header-count-num {
+      font-family: var(--font-display);
+      font-size: 18px;
       font-weight: 600;
-      color: white;
+      color: var(--text-primary);
     }
 
     .header-loading {
       width: 14px; height: 14px;
-      border: 2px solid rgba(255,255,255,0.3);
-      border-top-color: white;
+      border: 2px solid var(--sand);
+      border-top-color: var(--accent);
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .header-subtitle { font-size: 14px; color: rgba(255,255,255,0.85); display: flex; align-items: center; gap: 6px; }
-    .header-subtitle svg { width: 16px; height: 16px; opacity: 0.9; }
-
+    /* Controls - Pill style */
     .controls {
       display: flex;
-      gap: 8px;
-      padding: 16px 20px;
-      background: var(--bg-secondary);
-      border-bottom: 1px solid var(--border-light);
+      gap: 10px;
+      padding: 20px 28px;
+      background: var(--surface-primary);
       flex-wrap: wrap;
       position: sticky;
       top: 0;
@@ -139,306 +236,629 @@
     }
 
     .control-btn {
-      padding: 10px 18px;
-      border: none;
+      padding: 10px 20px;
+      border: 1.5px solid var(--border);
       border-radius: var(--radius-full);
-      font-size: 14px;
+      font-family: var(--font-body);
+      font-size: 13px;
       font-weight: 600;
+      letter-spacing: 0.01em;
       cursor: pointer;
-      transition: all 0.2s ease;
-      background: var(--bg-tertiary);
+      transition: all 0.25s var(--ease-out);
+      background: var(--surface-elevated);
       color: var(--text-secondary);
       display: flex;
       align-items: center;
       gap: 8px;
     }
 
-    .control-btn:hover { background: var(--border); }
-    .control-btn.active { background: var(--brand-gradient-subtle); color: var(--brand-primary); }
-    .control-btn.primary { background: var(--brand-gradient); color: white; }
-    .control-btn.primary:hover { opacity: 0.9; box-shadow: var(--shadow-glow); }
+    .control-btn:hover {
+      border-color: var(--stone);
+      color: var(--text-primary);
+      transform: translateY(-1px);
+    }
+
+    .control-btn.active {
+      background: var(--charcoal);
+      color: var(--text-inverse);
+      border-color: var(--charcoal);
+    }
+
+    .control-btn.primary {
+      background: var(--accent);
+      color: var(--text-inverse);
+      border-color: var(--accent);
+    }
+
+    .control-btn.primary:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      box-shadow: 0 4px 16px var(--accent-glow);
+    }
+
     .control-btn svg { width: 16px; height: 16px; }
 
-    .map-section { background: var(--bg-secondary); border-bottom: 1px solid var(--border-light); overflow: hidden; transition: height 0.3s ease; }
-    .map-section.collapsed { height: 0 !important; }
+    /* Map Section */
+    .map-section {
+      margin: 0 28px 24px;
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      background: var(--surface-elevated);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-subtle);
+      transition: height 0.4s var(--ease-out), opacity 0.3s ease, margin 0.4s var(--ease-out);
+    }
+
+    .map-section.collapsed {
+      height: 0 !important;
+      opacity: 0;
+      margin-bottom: 0;
+      border: none;
+    }
+
     .map-wrapper { height: 280px; position: relative; }
     #map { width: 100%; height: 100%; }
 
     .map-info {
       position: absolute;
       bottom: 16px; left: 16px;
-      background: var(--bg-secondary);
+      background: var(--surface-elevated);
       padding: 10px 16px;
       border-radius: var(--radius-md);
       font-size: 13px;
       font-weight: 600;
-      color: var(--brand-primary);
+      color: var(--text-primary);
       box-shadow: var(--shadow-md);
       z-index: 1000;
       display: flex;
       align-items: center;
-      gap: 8px;
-      border: 1px solid var(--border-light);
+      gap: 10px;
     }
 
-    .map-info .dot { width: 8px; height: 8px; background: var(--brand-primary); border-radius: 50%; animation: pulse 2s infinite; }
+    .map-info .dot {
+      width: 8px; height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+      box-shadow: 0 0 0 0 var(--accent-glow);
+    }
 
-    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.3); } }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 var(--accent-glow); }
+      50% { opacity: 0.8; transform: scale(1.1); box-shadow: 0 0 0 8px transparent; }
+    }
 
-    .job-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; padding: 20px; }
+    /* Job Grid - Masonry-inspired */
+    .job-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+      padding: 0 28px 28px;
+    }
 
+    /* Job Card - Editorial/Magazine style */
     .job-card {
-      background: var(--bg-card);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-card);
+      background: var(--surface-elevated);
+      border-radius: var(--radius-xl);
       overflow: hidden;
-      transition: all 0.25s ease;
+      transition: all 0.35s var(--ease-out);
       cursor: pointer;
-      border: 1px solid var(--border-light);
+      border: 1px solid var(--border-subtle);
+      position: relative;
     }
 
-    .job-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-card-hover); border-color: var(--brand-primary-light); }
-    .job-card-header { padding: 20px 20px 16px; }
-    .job-card-company { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+    .job-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-card);
+      transition: opacity 0.35s ease;
+    }
 
-    .company-logo { width: 52px; height: 52px; border-radius: var(--radius-md); object-fit: cover; background: var(--bg-tertiary); }
+    .job-card:hover {
+      transform: translateY(-6px);
+    }
+
+    .job-card:hover::before {
+      box-shadow: var(--shadow-card-hover);
+    }
+
+    .job-card-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .job-card-header {
+      padding: 24px 24px 20px;
+    }
+
+    .job-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .job-card-company {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .company-logo {
+      width: 44px; height: 44px;
+      border-radius: var(--radius-md);
+      object-fit: cover;
+      background: var(--surface-sunken);
+    }
 
     .company-logo-fallback {
-      width: 52px; height: 52px;
+      width: 44px; height: 44px;
       border-radius: var(--radius-md);
-      background: var(--brand-gradient);
+      background: linear-gradient(135deg, var(--sage) 0%, var(--sage-soft) 100%);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: white;
+      color: var(--text-inverse);
       font-weight: 700;
-      font-size: 18px;
+      font-size: 14px;
+      letter-spacing: 0.02em;
     }
 
     .company-info { flex: 1; min-width: 0; }
-    .company-name { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .company-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
 
     .job-type-badge {
       display: inline-flex;
-      font-size: 11px;
-      color: var(--brand-primary);
-      background: var(--brand-gradient-subtle);
+      font-size: 10px;
+      color: var(--sage);
+      background: var(--sage-soft);
       padding: 4px 10px;
       border-radius: var(--radius-full);
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.3px;
+      letter-spacing: 0.06em;
     }
 
+    .save-btn {
+      width: 36px; height: 36px;
+      border: none;
+      border-radius: var(--radius-md);
+      background: var(--surface-sunken);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      color: var(--text-muted);
+    }
+
+    .save-btn:hover {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .save-btn.saved {
+      background: var(--accent);
+      color: var(--text-inverse);
+    }
+
+    .save-btn svg { width: 16px; height: 16px; }
+
     .job-card-title {
-      font-size: 17px;
-      font-weight: 700;
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 500;
       color: var(--text-primary);
-      line-height: 1.35;
-      margin-bottom: 12px;
+      line-height: 1.3;
+      letter-spacing: -0.01em;
+      margin-bottom: 14px;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
 
-    .job-card-meta { display: flex; flex-wrap: wrap; gap: 12px; }
-    .job-meta-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); font-weight: 500; }
-    .job-meta-item svg { width: 14px; height: 14px; color: var(--text-muted); }
+    .job-card-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
 
-    .job-card-footer { display: flex; padding: 14px 20px; gap: 10px; background: var(--bg-tertiary); border-top: 1px solid var(--border-light); }
+    .job-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
 
+    .job-meta-item svg { width: 14px; height: 14px; color: var(--stone); }
+
+    .job-card-footer {
+      display: flex;
+      padding: 16px 24px;
+      gap: 10px;
+      background: var(--surface-sunken);
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    /* Buttons */
     .btn {
       flex: 1;
-      padding: 12px 16px;
+      padding: 12px 18px;
       border: none;
       border-radius: var(--radius-md);
-      font-size: 14px;
+      font-family: var(--font-body);
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.25s var(--ease-out);
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
     }
 
-    .btn svg { width: 16px; height: 16px; }
-    .btn-primary { background: var(--brand-gradient); color: white; }
-    .btn-primary:hover { opacity: 0.9; box-shadow: var(--shadow-glow); transform: scale(1.02); }
-    .btn-secondary { background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border); }
-    .btn-secondary:hover { border-color: var(--brand-primary); color: var(--brand-primary); }
-    .btn-icon { width: 44px; flex: none; padding: 12px; }
-    .btn-icon.saved { color: var(--urgent); background: var(--urgent-light); border-color: transparent; }
+    .btn svg { width: 15px; height: 15px; }
 
+    .btn-primary {
+      background: var(--charcoal);
+      color: var(--text-inverse);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px var(--accent-glow);
+    }
+
+    .btn-secondary {
+      background: var(--surface-elevated);
+      color: var(--text-primary);
+      border: 1.5px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--charcoal);
+      transform: translateY(-1px);
+    }
+
+    /* Pagination - Minimal */
     .pagination {
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 6px;
-      padding: 24px 20px;
-      background: var(--bg-secondary);
-      margin: 0 20px 20px;
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-card);
+      gap: 4px;
+      padding: 32px 28px 40px;
     }
 
     .page-btn {
-      min-width: 42px; height: 42px;
+      min-width: 40px; height: 40px;
       border: none;
       border-radius: var(--radius-md);
-      background: var(--bg-tertiary);
+      background: transparent;
+      font-family: var(--font-body);
       font-size: 14px;
-      font-weight: 600;
-      color: var(--text-secondary);
+      font-weight: 500;
+      color: var(--text-muted);
       cursor: pointer;
       transition: all 0.2s ease;
     }
 
-    .page-btn:hover:not(:disabled) { background: var(--border); color: var(--text-primary); }
-    .page-btn.active { background: var(--brand-gradient); color: white; }
-    .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .page-dots { padding: 0 8px; color: var(--text-muted); }
-
-    .empty-state, .loading-state {
-      padding: 80px 20px;
-      text-align: center;
-      background: var(--bg-secondary);
-      margin: 20px;
-      border-radius: var(--radius-xl);
-      border: 1px solid var(--border-light);
+    .page-btn:hover:not(:disabled) {
+      background: var(--surface-sunken);
+      color: var(--text-primary);
     }
 
-    .empty-icon, .spinner-wrap { width: 100px; height: 100px; margin: 0 auto 24px; background: var(--bg-tertiary); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-    .spinner-wrap { background: transparent; }
-    .spinner-large { width: 56px; height: 56px; border: 4px solid var(--border); border-top-color: var(--brand-primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
-    .empty-icon svg { width: 48px; height: 48px; color: var(--text-muted); }
-    .empty-title { font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
-    .empty-text { color: var(--text-muted); font-size: 15px; }
+    .page-btn.active {
+      background: var(--charcoal);
+      color: var(--text-inverse);
+    }
 
+    .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .page-dots { padding: 0 8px; color: var(--text-muted); font-size: 14px; }
+
+    /* Empty & Loading States */
+    .empty-state, .loading-state {
+      padding: 80px 28px;
+      text-align: center;
+    }
+
+    .empty-icon, .spinner-wrap {
+      width: 80px; height: 80px;
+      margin: 0 auto 28px;
+      background: var(--surface-sunken);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .spinner-wrap { background: transparent; }
+
+    .spinner-large {
+      width: 48px; height: 48px;
+      border: 3px solid var(--sand);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+
+    .empty-icon svg { width: 32px; height: 32px; color: var(--text-muted); }
+
+    .empty-title {
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .empty-text {
+      color: var(--text-muted);
+      font-size: 15px;
+      max-width: 280px;
+      margin: 0 auto;
+    }
+
+    /* Modal - Elegant overlay */
     .modal-overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(15, 23, 42, 0.6);
-      backdrop-filter: blur(4px);
+      background: rgba(44,44,44,0.4);
+      backdrop-filter: blur(8px);
       z-index: 2000;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding: 24px;
     }
 
     .modal-overlay.show { display: flex; }
 
     .modal {
-      background: var(--bg-secondary);
-      border-radius: var(--radius-xl);
+      background: var(--surface-elevated);
+      border-radius: var(--radius-2xl);
       box-shadow: var(--shadow-lg);
-      max-width: 560px;
+      max-width: 540px;
       width: 100%;
       max-height: 85vh;
       overflow: hidden;
-      animation: modalIn 0.3s ease;
+      animation: modalIn 0.4s var(--ease-out);
     }
 
-    @keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.96) translateY(12px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
 
-    .modal-header { padding: 24px; background: var(--brand-gradient); color: white; position: relative; }
-    .modal-header::before { content: ''; position: absolute; top: -50%; right: -20%; width: 300px; height: 300px; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%); }
-    .modal-header-content { position: relative; z-index: 1; padding-right: 50px; }
+    .modal-header {
+      padding: 28px 28px 24px;
+      position: relative;
+      border-bottom: 1px solid var(--border-subtle);
+    }
 
     .modal-close {
       position: absolute;
       top: 20px; right: 20px;
-      width: 40px; height: 40px;
+      width: 36px; height: 36px;
       border: none;
       border-radius: var(--radius-md);
-      background: rgba(255,255,255,0.2);
-      color: white;
+      background: var(--surface-sunken);
+      color: var(--text-muted);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       transition: all 0.2s ease;
-      z-index: 2;
     }
 
-    .modal-close:hover { background: rgba(255,255,255,0.3); }
-    .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; line-height: 1.3; }
-    .modal-company { font-size: 15px; opacity: 0.9; }
-    .modal-body { padding: 24px; overflow-y: auto; max-height: calc(85vh - 200px); }
-    .modal-meta { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
-    .modal-meta-item { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--bg-tertiary); border-radius: var(--radius-md); font-size: 13px; font-weight: 500; color: var(--text-secondary); }
-    .modal-meta-item svg { width: 16px; height: 16px; color: var(--brand-primary); }
+    .modal-close:hover {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .modal-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+
+    .modal-title {
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+      line-height: 1.25;
+      padding-right: 48px;
+    }
+
+    .modal-company {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-top: 6px;
+    }
+
+    .modal-body {
+      padding: 24px 28px;
+      overflow-y: auto;
+      max-height: calc(85vh - 220px);
+    }
+
+    .modal-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .modal-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: var(--surface-sunken);
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .modal-meta-item svg { width: 15px; height: 15px; color: var(--sage); }
 
     .modal-desc {
       font-size: 14px;
-      line-height: 1.7;
+      line-height: 1.75;
       color: var(--text-secondary);
       white-space: pre-wrap;
       padding: 20px;
-      background: var(--bg-tertiary);
-      border-radius: var(--radius-md);
-      border: 1px solid var(--border-light);
-      max-height: 300px;
+      background: var(--surface-sunken);
+      border-radius: var(--radius-lg);
+      max-height: 280px;
       overflow-y: auto;
     }
 
-    .modal-actions { display: flex; gap: 10px; padding: 20px 24px; background: var(--bg-tertiary); border-top: 1px solid var(--border-light); }
-    .modal-actions .btn { flex: 1; padding: 14px 20px; }
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      padding: 20px 28px 28px;
+    }
 
+    .modal-actions .btn {
+      padding: 14px 24px;
+    }
+
+    /* Toast - Subtle */
     .toast {
       position: fixed;
-      bottom: 24px; left: 50%;
-      transform: translateX(-50%) translateY(100px);
-      background: var(--text-primary);
-      color: var(--bg-primary);
+      bottom: 28px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--charcoal);
+      color: var(--text-inverse);
       padding: 14px 24px;
       border-radius: var(--radius-md);
       font-size: 14px;
-      font-weight: 600;
+      font-weight: 500;
       opacity: 0;
-      transition: all 0.3s ease;
+      transition: all 0.35s var(--ease-out);
       z-index: 3000;
       box-shadow: var(--shadow-lg);
     }
 
-    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-
-    .leaflet-popup-content-wrapper { border-radius: var(--radius-md); box-shadow: var(--shadow-lg); }
-    .map-popup { padding: 4px; }
-    .map-popup-title { font-weight: 700; color: var(--text-primary); margin-bottom: 4px; font-size: 14px; }
-    .map-popup-company { color: var(--text-muted); font-size: 12px; }
-    .map-popup-btn { margin-top: 10px; padding: 8px 14px; background: var(--brand-gradient); color: white; border: none; border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; cursor: pointer; width: 100%; }
-
-    @media (max-width: 640px) {
-      .header { padding: 20px 16px; }
-      .header-title { font-size: 20px; }
-      .header-count { padding: 6px 12px; font-size: 13px; }
-      .controls { padding: 12px 16px; gap: 6px; overflow-x: auto; flex-wrap: nowrap; }
-      .control-btn { padding: 8px 14px; font-size: 13px; flex-shrink: 0; }
-      .map-wrapper { height: 200px; }
-      .job-grid { grid-template-columns: 1fr; padding: 12px; gap: 12px; }
-      .job-card-header { padding: 16px; }
-      .company-logo, .company-logo-fallback { width: 44px; height: 44px; font-size: 14px; }
-      .job-card-title { font-size: 16px; }
-      .job-card-footer { padding: 12px 16px; }
-      .btn { padding: 11px 14px; font-size: 13px; }
-      .pagination { padding: 16px; margin: 12px; }
-      .page-btn { min-width: 38px; height: 38px; font-size: 13px; }
-      .empty-state, .loading-state { padding: 50px 16px; margin: 12px; }
-      .modal-overlay { padding: 0; align-items: flex-end; }
-      .modal { max-height: 92vh; border-radius: var(--radius-xl) var(--radius-xl) 0 0; animation: slideUp 0.3s ease; }
-      @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-      .modal-header { padding: 20px; }
-      .modal-body { padding: 16px; }
-      .modal-actions { padding: 16px; flex-direction: column; }
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
     }
 
-    [dir="rtl"] .header-top { flex-direction: row-reverse; }
+    /* Map popups */
+    .leaflet-popup-content-wrapper {
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
+      font-family: var(--font-body);
+    }
+
+    .map-popup { padding: 4px; }
+    .map-popup-title {
+      font-family: var(--font-display);
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+    .map-popup-company { color: var(--text-muted); font-size: 12px; }
+    .map-popup-btn {
+      margin-top: 10px;
+      padding: 8px 14px;
+      background: var(--charcoal);
+      color: var(--text-inverse);
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.2s ease;
+    }
+    .map-popup-btn:hover { background: var(--accent); }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .header { padding: 28px 20px 24px; }
+      .header::after { left: 20px; right: 20px; }
+      .header-title { font-size: 28px; }
+      .header-eyebrow { font-size: 10px; }
+      .controls { padding: 16px 20px; gap: 8px; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+      .control-btn { padding: 9px 16px; font-size: 12px; flex-shrink: 0; }
+      .map-section { margin: 0 16px 20px; border-radius: var(--radius-lg); }
+      .map-wrapper { height: 200px; }
+      .job-grid { grid-template-columns: 1fr; padding: 0 16px 20px; gap: 16px; }
+      .job-card-header { padding: 20px; }
+      .job-card-title { font-size: 18px; }
+      .job-card-footer { padding: 14px 20px; }
+      .btn { padding: 11px 16px; }
+      .pagination { padding: 24px 16px 32px; }
+      .page-btn { min-width: 36px; height: 36px; font-size: 13px; }
+      .empty-state, .loading-state { padding: 60px 20px; }
+      .modal-overlay { padding: 0; align-items: flex-end; }
+      .modal {
+        max-height: 92vh;
+        border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+        animation: slideUp 0.4s var(--ease-out);
+      }
+      @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+      .modal-header { padding: 24px 20px 20px; }
+      .modal-title { font-size: 20px; }
+      .modal-body { padding: 20px; }
+      .modal-actions { padding: 16px 20px 24px; flex-direction: column; }
+    }
+
+    /* RTL Support */
+    [dir="rtl"] .header-eyebrow::before { display: none; }
+    [dir="rtl"] .header-eyebrow::after { content: ''; width: 24px; height: 2px; background: var(--accent); }
+    [dir="rtl"] .job-card-top { flex-direction: row-reverse; }
     [dir="rtl"] .job-card-company { flex-direction: row-reverse; }
     [dir="rtl"] .job-card-footer { flex-direction: row-reverse; }
     [dir="rtl"] .controls { flex-direction: row-reverse; }
+    [dir="rtl"] .modal-title { padding-right: 0; padding-left: 48px; }
+    [dir="rtl"] .modal-close { right: auto; left: 20px; }
+
+    /* Animation stagger for cards */
+    .job-card {
+      animation: cardIn 0.5s var(--ease-out) backwards;
+    }
+
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .job-grid .job-card:nth-child(1) { animation-delay: 0.05s; }
+    .job-grid .job-card:nth-child(2) { animation-delay: 0.1s; }
+    .job-grid .job-card:nth-child(3) { animation-delay: 0.15s; }
+    .job-grid .job-card:nth-child(4) { animation-delay: 0.2s; }
+    .job-grid .job-card:nth-child(5) { animation-delay: 0.25s; }
+    .job-grid .job-card:nth-child(6) { animation-delay: 0.3s; }
+    .job-grid .job-card:nth-child(7) { animation-delay: 0.35s; }
+    .job-grid .job-card:nth-child(8) { animation-delay: 0.4s; }
+    .job-grid .job-card:nth-child(9) { animation-delay: 0.45s; }
+    .job-grid .job-card:nth-child(10) { animation-delay: 0.5s; }
+    .job-grid .job-card:nth-child(11) { animation-delay: 0.55s; }
+    .job-grid .job-card:nth-child(12) { animation-delay: 0.6s; }
   </style>
 </head>
 <body>
@@ -503,41 +923,51 @@
       return keys.reduce((acc, k, i) => ({ ...acc, [k]: vals[i] || labels[k] }), {});
     };
 
-    const CompanyLogo = ({ name, logoUrl, size = 52 }) => {
+    const CompanyLogo = ({ name, logoUrl, size = 44 }) => {
       const [src, setSrc] = useState(0);
       const domain = name?.toLowerCase().replace(/\s*(ab|hb|kb)\s*/gi, '').replace(/[^a-z0-9]/gi, '').replace(/[åäö]/g, c => c === 'ö' ? 'o' : 'a');
-      const sources = [logoUrl, domain?.length > 2 && `https://logo.clearbit.com/${domain}.se`, `https://ui-avatars.com/api/?name=${encodeURIComponent(name || '?')}&background=random&color=fff&size=${size * 2}&bold=true&format=svg`].filter(Boolean);
+      const sources = [logoUrl, domain?.length > 2 && `https://logo.clearbit.com/${domain}.se`, `https://ui-avatars.com/api/?name=${encodeURIComponent(name || '?')}&background=7B9E87&color=fff&size=${size * 2}&bold=true&format=svg`].filter(Boolean);
       if (src === -1 || !sources.length) return <div className="company-logo-fallback" style={{ width: size, height: size }}>{getInitials(name)}</div>;
       return <img src={sources[src]} alt={name} className="company-logo" style={{ width: size, height: size }} onError={() => setSrc(p => p < sources.length - 1 ? p + 1 : -1)} />;
     };
 
     const MapIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
     const ClockIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
-    const HeartIcon = ({ filled }) => <svg viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" width="18" height="18"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>;
-    const CloseIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20"><path d="M18 6L6 18M6 6l12 12"/></svg>;
+    const HeartIcon = ({ filled }) => <svg viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>;
+    const CloseIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>;
     const SearchIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>;
-    const ExternalIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>;
+    const ExternalIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>;
 
     const JobCard = ({ job, isSaved, onSave, onClick, labels }) => (
       <div className="job-card" onClick={() => onClick(job)}>
-        <div className="job-card-header">
-          <div className="job-card-company">
-            <CompanyLogo name={job.employer} logoUrl={job.logoUrl} />
-            <div className="company-info">
-              <div className="company-name">{job.employer}</div>
-              {job.employmentType && <span className="job-type-badge">{job.employmentType}</span>}
+        <div className="job-card-inner">
+          <div className="job-card-header">
+            <div className="job-card-top">
+              <div className="job-card-company">
+                <CompanyLogo name={job.employer} logoUrl={job.logoUrl} />
+                <div className="company-info">
+                  <div className="company-name">{job.employer}</div>
+                  {job.employmentType && <span className="job-type-badge">{job.employmentType}</span>}
+                </div>
+              </div>
+              <button
+                className={`save-btn ${isSaved ? 'saved' : ''}`}
+                onClick={e => { e.stopPropagation(); onSave(job.id); }}
+                aria-label={isSaved ? 'Unsave' : 'Save'}
+              >
+                <HeartIcon filled={isSaved} />
+              </button>
+            </div>
+            <div className="job-card-title">{job.title}</div>
+            <div className="job-card-meta">
+              <span className="job-meta-item"><MapIcon />{job.location || 'Sverige'}</span>
+              {job.deadline && <span className="job-meta-item"><ClockIcon />{job.deadline}</span>}
             </div>
           </div>
-          <div className="job-card-title">{job.title}</div>
-          <div className="job-card-meta">
-            <span className="job-meta-item"><MapIcon />{job.location || 'Sverige'}</span>
-            {job.deadline && <span className="job-meta-item"><ClockIcon />{job.deadline}</span>}
+          <div className="job-card-footer">
+            <button className="btn btn-secondary" onClick={e => { e.stopPropagation(); onClick(job); }}>{labels.showMore}</button>
+            <button className="btn btn-primary" onClick={e => { e.stopPropagation(); window.openai?.openExternal?.({ href: job.url }); }}><ExternalIcon />{labels.apply}</button>
           </div>
-        </div>
-        <div className="job-card-footer">
-          <button className="btn btn-secondary" onClick={e => { e.stopPropagation(); onClick(job); }}>{labels.showMore}</button>
-          <button className="btn btn-primary" onClick={e => { e.stopPropagation(); window.openai?.openExternal?.({ href: job.url }); }}><ExternalIcon />{labels.apply}</button>
-          <button className={`btn btn-secondary btn-icon ${isSaved ? 'saved' : ''}`} onClick={e => { e.stopPropagation(); onSave(job.id); }}><HeartIcon filled={isSaved} /></button>
         </div>
       </div>
     );
@@ -584,19 +1014,21 @@
         <div className="modal-overlay show" onClick={onClose}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="modal-header-content"><div className="modal-title">{d.title}</div><div className="modal-company">{d.employer}</div></div>
+              <div className="modal-eyebrow">{d.employer}</div>
+              <div className="modal-title">{d.title}</div>
               <button className="modal-close" onClick={onClose}><CloseIcon /></button>
             </div>
             <div className="modal-body">
               <div className="modal-meta">
                 <span className="modal-meta-item"><MapIcon />{d.location || 'Sverige'}</span>
                 {d.deadline && <span className="modal-meta-item"><ClockIcon />{d.deadline}</span>}
+                {d.employmentType && <span className="modal-meta-item">{d.employmentType}</span>}
               </div>
-              {loading ? <div style={{ textAlign: 'center', padding: 30 }}><div className="spinner-large" style={{ margin: '0 auto 16px' }} /><div style={{ color: 'var(--text-muted)' }}>{labels.loadingDesc}</div></div> : <div className="modal-desc">{desc || labels.noDesc}</div>}
+              {loading ? <div style={{ textAlign: 'center', padding: 40 }}><div className="spinner-large" style={{ margin: '0 auto 20px' }} /><div style={{ color: 'var(--text-muted)', fontSize: 14 }}>{labels.loadingDesc}</div></div> : <div className="modal-desc">{desc || labels.noDesc}</div>}
             </div>
             <div className="modal-actions">
-              <button className="btn btn-primary" onClick={() => window.openai?.openExternal?.({ href: d.url })}><ExternalIcon />{labels.applyNow}</button>
               <button className="btn btn-secondary" onClick={() => { showToast(labels.sending); window.openai?.sendFollowUpMessage?.({ prompt: `Visa lönestatistik för: ${d.title} i ${d.location || 'Sverige'}. Sök på nätet och anropa display_salary.` }); }}>{labels.salaryInfo}</button>
+              <button className="btn btn-primary" onClick={() => window.openai?.openExternal?.({ href: d.url })}><ExternalIcon />{labels.applyNow}</button>
             </div>
           </div>
         </div>
@@ -611,7 +1043,7 @@
       const [location, setLocation] = useState('');
       const [filter, setFilter] = useState('all');
       const [currentPage, setCurrentPage] = useState(1);
-      const [showMap, setShowMap] = useState(true);
+      const [showMap, setShowMap] = useState(false);
       const [savedJobs, setSavedJobs] = useState([]);
       const [selectedJob, setSelectedJob] = useState(null);
       const [loading, setLoading] = useState(true);
@@ -621,7 +1053,7 @@
       const [toast, setToast] = useState({ message: '', visible: false });
       const [targetLanguage, setTargetLanguage] = useState('sv');
 
-      const defaultLabels = { jobs: 'jobb', map: 'Karta', all: 'Alla', fulltime: 'Heltid', parttime: 'Deltid', showMore: 'Visa mer', apply: 'Ansök', saved: 'Sparad!', noJobs: 'Inga jobb hittades', tryOther: 'Försök med andra sökord', loadingDesc: 'Laddar...', noDesc: 'Ingen beskrivning.', applyNow: 'Ansök nu', salaryInfo: 'Löneinfo', sending: 'Skickar...' };
+      const defaultLabels = { jobs: 'jobb', map: 'Karta', all: 'Alla', fulltime: 'Heltid', parttime: 'Deltid', showMore: 'Läs mer', apply: 'Ansök', saved: 'Sparad!', noJobs: 'Inga jobb hittades', tryOther: 'Prova att söka efter något annat', loadingDesc: 'Laddar...', noDesc: 'Ingen beskrivning tillgänglig.', applyNow: 'Ansök nu', salaryInfo: 'Löneinfo', sending: 'Skickar...' };
       const [labels, setLabels] = useState(defaultLabels);
 
       const mapRef = useRef(null);
@@ -649,7 +1081,7 @@
         if (!mapRef.current || mapInstance.current) return;
         mapInstance.current = L.map(mapRef.current).setView([62, 15], 5);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '© OSM © CARTO', maxZoom: 18 }).addTo(mapInstance.current);
-      }, []);
+      }, [showMap]);
 
       useEffect(() => {
         if (!mapInstance.current || !showMap || !filtered.length) { markers.current.forEach(m => mapInstance.current?.removeLayer(m)); markers.current = []; markerIds.current.clear(); return; }
@@ -658,7 +1090,7 @@
         const bounds = [];
         newJobs.forEach(j => {
           const c = getCoords(j); bounds.push(c);
-          const m = L.circleMarker(c, { radius: 8, fillColor: '#6366f1', color: '#fff', weight: 2, fillOpacity: 0.9 }).addTo(mapInstance.current);
+          const m = L.circleMarker(c, { radius: 8, fillColor: '#C85A38', color: '#fff', weight: 2, fillOpacity: 0.9 }).addTo(mapInstance.current);
           m.bindPopup(`<div class="map-popup"><div class="map-popup-title">${j.title}</div><div class="map-popup-company">${j.employer}</div><button class="map-popup-btn" onclick="window.openJobFromMap('${j.id}')">Visa</button></div>`);
           markers.current.push(m); markerIds.current.add(j.id);
         });
@@ -667,7 +1099,7 @@
 
       const prevFilter = useRef(filter);
       useEffect(() => { if (prevFilter.current !== filter) { markers.current.forEach(m => mapInstance.current?.removeLayer(m)); markers.current = []; markerIds.current.clear(); prevFilter.current = filter; } }, [filter]);
-      useEffect(() => { mapInstance.current && setTimeout(() => mapInstance.current.invalidateSize(), 350); }, [showMap]);
+      useEffect(() => { mapInstance.current && setTimeout(() => mapInstance.current.invalidateSize(), 400); }, [showMap]);
       useEffect(() => { window.openJobFromMap = id => { const j = jobs.find(x => x.id === id); if (j) setSelectedJob(j); }; return () => delete window.openJobFromMap; }, [jobs]);
 
       const loadMore = useCallback(async sid => {
@@ -723,8 +1155,7 @@
         window.addEventListener('openai:set_globals', h);
         if (window.openai?.toolOutput) handleData(window.openai.toolOutput, true);
         else {
-          // Preview mode - fetch demo jobs
-          fetch('https://jobsearch.api.jobtechdev.se/search?q=utvecklare&limit=10')
+          fetch('https://jobsearch.api.jobtechdev.se/search?q=utvecklare&limit=12')
             .then(r => r.json())
             .then(data => {
               const demoJobs = data.hits?.map(h => ({
@@ -736,6 +1167,7 @@
                 employmentType: h.employment_type?.label || 'Heltid',
                 deadline: h.application_deadline || '',
                 url: h.webpage_url || `https://arbetsformedlingen.se/platsbanken/annonser/${h.id}`,
+                logoUrl: h.logo_url,
                 coordinates: h.workplace_address?.coordinates ? [h.workplace_address.coordinates[1], h.workplace_address.coordinates[0]] : null
               })) || [];
               handleData({ jobs: demoJobs, total: data.total?.value || demoJobs.length, query: 'Utvecklare', location: 'Sverige' });
@@ -750,10 +1182,18 @@
 
       return (
         <div className="container">
-          <div className="header"><div className="header-content">
-            <div className="header-top"><div className="header-title">{query || 'Lediga jobb'}</div><div className="header-count">{loadedCount < totalAvailable ? <><span>{loadedCount}/{totalAvailable}</span><span className="header-loading" /></> : <span>{totalAvailable} {labels.jobs}</span>}</div></div>
-            {location && <div className="header-subtitle"><MapIcon />{location}</div>}
-          </div></div>
+          <div className="header">
+            <div className="header-eyebrow">Jobbsökning</div>
+            <div className="header-title">{query || 'Lediga tjänster'}</div>
+            <div className="header-meta">
+              {location && <div className="header-location"><MapIcon />{location}</div>}
+              <div className="header-count">
+                <span className="header-count-num">{totalAvailable}</span>
+                <span>{labels.jobs}</span>
+                {loadedCount < totalAvailable && <span className="header-loading" />}
+              </div>
+            </div>
+          </div>
 
           <div className="controls">
             <button className={`control-btn ${showMap ? 'primary' : ''}`} onClick={() => setShowMap(!showMap)}><MapIcon />{labels.map}</button>
@@ -766,7 +1206,7 @@
 
           {loading ? <div className="loading-state"><div className="spinner-wrap"><div className="spinner-large" /></div><div className="empty-text">{loadingText}</div></div>
            : !filtered.length ? <div className="empty-state"><div className="empty-icon"><SearchIcon /></div><div className="empty-title">{labels.noJobs}</div><div className="empty-text">{labels.tryOther}</div></div>
-           : <><div className="job-grid">{pageJobs.map(j => <JobCard key={j.id} job={j} isSaved={savedJobs.includes(j.id)} onSave={toggleSave} onClick={setSelectedJob} labels={labels} />)}</div><Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={p => { setCurrentPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }} /></>}
+           : <><div className="job-grid" key={currentPage}>{pageJobs.map(j => <JobCard key={j.id} job={j} isSaved={savedJobs.includes(j.id)} onSave={toggleSave} onClick={setSelectedJob} labels={labels} />)}</div><Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={p => { setCurrentPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }} /></>}
 
           {selectedJob && <Modal job={selectedJob} onClose={() => setSelectedJob(null)} showToast={showToastMsg} labels={labels} targetLanguage={targetLanguage} />}
           <Toast message={toast.message} visible={toast.visible} />

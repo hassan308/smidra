@@ -132,6 +132,10 @@ async function searchJobsSingle(query, location, limit = 100, offset = 0, filter
     params.set("language", filters.language);
     console.log(`🗣️ Filter: Språk ${filters.language}`);
   }
+  if (filters.noExperience) {
+    params.set("experience", "false");
+    console.log(`🌟 Filter: Ingen erfarenhet krävs`);
+  }
 
   const url = `${AF_API_BASE}/search?${params.toString()}`;
 
@@ -421,13 +425,14 @@ Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), l
       drivingLicense: z.boolean().optional().describe("Only jobs that require driving license"),
       trainee: z.boolean().optional().describe("Only trainee/praktik positions"),
       abroad: z.boolean().optional().describe("Only jobs abroad/utomlands"),
-      jobLanguage: z.string().optional().describe("Job language requirement (e.g., 'sv', 'en', 'ar')")
+      jobLanguage: z.string().optional().describe("Job language requirement (e.g., 'sv', 'en', 'ar')"),
+      noExperience: z.boolean().optional().describe("Only jobs that do NOT require experience (entry-level/nybörjarjobb)")
     },
     _meta: {
       "openai/outputTemplate": "ui://widget/job-list.html"  // Show widget immediately
     }
   },
-  async ({ query, location, limit, language, direction, loadingText, translatingText, remote, fulltime, parttime, drivingLicense, trainee, abroad, jobLanguage }) => {
+  async ({ query, location, limit, language, direction, loadingText, translatingText, remote, fulltime, parttime, drivingLicense, trainee, abroad, jobLanguage, noExperience }) => {
     // Build filters object
     const filters = {};
     if (remote) filters.remote = true;
@@ -437,6 +442,7 @@ Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), l
     if (trainee) filters.trainee = true;
     if (abroad) filters.abroad = true;
     if (jobLanguage) filters.language = jobLanguage;
+    if (noExperience) filters.noExperience = true;
 
     const activeFilters = Object.keys(filters).length > 0 ? ` [filters: ${Object.keys(filters).join(', ')}]` : '';
     console.log(`🔧 search_jobs called: "${query}" in ${location || 'Sweden'} (${language})${activeFilters}`);
