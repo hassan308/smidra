@@ -400,22 +400,21 @@ server.registerTool(
   "search_jobs",
   {
     title: "Search Jobs",
-    description: `Search for jobs in Sweden. Shows interactive job widget immediately.
+    description: `Search for jobs in Sweden. Shows interactive job widget.
 
-The widget automatically translates job titles and locations to the user's language using Google Translate. No need to call any other tool after this - results are shown directly!
+⚠️ AFTER CALLING: Do NOT write any text to user. The widget shows everything they need.
 
-⚠️ noExperience filter (ONLY when user asks for jobs without experience):
-When noExperience=true, returns data for you to filter.
-Simply remove jobs where title contains "senior" (case-insensitive).
-Keep ALL other jobs. Then call display_jobs.
+The widget auto-translates to user's language. Just call this tool and stop.
 
 PARAMETERS:
 - query: Search term IN SWEDISH (e.g., 'kock', 'utvecklare', 'sjuksköterska')
-- language: User's language code for auto-translation (e.g., 'en', 'ar', 'so', 'sv')
+- language: User's language code (e.g., 'en', 'ar', 'so', 'sv')
 - loadingText: "Searching..." in user's language
 - translatingText: "Translating..." in user's language
 
-Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), lärare (teacher), städare/lokalvårdare (cleaner), chaufför (driver), säljare (salesperson), ingenjör (engineer)`,
+Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), lärare (teacher), städare (cleaner), chaufför (driver), säljare (salesperson), ingenjör (engineer)
+
+⚠️ noExperience: When true, filter out "senior" titles, then call display_jobs.`,
     inputSchema: {
       query: z.string().describe("Search query IN SWEDISH"),
       location: z.string().optional().describe("City/region in Sweden"),
@@ -542,12 +541,11 @@ server.registerTool(
   "display_jobs",
   {
     title: "Display Jobs",
-    description: `Show job results in widget.
+    description: `Show filtered job results in widget.
 
-Only needed when search_jobs returns NEEDS_VERIFICATION (noExperience searches).
-Simply remove jobs with "senior" in title, keep everything else, then call this tool.
+⚠️ AFTER CALLING: Do NOT write any text. Widget shows everything.
 
-For normal searches, search_jobs shows widget directly - no need to call this.`,
+Only needed after filtering noExperience results. For normal searches, search_jobs handles everything.`,
     inputSchema: {
       language: z.string().default("sv"),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
@@ -604,7 +602,9 @@ server.registerTool(
   "get_job_details",
   {
     title: "Show Job Details",
-    description: "Get and display job details. Translate labels before calling.",
+    description: `Show detailed job information in widget.
+
+⚠️ AFTER CALLING: Do NOT write any text. Widget shows all details.`,
     inputSchema: {
       jobId: z.string(),
       language: z.string(),
@@ -799,16 +799,11 @@ server.registerTool(
   "show_salary_inline",
   {
     title: "Show Salary Inline",
-    description: `Show salary data inline in the user's already-open job modal.
+    description: `Show salary in user's already-open job modal via SSE.
 
-USE THIS when the message contains "widgetSessionId:".
-The salary appears directly in their current view - no new widget needed.
+⚠️ AFTER CALLING: Do NOT write any text. Data appears in their modal instantly.
 
-When to use:
-- User clicked "Löneinfo" button in job widget
-- Message contains "widgetSessionId:"
-
-This just displays data inline. No confirmation needed.`,
+USE THIS when message contains "widgetSessionId:".`,
     inputSchema: {
       widgetSessionId: z.string().describe("Session ID from widget"),
       job: z.object({
@@ -858,11 +853,10 @@ server.registerTool(
   "display_salary",
   {
     title: "Display Salary Widget",
-    description: `Show salary in a NEW standalone widget.
+    description: `Show salary in a standalone widget.
 
-⚠️ If message contains "widgetSessionId:" → use show_salary_inline instead!
-
-Only use this when user asks about salary directly in chat (not from widget button).`,
+⚠️ AFTER CALLING: Do NOT write any text. Widget shows everything.
+⚠️ If message has "widgetSessionId:" → use show_salary_inline instead!`,
     inputSchema: {
       language: z.string().default("sv"),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
@@ -925,18 +919,11 @@ server.registerTool(
   "display_cv",
   {
     title: "Display CV",
-    description: `Show a customized CV in a beautiful downloadable widget.
+    description: `Show a customized CV in a downloadable widget.
 
-Call this AFTER the user has asked to create a CV for a specific job.
-Use the job details and the user's background (from their uploaded CV) to create a tailored CV.
+⚠️ AFTER CALLING: Do NOT write any text. Widget shows the CV with download option.
 
-The widget will display:
-- Professional header with name and contact
-- Summary/profile section
-- Work experience
-- Skills (technical & soft)
-- Education
-- Download as PDF option`,
+Use job details and user's background to create a tailored CV.`,
     inputSchema: {
       language: z.string().default("sv"),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
