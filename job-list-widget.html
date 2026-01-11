@@ -1386,18 +1386,24 @@
         setSalaryLoading(true);
         setSalaryData(null);
         window.openai?.sendFollowUpMessage?.({
-          prompt: `[SILENT TASK - DO NOT RESPOND WITH TEXT]
+          prompt: `[TYST UPPGIFT - SVARA INTE MED TEXT]
 
-Sök lönestatistik för: "${job.title}" i ${job.location || 'Sverige'}
+Hämta lönestatistik för: "${job.title}" i ${job.location || 'Sverige'}
 
 widgetSessionId: ${widgetSessionId}
 
-INSTRUKTIONER:
-1. Sök på nätet efter lönedata för detta yrke
-2. Anropa display_salary med widgetSessionId="${widgetSessionId}"
-3. VIKTIGT: Svara INTE med någon text till användaren!
-4. Visa INGEN widget - data skickas via SSE till befintlig widget
-5. Ditt enda jobb är att anropa display_salary - inget annat!`
+ANVÄND VERKTYGET: push_salary_to_widget
+- widgetSessionId: "${widgetSessionId}"
+- job: { title: "${job.title}", employer: "${job.employer}", location: "${job.location || 'Sverige'}" }
+- salary: { avg: X, min: Y, max: Z } (sök på nätet)
+- tips: ["tip1", "tip2"] (valfritt)
+- sources: ["källa1"] (valfritt)
+
+REGLER:
+1. Sök lönedata på nätet
+2. Anropa ENDAST push_salary_to_widget (INTE display_salary!)
+3. Skriv INGEN text till användaren
+4. Skapa INGEN widget`
         });
       }, [widgetSessionId]);
       useEffect(() => { labelsRef.current = labels; }, [labels]);

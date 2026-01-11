@@ -514,7 +514,7 @@ Then call display_jobs with the filtered list.`
 
     console.log(`📤 Found ${jobs.length} jobs - widget will translate to ${language}`);
 
-    // Normal flow: Return widget data directly
+    // Normal flow: Return widget data directly - NO text response
     return {
       structuredContent: {
         translateMode: true,
@@ -531,7 +531,7 @@ Then call display_jobs with the filtered list.`
       },
       content: [{
         type: "text",
-        text: `Found ${jobs.length} jobs for "${query}" in ${location || 'Sweden'}. Widget is translating to ${language}.`
+        text: `[WIDGET DISPLAYED - DO NOT ADD ANY TEXT. The user sees the job list widget. Do not write anything to the user.]`
       }]
     };
   }
@@ -596,7 +596,7 @@ For normal searches, search_jobs shows widget directly - no need to call this.`,
       },
       content: [{
         type: "text",
-        text: `Showing ${jobs.length} verified entry-level jobs for "${query}" in ${location || 'Sverige'}`
+        text: `[WIDGET DISPLAYED - DO NOT ADD ANY TEXT. The user sees the job list widget. Do not write anything to the user.]`
       }]
     };
   }
@@ -639,7 +639,7 @@ server.registerTool(
 
     return {
       structuredContent: { language, direction, labels, job: formatted },
-      content: [{ type: "text", text: `Details for: ${formatted.title}` }]
+      content: [{ type: "text", text: `[WIDGET DISPLAYED - DO NOT ADD ANY TEXT]` }]
     };
   }
 );
@@ -799,33 +799,81 @@ Respond in ${language}.`
 // DISPLAY TOOLS - Show data in beautiful widgets
 // ============================================================
 
-// Display salary statistics widget
+// Push salary to existing widget via SSE (NO widget created)
+server.registerTool(
+  "push_salary_to_widget",
+  {
+    title: "Push Salary to Widget (SSE)",
+    description: `Push salary data to existing job widget via SSE. USE THIS when widgetSessionId is provided!
+
+⚠️ IMPORTANT: This tool does NOT create any widget or text response!
+The data appears directly in the user's already-open job modal.
+
+When to use:
+- User clicked "Löneinfo" button in job widget
+- Message contains "widgetSessionId:" - USE THIS TOOL
+- DO NOT use display_salary when widgetSessionId is present
+
+After calling: Say NOTHING to the user. They already see the data.`,
+    inputSchema: {
+      widgetSessionId: z.string().describe("Session ID from widget (required)"),
+      job: z.object({
+        title: z.string(),
+        employer: z.string(),
+        location: z.string().optional()
+      }),
+      salary: z.object({
+        avg: z.number().describe("Average salary per month in SEK"),
+        min: z.number().describe("Minimum salary"),
+        max: z.number().describe("Maximum salary")
+      }),
+      tips: z.array(z.string()).optional(),
+      sources: z.array(z.string()).optional()
+    }
+    // NO _meta.outputTemplate - this tool never shows a widget
+  },
+  async (params) => {
+    console.log(`📤 push_salary_to_widget: ${params.job.title} → ${params.widgetSessionId}`);
+
+    const pushed = pushToWidget(params.widgetSessionId, 'salary', {
+      job: params.job,
+      salary: params.salary,
+      tips: params.tips,
+      sources: params.sources
+    });
+
+    if (pushed) {
+      console.log(`✅ Salary pushed to ${params.widgetSessionId}`);
+      return {
+        content: [{
+          type: "text",
+          text: `[SUCCESS - SAY NOTHING TO USER. Data is visible in their widget.]`
+        }]
+      };
+    }
+
+    // Widget not connected
+    console.log(`❌ Widget ${params.widgetSessionId} not connected`);
+    return {
+      content: [{
+        type: "text",
+        text: `[Widget not connected. Tell user: "Lönedata kunde inte visas. Försök igen."]`
+      }]
+    };
+  }
+);
+
+// Display salary statistics widget (creates NEW widget - only when no SSE)
 server.registerTool(
   "display_salary",
   {
-    title: "Display Salary Statistics",
-    description: `Show salary statistics in a widget OR push to existing widget via SSE.
+    title: "Display Salary Widget",
+    description: `Show salary in a NEW widget. Only use when NO widgetSessionId is provided!
 
-Call this AFTER you have searched the web for salary information.
+⚠️ If message contains "widgetSessionId:" → use push_salary_to_widget instead!
 
-⚠️ SILENT MODE (when widgetSessionId is provided):
-- If the user's message contains "widgetSessionId:" followed by an ID, include that ID
-- Data will be pushed via SSE to the existing widget
-- DO NOT show any text response to the user
-- DO NOT create a new widget
-- The user already sees the data in their open modal
-
-NORMAL MODE (no widgetSessionId):
-- Creates a new salary widget with the data
-- Include text response
-
-The widget displays:
-- Average salary with visual range bar
-- Min/max salary range
-- Tips for salary negotiation
-- Sources of the data`,
+This creates a standalone salary widget for users who ask about salary without clicking from job widget.`,
     inputSchema: {
-      widgetSessionId: z.string().optional().describe("Session ID from widget for real-time updates (look for 'widgetSession:' in user message)"),
       language: z.string().default("sv"),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
       job: z.object({
@@ -837,17 +885,17 @@ The widget displays:
         avg: z.number().describe("Average salary per month in SEK"),
         min: z.number().describe("Minimum salary (entry level)"),
         max: z.number().describe("Maximum salary (senior level)"),
-        entryLevel: z.number().optional().describe("Typical entry level salary"),
-        experienced: z.number().optional().describe("Typical senior salary")
+        entryLevel: z.number().optional(),
+        experienced: z.number().optional()
       }),
       comparison: z.object({
-        percentDiff: z.number().describe("Percentage difference from regional average (positive = above)"),
-        description: z.string().optional().describe("Comparison description")
+        percentDiff: z.number(),
+        description: z.string().optional()
       }).optional(),
-      industry: z.string().optional().describe("Industry sector"),
-      demandLevel: z.string().optional().describe("Job market demand level"),
-      tips: z.array(z.string()).optional().describe("Salary negotiation tips"),
-      sources: z.array(z.string()).optional().describe("Data sources"),
+      industry: z.string().optional(),
+      demandLevel: z.string().optional(),
+      tips: z.array(z.string()).optional(),
+      sources: z.array(z.string()).optional(),
       labels: z.object({
         avgSalary: z.string().optional(),
         perMonth: z.string().optional(),
@@ -873,38 +921,11 @@ The widget displays:
   async (params) => {
     console.log(`💰 display_salary: ${params.job.title} - avg ${params.salary.avg} kr`);
 
-    // If we have a widget session, push data via SSE
-    if (params.widgetSessionId) {
-      const pushed = pushToWidget(params.widgetSessionId, 'salary', {
-        job: params.job,
-        salary: params.salary,
-        comparison: params.comparison,
-        industry: params.industry,
-        demandLevel: params.demandLevel,
-        tips: params.tips,
-        sources: params.sources
-      });
-
-      if (pushed) {
-        console.log(`✅ Salary data pushed to widget ${params.widgetSessionId}`);
-        // Return minimal response - NO widget, NO text to user
-        return {
-          content: [{
-            type: "text",
-            text: `[SILENT SUCCESS] Data pushed to widget. DO NOT show any text or widget to user - the data is already visible in their existing widget.`
-          }]
-        };
-      } else {
-        console.log(`⚠️ Widget ${params.widgetSessionId} not connected, falling back to widget`);
-      }
-    }
-
-    // Fallback: return widget only if no SSE session or push failed
     return {
       structuredContent: params,
       content: [{
         type: "text",
-        text: `Salary statistics for ${params.job.title}: ${params.salary.avg} kr/month (range: ${params.salary.min}-${params.salary.max} kr)`
+        text: `[WIDGET DISPLAYED - DO NOT ADD ANY TEXT]`
       }]
     };
   }
@@ -985,13 +1006,13 @@ The widget will display:
       structuredContent: params,
       content: [{
         type: "text",
-        text: `CV for ${params.cv.name} - tailored for ${params.targetJob.title} at ${params.targetJob.company}`
+        text: `[WIDGET DISPLAYED - DO NOT ADD ANY TEXT]`
       }]
     };
   }
 );
 
-console.log("✅ Tools: search_jobs → display_jobs, get_job_details, display_salary, display_cv");
+console.log("✅ Tools: search_jobs, display_jobs, get_job_details, push_salary_to_widget, display_salary, display_cv");
 
 // HTTP Server
 const transports = new Map();
