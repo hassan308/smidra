@@ -434,6 +434,30 @@ ssh vps "docker logs smidra --tail 50"
 
 ---
 
+## 🚫 Undvika Godkännande-knappen
+
+ChatGPT kräver ibland godkännande innan tool anropas. Undvik detta med **annotations**:
+
+```javascript
+annotations: {
+  readOnlyHint: true,      // Bara visar data
+  openWorldHint: false,    // Endast vår egen widget
+  destructiveHint: false   // Inte destruktiv
+}
+```
+
+### Regler:
+| Scenario | Godkännande? |
+|----------|--------------|
+| `readOnlyHint: true` | ❌ Nej |
+| `openWorldHint: false` | ❌ Nej |
+| `destructiveHint: true` | ❌ Nej (!) |
+| Open world write (standard) | ✅ Ja |
+
+**Alla våra display-tools har nu dessa annotations!**
+
+---
+
 ## Lärdomar för framtida ChatGPT-appar
 
 ### ✅ Vad fungerar:
@@ -444,6 +468,7 @@ ssh vps "docker logs smidra --tail 50"
 5. **`content: []`** - Tom array = ChatGPT säger inget
 6. **Tool utan `_meta.outputTemplate`** = ingen ny widget skapas
 7. **SSE för real-time updates** till befintlig widget
+8. **Tool annotations** - `readOnlyHint: true` undviker godkännande
 
 ### ❌ Vad fungerar INTE:
 - Enkla text-prompter som "anropa detta verktyg" - ChatGPT ignorerar ofta
