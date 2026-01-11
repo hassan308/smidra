@@ -809,6 +809,10 @@ server.registerTool(
 Call this AFTER you have searched the web for salary information.
 Pass the job details AND the salary data you found.
 
+IMPORTANT: If the user's message contains "widgetSession:" followed by an ID,
+include that ID as the widgetSessionId parameter. This enables real-time updates
+to the existing widget instead of creating a new one.
+
 The widget will display:
 - Average salary with visual range bar
 - Min/max salary range
@@ -816,6 +820,7 @@ The widget will display:
 - Tips for salary negotiation
 - Sources of the data`,
     inputSchema: {
+      widgetSessionId: z.string().optional().describe("Session ID from widget for real-time updates (look for 'widgetSession:' in user message)"),
       language: z.string().default("sv"),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
       job: z.object({
@@ -863,6 +868,30 @@ The widget will display:
   async (params) => {
     console.log(`💰 display_salary: ${params.job.title} - avg ${params.salary.avg} kr`);
 
+    // If we have a widget session, push data via SSE
+    if (params.widgetSessionId) {
+      const pushed = pushToWidget(params.widgetSessionId, 'salary', {
+        job: params.job,
+        salary: params.salary,
+        comparison: params.comparison,
+        industry: params.industry,
+        demandLevel: params.demandLevel,
+        tips: params.tips,
+        sources: params.sources
+      });
+
+      if (pushed) {
+        console.log(`✅ Salary data pushed to widget ${params.widgetSessionId}`);
+        return {
+          content: [{
+            type: "text",
+            text: `Lönestatistik för ${params.job.title} har skickats till widgeten! Genomsnittslön: ${params.salary.avg} kr/månad.`
+          }]
+        };
+      }
+    }
+
+    // Fallback: return widget as before
     return {
       structuredContent: params,
       content: [{
@@ -959,6 +988,24 @@ console.log("✅ Tools: search_jobs → display_jobs, get_job_details, display_s
 // HTTP Server
 const transports = new Map();
 
+// SSE clients for real-time widget updates
+const sseClients = new Map(); // widgetSessionId -> response object
+
+function pushToWidget(sessionId, eventType, data) {
+  const client = sseClients.get(sessionId);
+  if (client) {
+    try {
+      client.write(`data: ${JSON.stringify({ type: eventType, ...data })}\n\n`);
+      console.log(`📤 SSE push to ${sessionId}: ${eventType}`);
+      return true;
+    } catch (e) {
+      console.log(`❌ SSE push failed: ${e.message}`);
+      sseClients.delete(sessionId);
+    }
+  }
+  return false;
+}
+
 const httpServer = http.createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -989,6 +1036,48 @@ const httpServer = http.createServer(async (req, res) => {
   if (url.pathname === "/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end('{"status":"ok","service":"smidra","version":"4.0.0"}');
+    return;
+  }
+
+  // SSE endpoint for widget real-time updates
+  if (url.pathname === "/events") {
+    const sessionId = url.searchParams.get("session");
+    if (!sessionId) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end('{"error":"Missing session parameter"}');
+      return;
+    }
+
+    console.log(`🔌 SSE widget connected: ${sessionId}`);
+
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive"
+    });
+
+    // Send initial connection confirmation
+    res.write(`data: ${JSON.stringify({ type: "connected", sessionId })}\n\n`);
+
+    // Store client
+    sseClients.set(sessionId, res);
+
+    // Keep-alive ping every 30 seconds
+    const pingInterval = setInterval(() => {
+      try {
+        res.write(`data: ${JSON.stringify({ type: "ping" })}\n\n`);
+      } catch (e) {
+        clearInterval(pingInterval);
+      }
+    }, 30000);
+
+    // Clean up on close
+    req.on("close", () => {
+      console.log(`🔌 SSE widget disconnected: ${sessionId}`);
+      clearInterval(pingInterval);
+      sseClients.delete(sessionId);
+    });
+
     return;
   }
 

@@ -832,6 +832,113 @@
       height: 16px;
     }
 
+    /* Inline salary section in modal */
+    .modal-salary {
+      margin-top: 20px;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--sage-soft) 0%, var(--surface-sunken) 100%);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--sage);
+    }
+
+    .modal-salary-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .modal-salary-icon {
+      font-size: 24px;
+    }
+
+    .modal-salary-title {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .modal-salary-amount {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .modal-salary-range {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .modal-salary-bar {
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .modal-salary-bar-fill {
+      position: absolute;
+      height: 100%;
+      background: linear-gradient(90deg, var(--sage) 0%, var(--accent) 100%);
+      border-radius: 4px;
+    }
+
+    .modal-salary-bar-marker {
+      position: absolute;
+      top: 50%;
+      width: 14px;
+      height: 14px;
+      background: var(--accent);
+      border: 2px solid var(--surface-elevated);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .modal-salary-tips {
+      font-size: 13px;
+      color: var(--text-secondary);
+      padding-left: 16px;
+      margin: 0;
+    }
+
+    .modal-salary-tips li {
+      margin-bottom: 4px;
+    }
+
+    .modal-salary-sources {
+      margin-top: 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .modal-salary-loading {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 20px;
+      background: var(--surface-sunken);
+      border-radius: var(--radius-lg);
+      margin-top: 20px;
+    }
+
+    .modal-salary-loading .spinner-small {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
     /* Mobile action notification */
     @media (max-width: 640px) {
       .action-notification {
@@ -1077,7 +1184,7 @@
       );
     };
 
-    const Modal = ({ job, onClose, showActionNotif, labels, targetLanguage }) => {
+    const Modal = ({ job, onClose, labels, targetLanguage, salaryData, salaryLoading, requestSalary }) => {
       const [details, setDetails] = useState(null);
       const [loading, setLoading] = useState(false);
       const [desc, setDesc] = useState(null);
@@ -1099,6 +1206,17 @@
       if (!job) return null;
       const d = details || job;
 
+      // Format salary number with thousands separator
+      const formatSalary = (num) => num ? num.toLocaleString('sv-SE') : '0';
+
+      // Calculate bar position percentage
+      const getBarPosition = (salary) => {
+        if (!salary) return 50;
+        const range = salary.max - salary.min;
+        if (range <= 0) return 50;
+        return Math.min(100, Math.max(0, ((salary.avg - salary.min) / range) * 100));
+      };
+
       return (
         <div className="modal-overlay show" onClick={onClose}>
           <div className="modal" onClick={e => e.stopPropagation()}>
@@ -1114,13 +1232,49 @@
                 {d.employmentType && <span className="modal-meta-item">{d.employmentType}</span>}
               </div>
               {loading ? <div style={{ textAlign: 'center', padding: 40 }}><div className="spinner-large" style={{ margin: '0 auto 20px' }} /><div style={{ color: 'var(--text-muted)', fontSize: 14 }}>{labels.loadingDesc}</div></div> : <div className="modal-desc">{desc || labels.noDesc}</div>}
+
+              {/* Inline salary section */}
+              {salaryLoading && (
+                <div className="modal-salary-loading">
+                  <div className="spinner-small" />
+                  <span style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Hämtar lönestatistik...</span>
+                </div>
+              )}
+
+              {salaryData && salaryData.salary && (
+                <div className="modal-salary">
+                  <div className="modal-salary-header">
+                    <span className="modal-salary-icon">💰</span>
+                    <span className="modal-salary-title">Lönestatistik</span>
+                  </div>
+                  <div className="modal-salary-amount">{formatSalary(salaryData.salary.avg)} kr/mån</div>
+                  <div className="modal-salary-range">
+                    <span>Min: {formatSalary(salaryData.salary.min)} kr</span>
+                    <span>Max: {formatSalary(salaryData.salary.max)} kr</span>
+                  </div>
+                  <div className="modal-salary-bar">
+                    <div className="modal-salary-bar-fill" style={{ width: '100%' }} />
+                    <div className="modal-salary-bar-marker" style={{ left: `${getBarPosition(salaryData.salary)}%` }} />
+                  </div>
+                  {salaryData.tips && salaryData.tips.length > 0 && (
+                    <ul className="modal-salary-tips">
+                      {salaryData.tips.map((tip, i) => <li key={i}>{tip}</li>)}
+                    </ul>
+                  )}
+                  {salaryData.sources && salaryData.sources.length > 0 && (
+                    <div className="modal-salary-sources">Källor: {salaryData.sources.join(', ')}</div>
+                  )}
+                </div>
+              )}
             </div>
             <div className="modal-actions">
-              <button className="btn btn-secondary" onClick={() => {
-                showActionNotif('Hämtar lönestatistik...', 'Skrolla ner i chatten för att se resultatet');
-                onClose();
-                window.openai?.sendFollowUpMessage?.({ prompt: `Visa lönestatistik för: ${d.title} i ${d.location || 'Sverige'}. Sök på nätet och anropa display_salary.` });
-              }}>{labels.salaryInfo}</button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => requestSalary(d)}
+                disabled={salaryLoading || salaryData}
+              >
+                {salaryLoading ? 'Hämtar...' : salaryData ? '✓ Lönedata visas' : labels.salaryInfo}
+              </button>
               <button className="btn btn-primary" onClick={() => window.openai?.openExternal?.({ href: d.url })}><ExternalIcon />{labels.applyNow}</button>
             </div>
           </div>
@@ -1162,6 +1316,10 @@
       const [toast, setToast] = useState({ message: '', visible: false });
       const [actionNotif, setActionNotif] = useState({ visible: false, title: '', description: '' });
       const [targetLanguage, setTargetLanguage] = useState('sv');
+      const [widgetSessionId] = useState(() => 'ws_' + Math.random().toString(36).substr(2, 9));
+      const [salaryData, setSalaryData] = useState(null);
+      const [salaryLoading, setSalaryLoading] = useState(false);
+      const eventSourceRef = useRef(null);
 
       const defaultLabels = { jobs: 'jobb', map: 'Karta', all: 'Alla', fulltime: 'Heltid', parttime: 'Deltid', showMore: 'Läs mer', apply: 'Ansök', saved: 'Sparad!', noJobs: 'Inga jobb hittades', tryOther: 'Prova att söka efter något annat', loadingDesc: 'Laddar...', noDesc: 'Ingen beskrivning tillgänglig.', applyNow: 'Ansök nu', salaryInfo: 'Löneinfo', sending: 'Skickar...' };
       const [labels, setLabels] = useState(defaultLabels);
@@ -1184,6 +1342,57 @@
         setTimeout(() => setActionNotif(n => ({ ...n, visible: false })), 8000);
       }, []);
       const hideActionNotif = useCallback(() => setActionNotif(n => ({ ...n, visible: false })), []);
+
+      // SSE connection for real-time updates
+      useEffect(() => {
+        console.log('🔌 Connecting SSE:', widgetSessionId);
+        const es = new EventSource(`https://api.smidra.se/events?session=${widgetSessionId}`);
+        eventSourceRef.current = es;
+
+        es.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            console.log('📨 SSE event:', data.type);
+
+            if (data.type === 'salary') {
+              setSalaryData(data);
+              setSalaryLoading(false);
+              hideActionNotif();
+            }
+          } catch (e) {
+            console.error('SSE parse error:', e);
+          }
+        };
+
+        es.onerror = (e) => {
+          console.log('SSE error, reconnecting...');
+        };
+
+        return () => {
+          console.log('🔌 Closing SSE');
+          es.close();
+        };
+      }, [widgetSessionId, hideActionNotif]);
+
+      // Reset salary data when modal closes
+      const handleCloseModal = useCallback(() => {
+        setSelectedJob(null);
+        setSalaryData(null);
+        setSalaryLoading(false);
+      }, []);
+
+      // Request salary with session ID
+      const requestSalary = useCallback((job) => {
+        setSalaryLoading(true);
+        setSalaryData(null);
+        window.openai?.sendFollowUpMessage?.({
+          prompt: `Sök lönestatistik för tjänsten "${job.title}" i ${job.location || 'Sverige'}.
+
+widgetSession: ${widgetSessionId}
+
+Sök på nätet efter aktuell lönedata och anropa sedan display_salary med widgetSessionId="${widgetSessionId}" samt lönedata.`
+        });
+      }, [widgetSessionId]);
       useEffect(() => { labelsRef.current = labels; }, [labels]);
 
       const toggleSave = useCallback(id => { setSavedJobs(p => p.includes(id) ? p.filter(x => x !== id) : (showToastMsg(labelsRef.current.saved), [...p, id])); }, [showToastMsg]);
@@ -1303,7 +1512,7 @@
            : !filtered.length ? <div className="empty-state"><div className="empty-icon"><SearchIcon /></div><div className="empty-title">{labels.noJobs}</div><div className="empty-text">{labels.tryOther}</div></div>
            : <><div className="job-grid" key={currentPage}>{pageJobs.map(j => <JobCard key={j.id} job={j} isSaved={savedJobs.includes(j.id)} onSave={toggleSave} onClick={setSelectedJob} labels={labels} />)}</div><Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={p => { setCurrentPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }} /></>}
 
-          {selectedJob && <Modal job={selectedJob} onClose={() => setSelectedJob(null)} showActionNotif={showActionNotif} labels={labels} targetLanguage={targetLanguage} />}
+          {selectedJob && <Modal job={selectedJob} onClose={handleCloseModal} labels={labels} targetLanguage={targetLanguage} salaryData={salaryData} salaryLoading={salaryLoading} requestSalary={requestSalary} />}
           <Toast message={toast.message} visible={toast.visible} />
           <ActionNotification
             visible={actionNotif.visible}
