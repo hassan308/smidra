@@ -402,8 +402,9 @@ server.registerTool(
     title: "Search Jobs (Smidra MCP)",
     description: `Sök jobb i Sverige. Visar interaktiv jobbwidget.
 
-VIKTIGT: SKRIV INGEN TEXT EFTER ANROPET!
-Widget visar allt. Anropa verktyget och sluta - ingen text alls.
+VIKTIGT: SKRIV ALDRIG TEXT - VARKEN VID FÖRSTA ELLER EFTERFÖLJANDE SÖKNINGAR!
+Widget visar allt användaren behöver. Anropa verktyget och avsluta direkt.
+Jämför inte med tidigare sökningar. Kommentera inte resultaten. Bara anropa.
 
 Widget översätter automatiskt till användarens språk.
 
@@ -413,7 +414,7 @@ PARAMETRAR:
 - loadingText: "Söker..." på användarens språk
 - translatingText: "Översätter..." på användarens språk
 
-Svenska nyckelord: utvecklare (developer), sjuksköterska (nurse), kock (chef), lärare (teacher), städare (cleaner), chaufför (driver), säljare (salesperson), ingenjör (engineer)
+Svenska: utvecklare, sjuksköterska, kock, lärare, städare, chaufför, säljare, ingenjör
 
 noExperience: När true, filtrera bort "senior"-titlar och anropa display_jobs.`,
     inputSchema: {
