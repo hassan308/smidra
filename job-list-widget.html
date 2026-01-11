@@ -1469,28 +1469,42 @@
         setSalaryLoading(false);
       }, []);
 
-      // Request salary directly from our API - instant, no ChatGPT needed!
-      const requestSalary = useCallback(async (job) => {
+      // Request salary via ChatGPT web search → tool call → SSE update
+      const requestSalary = useCallback((job) => {
         setSalaryLoading(true);
         setSalaryData(null);
-        try {
-          const params = new URLSearchParams({
+
+        // Structured prompt like the two-step job search pattern
+        const request = {
+          action: "SALARY_SEARCH",
+          status: "PENDING",
+          job: {
             title: job.title,
+            employer: job.employer,
             location: job.location || 'Sverige'
-          });
-          const res = await fetch(`https://api.smidra.se/api/salary?${params}`);
-          const data = await res.json();
-          setSalaryData(data);
-        } catch (e) {
-          console.error('Salary fetch error:', e);
-          setSalaryData({
-            salary: { min: 30000, max: 50000, avg: 38000 },
-            tips: ['Förhandla alltid lön', 'Kolla SCB för mer data'],
-            sources: ['Estimat']
-          });
-        }
-        setSalaryLoading(false);
-      }, []);
+          },
+          widgetSessionId: widgetSessionId,
+          instructions: {
+            step1: "Search the web for current Swedish salary data for this job type",
+            step2: "Call show_salary_inline with the salary data you found",
+            important: "User is waiting with loading spinner. Do NOT write text. ONLY call the tool."
+          },
+          next_action: {
+            required: true,
+            tool: "show_salary_inline",
+            params: ["widgetSessionId", "job", "salary", "tips", "sources"]
+          }
+        };
+
+        window.openai?.sendFollowUpMessage?.({
+          prompt: `${JSON.stringify(request, null, 2)}
+
+⚠️ SALARY REQUEST - SILENT MODE
+1. Search web for "${job.title}" salary in ${job.location || 'Sverige'}
+2. Call show_salary_inline with: widgetSessionId="${widgetSessionId}", salary data
+3. DO NOT write any text. User sees loading spinner until you call the tool.`
+        });
+      }, [widgetSessionId]);
       useEffect(() => { labelsRef.current = labels; }, [labels]);
 
       const toggleSave = useCallback(id => { setSavedJobs(p => p.includes(id) ? p.filter(x => x !== id) : (showToastMsg(labelsRef.current.saved), [...p, id])); }, [showToastMsg]);

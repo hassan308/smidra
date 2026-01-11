@@ -798,11 +798,15 @@ Respond in ${language}.`
 server.registerTool(
   "show_salary_inline",
   {
-    title: "Show Salary Inline",
-    description: `Display salary statistics in user's open job modal.
+    title: "Show Salary (Step 2 of 2)",
+    description: `⚠️ THIS IS THE ONLY WAY TO SHOW SALARY DATA TO THE USER!
 
-When user asks for salary info and provides a widgetSessionId, use this to show the data directly in their modal.
-Search the web for current Swedish salary data for the job type, then call this with the results.`,
+When you receive a SALARY_SEARCH request with widgetSessionId:
+1. Search the web for Swedish salary data for that job type
+2. Call THIS TOOL with the data - user will NOT see anything until you do!
+
+The user has a loading spinner waiting. Do NOT write text - ONLY call this tool.
+User cannot see salary until you call this tool with the widgetSessionId.`,
     inputSchema: {
       widgetSessionId: z.string().describe("Session ID from widget"),
       job: z.object({
