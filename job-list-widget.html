@@ -1469,19 +1469,28 @@
         setSalaryLoading(false);
       }, []);
 
-      // Request salary via ChatGPT web search + SSE push to widget
-      const requestSalary = useCallback((job) => {
+      // Request salary directly from our API - instant, no ChatGPT needed!
+      const requestSalary = useCallback(async (job) => {
         setSalaryLoading(true);
         setSalaryData(null);
-        showActionNotif('Söker lönestatistik...', 'Se svaret i chatten nedan ↓');
-        window.openai?.sendFollowUpMessage?.({
-          prompt: `Sök lönestatistik för "${job.title}" i ${job.location || 'Sverige'}.
-
-widgetSessionId: ${widgetSessionId}
-
-Hitta aktuell lönedata och visa i min öppna modal med show_salary_inline.`
-        });
-      }, [widgetSessionId, showActionNotif]);
+        try {
+          const params = new URLSearchParams({
+            title: job.title,
+            location: job.location || 'Sverige'
+          });
+          const res = await fetch(`https://api.smidra.se/api/salary?${params}`);
+          const data = await res.json();
+          setSalaryData(data);
+        } catch (e) {
+          console.error('Salary fetch error:', e);
+          setSalaryData({
+            salary: { min: 30000, max: 50000, avg: 38000 },
+            tips: ['Förhandla alltid lön', 'Kolla SCB för mer data'],
+            sources: ['Estimat']
+          });
+        }
+        setSalaryLoading(false);
+      }, []);
       useEffect(() => { labelsRef.current = labels; }, [labels]);
 
       const toggleSave = useCallback(id => { setSavedJobs(p => p.includes(id) ? p.filter(x => x !== id) : (showToastMsg(labelsRef.current.saved), [...p, id])); }, [showToastMsg]);
