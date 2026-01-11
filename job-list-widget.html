@@ -1154,26 +1154,6 @@
         const h = () => window.openai?.toolOutput && handleData(window.openai.toolOutput, true);
         window.addEventListener('openai:set_globals', h);
         if (window.openai?.toolOutput) handleData(window.openai.toolOutput, true);
-        else {
-          fetch('https://jobsearch.api.jobtechdev.se/search?q=utvecklare&limit=12')
-            .then(r => r.json())
-            .then(data => {
-              const demoJobs = data.hits?.map(h => ({
-                id: h.id,
-                title: h.headline || 'Utvecklare',
-                employer: h.employer?.name || 'Företag',
-                location: h.workplace_address?.municipality || 'Stockholm',
-                description: h.description?.text?.substring(0, 200) || '',
-                employmentType: h.employment_type?.label || 'Heltid',
-                deadline: h.application_deadline || '',
-                url: h.webpage_url || `https://arbetsformedlingen.se/platsbanken/annonser/${h.id}`,
-                logoUrl: h.logo_url,
-                coordinates: h.workplace_address?.coordinates ? [h.workplace_address.coordinates[1], h.workplace_address.coordinates[0]] : null
-              })) || [];
-              handleData({ jobs: demoJobs, total: data.total?.value || demoJobs.length, query: 'Utvecklare', location: 'Sverige' });
-            })
-            .catch(() => {});
-        }
         if (window.openai?.theme) document.documentElement.setAttribute('data-theme', window.openai.theme);
         return () => window.removeEventListener('openai:set_globals', h);
       }, [handleData]);
