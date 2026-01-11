@@ -1469,40 +1469,15 @@
         setSalaryLoading(false);
       }, []);
 
-      // Request salary via ChatGPT web search → tool call → SSE update
+      // Request salary via ChatGPT - simple natural prompt
       const requestSalary = useCallback((job) => {
         setSalaryLoading(true);
         setSalaryData(null);
 
-        // Structured prompt like the two-step job search pattern
-        const request = {
-          action: "SALARY_SEARCH",
-          status: "PENDING",
-          job: {
-            title: job.title,
-            employer: job.employer,
-            location: job.location || 'Sverige'
-          },
-          widgetSessionId: widgetSessionId,
-          instructions: {
-            step1: "Search the web for current Swedish salary data for this job type",
-            step2: "Call show_salary_inline with the salary data you found",
-            important: "User is waiting with loading spinner. Do NOT write text. ONLY call the tool."
-          },
-          next_action: {
-            required: true,
-            tool: "show_salary_inline",
-            params: ["widgetSessionId", "job", "salary", "tips", "sources"]
-          }
-        };
-
         window.openai?.sendFollowUpMessage?.({
-          prompt: `${JSON.stringify(request, null, 2)}
+          prompt: `Vad är lönen för ${job.title} i ${job.location || 'Sverige'}?
 
-⚠️ SALARY REQUEST - SILENT MODE
-1. Search web for "${job.title}" salary in ${job.location || 'Sverige'}
-2. Call show_salary_inline with: widgetSessionId="${widgetSessionId}", salary data
-3. DO NOT write any text. User sees loading spinner until you call the tool.`
+(session: ${widgetSessionId})`
         });
       }, [widgetSessionId]);
       useEffect(() => { labelsRef.current = labels; }, [labels]);
