@@ -1055,6 +1055,81 @@
     .job-grid .job-card:nth-child(10) { animation-delay: 0.5s; }
     .job-grid .job-card:nth-child(11) { animation-delay: 0.55s; }
     .job-grid .job-card:nth-child(12) { animation-delay: 0.6s; }
+
+    /* Fullscreen Mode */
+    .fullscreen-mode {
+      max-width: 100%;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .fullscreen-mode .header {
+      padding: 20px 28px 16px;
+      flex-shrink: 0;
+    }
+
+    .fullscreen-mode .controls {
+      flex-shrink: 0;
+    }
+
+    .fullscreen-mode .map-section {
+      flex: 1;
+      margin: 0 28px 16px;
+      min-height: 50vh;
+    }
+
+    .fullscreen-mode .map-section .map-wrapper {
+      height: 100%;
+      min-height: 50vh;
+    }
+
+    .fullscreen-mode .job-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      padding: 0 28px 100px;
+    }
+
+    .fullscreen-mode .job-card-header {
+      padding: 16px;
+    }
+
+    .fullscreen-mode .job-card-title {
+      font-size: 16px;
+    }
+
+    .fullscreen-mode .job-card-footer {
+      padding: 12px 16px;
+    }
+
+    /* Split view in fullscreen - map left, jobs right */
+    @media (min-width: 1024px) {
+      .fullscreen-mode .main-content {
+        display: flex;
+        flex: 1;
+        gap: 20px;
+        padding: 0 28px;
+      }
+
+      .fullscreen-mode .map-section {
+        flex: 1;
+        margin: 0;
+        min-height: 60vh;
+        max-width: 50%;
+      }
+
+      .fullscreen-mode .jobs-panel {
+        flex: 1;
+        overflow-y: auto;
+        max-height: calc(100vh - 200px);
+      }
+
+      .fullscreen-mode .jobs-panel .job-grid {
+        padding: 0;
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1319,7 +1394,20 @@
       const [widgetSessionId] = useState(() => 'ws_' + Math.random().toString(36).substr(2, 9));
       const [salaryData, setSalaryData] = useState(null);
       const [salaryLoading, setSalaryLoading] = useState(false);
+      const [isFullscreen, setIsFullscreen] = useState(false);
       const eventSourceRef = useRef(null);
+
+      // Fullscreen toggle
+      const toggleFullscreen = useCallback(async () => {
+        const newMode = !isFullscreen;
+        setIsFullscreen(newMode);
+        setShowMap(newMode); // Always show map in fullscreen
+        try {
+          await window.openai?.requestDisplayMode?.({ mode: newMode ? 'fullscreen' : 'inline' });
+        } catch (e) {
+          console.log('Display mode change:', e);
+        }
+      }, [isFullscreen]);
 
       const defaultLabels = { jobs: 'jobb', map: 'Karta', all: 'Alla', fulltime: 'Heltid', parttime: 'Deltid', showMore: 'Läs mer', apply: 'Ansök', saved: 'Sparad!', noJobs: 'Inga jobb hittades', tryOther: 'Prova att söka efter något annat', loadingDesc: 'Laddar...', noDesc: 'Ingen beskrivning tillgänglig.', applyNow: 'Ansök nu', salaryInfo: 'Löneinfo', sending: 'Skickar...' };
       const [labels, setLabels] = useState(defaultLabels);
@@ -1424,7 +1512,7 @@ Hitta aktuell lönedata och visa i min öppna modal med show_salary_inline.`
 
       const prevFilter = useRef(filter);
       useEffect(() => { if (prevFilter.current !== filter) { markers.current.forEach(m => mapInstance.current?.removeLayer(m)); markers.current = []; markerIds.current.clear(); prevFilter.current = filter; } }, [filter]);
-      useEffect(() => { mapInstance.current && setTimeout(() => mapInstance.current.invalidateSize(), 400); }, [showMap]);
+      useEffect(() => { mapInstance.current && setTimeout(() => mapInstance.current.invalidateSize(), 400); }, [showMap, isFullscreen]);
       useEffect(() => { window.openJobFromMap = id => { const j = jobs.find(x => x.id === id); if (j) setSelectedJob(j); }; return () => delete window.openJobFromMap; }, [jobs]);
 
       const loadMore = useCallback(async sid => {
@@ -1483,10 +1571,13 @@ Hitta aktuell lönedata och visa i min öppna modal med show_salary_inline.`
         return () => window.removeEventListener('openai:set_globals', h);
       }, [handleData]);
 
-      useEffect(() => { window.openai?.notifyIntrinsicHeight?.(document.body.scrollHeight); }, [pageJobs, showMap]);
+      useEffect(() => {
+        const height = isFullscreen ? window.innerHeight : document.body.scrollHeight;
+        window.openai?.notifyIntrinsicHeight?.(height);
+      }, [pageJobs, showMap, isFullscreen]);
 
       return (
-        <div className="container">
+        <div className={`container ${isFullscreen ? 'fullscreen-mode' : ''}`}>
           <div className="header">
             <div className="header-eyebrow">Jobbsökning</div>
             <div className="header-title">{query || 'Lediga tjänster'}</div>
@@ -1501,6 +1592,9 @@ Hitta aktuell lönedata och visa i min öppna modal med show_salary_inline.`
           </div>
 
           <div className="controls">
+            <button className={`control-btn ${isFullscreen ? 'primary' : ''}`} onClick={toggleFullscreen}>
+              {isFullscreen ? '↩️ Minimera' : '🖥️ Fullskärm'}
+            </button>
             <button className={`control-btn ${showMap ? 'primary' : ''}`} onClick={() => setShowMap(!showMap)}><MapIcon />{labels.map}</button>
             <button className={`control-btn ${filter === 'all' ? 'active' : ''}`} onClick={() => { setFilter('all'); setCurrentPage(1); }}>{labels.all}</button>
             <button className={`control-btn ${filter === 'fulltime' ? 'active' : ''}`} onClick={() => { setFilter('fulltime'); setCurrentPage(1); }}>{labels.fulltime}</button>
