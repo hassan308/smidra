@@ -801,6 +801,9 @@ This is a read-only display operation. Widget is already open and waiting.`,
       readOnlyHint: true,
       openWorldHint: false,
       destructiveHint: false
+    },
+    _meta: {
+      "openai/widgetAccessible": true  // Can be called from widget
     }
   },
   async (params) => {
