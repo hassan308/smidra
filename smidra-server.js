@@ -798,15 +798,12 @@ Respond in ${language}.`
 server.registerTool(
   "show_salary_inline",
   {
-    title: "Show Salary (Step 2 of 2)",
-    description: `⚠️ THIS IS THE ONLY WAY TO SHOW SALARY DATA TO THE USER!
+    title: "Show Salary in Widget",
+    description: `Display salary statistics in user's open widget.
 
-When you receive a SALARY_SEARCH request with widgetSessionId:
-1. Search the web for Swedish salary data for that job type
-2. Call THIS TOOL with the data - user will NOT see anything until you do!
+When message contains "widget_session:", search for Swedish salary data and display it using this tool.
 
-The user has a loading spinner waiting. Do NOT write text - ONLY call this tool.
-User cannot see salary until you call this tool with the widgetSessionId.`,
+This is a read-only display operation. The widget is already open and waiting for data.`,
     inputSchema: {
       widgetSessionId: z.string().describe("Session ID from widget"),
       job: z.object({

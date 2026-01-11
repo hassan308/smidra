@@ -1469,15 +1469,15 @@
         setSalaryLoading(false);
       }, []);
 
-      // Request salary via ChatGPT - simple natural prompt
+      // Request salary via ChatGPT - passive display prompt
       const requestSalary = useCallback((job) => {
         setSalaryLoading(true);
         setSalaryData(null);
 
         window.openai?.sendFollowUpMessage?.({
-          prompt: `Vad är lönen för ${job.title} i ${job.location || 'Sverige'}?
+          prompt: `Visa lönestatistik för ${job.title} i ${job.location || 'Sverige'} i min öppna widget.
 
-(session: ${widgetSessionId})`
+widget_session: ${widgetSessionId}`
         });
       }, [widgetSessionId]);
       useEffect(() => { labelsRef.current = labels; }, [labels]);
