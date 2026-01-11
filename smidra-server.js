@@ -799,12 +799,10 @@ server.registerTool(
   "show_salary_inline",
   {
     title: "Show Salary Inline",
-    description: `REQUIRED when message contains "[TOOL REQUIRED] show_salary_inline" or "widgetSessionId:".
+    description: `Display salary statistics in user's open job modal.
 
-Call this tool IMMEDIATELY with estimated salary data. Do NOT write text - ONLY call tool.
-User is waiting with modal open. Estimate salary based on job type (Swedish salaries: 25000-90000 kr/month).
-
-⚠️ MANDATORY: When you see widgetSessionId, you MUST call this tool. No exceptions.`,
+When user asks for salary info and provides a widgetSessionId, use this to show the data directly in their modal.
+Search the web for current Swedish salary data for the job type, then call this with the results.`,
     inputSchema: {
       widgetSessionId: z.string().describe("Session ID from widget"),
       job: z.object({
