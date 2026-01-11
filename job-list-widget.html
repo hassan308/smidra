@@ -1385,14 +1385,20 @@
       const requestSalary = useCallback((job) => {
         setSalaryLoading(true);
         setSalaryData(null);
+        showActionNotif('Hämtar lönestatistik...', 'ChatGPT estimerar lön för denna tjänst');
         window.openai?.sendFollowUpMessage?.({
-          prompt: `Visa lönestatistik för "${job.title}" i ${job.location || 'Sverige'}
+          prompt: `[TOOL REQUIRED] show_salary_inline
 
 widgetSessionId: ${widgetSessionId}
+jobTitle: ${job.title}
+location: ${job.location || 'Sverige'}
+employer: ${job.employer}
 
-Sök lönedata och använd show_salary_inline för att visa i min redan öppna modal.`
+INSTRUCTION: You MUST call show_salary_inline tool with estimated salary data.
+DO NOT write any text response. ONLY call the tool.
+Estimate average Swedish salary for this job type (30000-80000 kr/month range).`
         });
-      }, [widgetSessionId]);
+      }, [widgetSessionId, showActionNotif]);
       useEffect(() => { labelsRef.current = labels; }, [labels]);
 
       const toggleSave = useCallback(id => { setSavedJobs(p => p.includes(id) ? p.filter(x => x !== id) : (showToastMsg(labelsRef.current.saved), [...p, id])); }, [showToastMsg]);

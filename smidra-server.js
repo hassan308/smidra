@@ -799,11 +799,12 @@ server.registerTool(
   "show_salary_inline",
   {
     title: "Show Salary Inline",
-    description: `Show salary in user's already-open job modal via SSE.
+    description: `REQUIRED when message contains "[TOOL REQUIRED] show_salary_inline" or "widgetSessionId:".
 
-⚠️ AFTER CALLING: Do NOT write any text. Data appears in their modal instantly.
+Call this tool IMMEDIATELY with estimated salary data. Do NOT write text - ONLY call tool.
+User is waiting with modal open. Estimate salary based on job type (Swedish salaries: 25000-90000 kr/month).
 
-USE THIS when message contains "widgetSessionId:".`,
+⚠️ MANDATORY: When you see widgetSessionId, you MUST call this tool. No exceptions.`,
     inputSchema: {
       widgetSessionId: z.string().describe("Session ID from widget"),
       job: z.object({
