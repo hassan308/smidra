@@ -1429,8 +1429,8 @@
       // Helper: Send message to ChatGPT with MCP instruction appended
       const sendToChatGPT = useCallback((message, toolName = null) => {
         const mcpSuffix = toolName
-          ? `\n\n[Använd endast ${toolName} verktyget från Smidra MCP]`
-          : '\n\n[Använd verktygen från Smidra MCP]';
+          ? `\n\n[Använd endast ${toolName} verktyget från Smidra MCP. Skicka ingen text - anropa bara verktyget.]`
+          : '\n\n[Använd verktygen från Smidra MCP. Skicka ingen text - anropa bara verktygen.]';
 
         const fullMessage = message + mcpSuffix;
 
