@@ -1381,24 +1381,29 @@
         setSalaryLoading(false);
       }, []);
 
-      // Request salary with session ID
-      const requestSalary = useCallback((job) => {
+      // Request salary directly from our API - no ChatGPT, no approval, instant!
+      const requestSalary = useCallback(async (job) => {
         setSalaryLoading(true);
         setSalaryData(null);
-        showActionNotif('Hämtar lönestatistik...', 'ChatGPT estimerar lön för denna tjänst');
-        window.openai?.sendFollowUpMessage?.({
-          prompt: `[TOOL REQUIRED] show_salary_inline
-
-widgetSessionId: ${widgetSessionId}
-jobTitle: ${job.title}
-location: ${job.location || 'Sverige'}
-employer: ${job.employer}
-
-INSTRUCTION: You MUST call show_salary_inline tool with estimated salary data.
-DO NOT write any text response. ONLY call the tool.
-Estimate average Swedish salary for this job type (30000-80000 kr/month range).`
-        });
-      }, [widgetSessionId, showActionNotif]);
+        try {
+          const params = new URLSearchParams({
+            title: job.title,
+            location: job.location || 'Sverige'
+          });
+          const res = await fetch(`https://api.smidra.se/api/salary?${params}`);
+          const data = await res.json();
+          setSalaryData(data);
+        } catch (e) {
+          console.error('Salary fetch error:', e);
+          // Fallback - show generic estimate
+          setSalaryData({
+            salary: { min: 30000, max: 50000, avg: 38000 },
+            tips: ['Förhandla alltid lön', 'Kolla SCB för mer data'],
+            sources: ['Estimat']
+          });
+        }
+        setSalaryLoading(false);
+      }, []);
       useEffect(() => { labelsRef.current = labels; }, [labels]);
 
       const toggleSave = useCallback(id => { setSavedJobs(p => p.includes(id) ? p.filter(x => x !== id) : (showToastMsg(labelsRef.current.saved), [...p, id])); }, [showToastMsg]);

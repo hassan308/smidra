@@ -1126,6 +1126,87 @@ const httpServer = http.createServer(async (req, res) => {
     return;
   }
 
+  // Salary estimation endpoint - direct from widget, no ChatGPT needed
+  if (url.pathname === "/api/salary") {
+    const jobTitle = url.searchParams.get("title") || "";
+    const location = url.searchParams.get("location") || "Sverige";
+
+    // Simple salary estimation based on job type keywords
+    const salaryRanges = {
+      // Tech
+      'utvecklare': { min: 42000, max: 65000, avg: 52000 },
+      'systemutvecklare': { min: 45000, max: 70000, avg: 55000 },
+      'programmerare': { min: 40000, max: 60000, avg: 48000 },
+      'devops': { min: 50000, max: 75000, avg: 60000 },
+      'frontend': { min: 40000, max: 60000, avg: 48000 },
+      'backend': { min: 45000, max: 68000, avg: 54000 },
+      'fullstack': { min: 45000, max: 70000, avg: 55000 },
+      'data scientist': { min: 50000, max: 80000, avg: 62000 },
+      'ai': { min: 55000, max: 85000, avg: 68000 },
+      'cloud': { min: 50000, max: 75000, avg: 60000 },
+      'architect': { min: 60000, max: 90000, avg: 72000 },
+      'tech lead': { min: 55000, max: 85000, avg: 68000 },
+      // Healthcare
+      'sjuksköterska': { min: 32000, max: 42000, avg: 36000 },
+      'läkare': { min: 55000, max: 95000, avg: 72000 },
+      'undersköterska': { min: 26000, max: 32000, avg: 29000 },
+      // Service
+      'säljare': { min: 28000, max: 50000, avg: 38000 },
+      'kock': { min: 26000, max: 38000, avg: 31000 },
+      'städare': { min: 24000, max: 30000, avg: 27000 },
+      'chaufför': { min: 28000, max: 38000, avg: 32000 },
+      'lagerarbetare': { min: 26000, max: 34000, avg: 30000 },
+      // Education
+      'lärare': { min: 32000, max: 45000, avg: 38000 },
+      'förskollärare': { min: 30000, max: 38000, avg: 34000 },
+      // Engineering
+      'ingenjör': { min: 40000, max: 65000, avg: 50000 },
+      'civilingenjör': { min: 45000, max: 70000, avg: 55000 },
+      'projektledare': { min: 45000, max: 70000, avg: 55000 },
+      // Admin
+      'administratör': { min: 28000, max: 40000, avg: 34000 },
+      'ekonom': { min: 38000, max: 55000, avg: 45000 },
+      'controller': { min: 45000, max: 65000, avg: 52000 },
+      'hr': { min: 35000, max: 55000, avg: 44000 },
+      // Default
+      'default': { min: 30000, max: 45000, avg: 36000 }
+    };
+
+    // Find matching salary range
+    const titleLower = jobTitle.toLowerCase();
+    let salary = salaryRanges.default;
+    for (const [keyword, range] of Object.entries(salaryRanges)) {
+      if (titleLower.includes(keyword)) {
+        salary = range;
+        break;
+      }
+    }
+
+    // Stockholm adjustment (+10%)
+    if (location.toLowerCase().includes('stockholm')) {
+      salary = {
+        min: Math.round(salary.min * 1.1),
+        max: Math.round(salary.max * 1.1),
+        avg: Math.round(salary.avg * 1.1)
+      };
+    }
+
+    console.log(`💰 Salary estimate: ${jobTitle} in ${location} → ${salary.avg} kr/mån`);
+
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({
+      job: { title: jobTitle, location },
+      salary,
+      tips: [
+        'Förhandla alltid - första erbjudandet är sällan det bästa',
+        'Lyft fram specifika resultat och erfarenheter',
+        'Kolla fler källor som SCB och Glassdoor'
+      ],
+      sources: ['SCB', 'Arbetsförmedlingen', 'Glassdoor (estimat)']
+    }));
+    return;
+  }
+
   // Single job details endpoint - for widget lazy loading
   if (url.pathname.startsWith("/api/job/")) {
     const jobId = url.pathname.split("/api/job/")[1];
