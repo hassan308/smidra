@@ -643,38 +643,7 @@ server.registerTool(
 // ACTION TOOLS - Called from widget buttons via callTool()
 // ============================================================
 
-// Salary statistics tool
-server.registerTool(
-  "get_salary_info",
-  {
-    title: "Get Salary Statistics",
-    description: "Get salary statistics for a specific job/occupation. Returns text for ChatGPT to present.",
-    inputSchema: {
-      jobTitle: z.string().describe("The job title to get salary info for"),
-      location: z.string().optional().describe("Location (city or region)"),
-      language: z.string().default("sv").describe("Response language code")
-    }
-  },
-  async ({ jobTitle, location, language }) => {
-    console.log(`💰 get_salary_info: ${jobTitle} in ${location || 'Sweden'}`);
-
-    // Return instructions for ChatGPT to answer using its knowledge
-    return {
-      content: [{
-        type: "text",
-        text: `USER REQUEST: Salary statistics for "${jobTitle}" in ${location || 'Sweden'}.
-
-Please provide helpful salary information based on your knowledge:
-- Average/median salary range
-- Entry level vs senior level
-- How it compares to other regions
-- Factors that affect salary
-
-Respond in the user's language (${language}). Be helpful and informative!`
-      }]
-    };
-  }
-);
+// NOTE: get_salary_info removed - use update_widget_info instead (pushes to widget via SSE)
 
 // Cover letter help tool
 server.registerTool(
