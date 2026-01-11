@@ -48,6 +48,62 @@ smidra/
 
 ---
 
+## 🚨 KRITISKT: Få ChatGPT att BARA anropa verktyg (ingen text!)
+
+### Problemet
+ChatGPT skriver ofta text-svar efter att ha anropat ett verktyg, även om widgeten visar allt.
+
+### Lösningen - Tre nycklar:
+
+#### 1. Tool-beskrivning på SVENSKA med "SKRIV INGEN TEXT"
+```javascript
+title: "Search Jobs (Smidra MCP)",  // Inkludera "(Smidra MCP)"!
+description: `Sök jobb i Sverige. Visar interaktiv jobbwidget.
+
+VIKTIGT: SKRIV INGEN TEXT EFTER ANROPET!
+Widget visar allt. Anropa verktyget och sluta - ingen text alls.`
+```
+
+#### 2. Widget-helper som appendar MCP-suffix
+```javascript
+const sendToChatGPT = useCallback((message, toolName = null) => {
+  const mcpSuffix = toolName
+    ? `\n\n[Använd endast ${toolName} verktyget från Smidra MCP. Skicka ingen text - anropa bara verktyget.]`
+    : '\n\n[Använd verktygen från Smidra MCP. Skicka ingen text - anropa bara verktygen.]';
+
+  window.openai?.sendFollowUpMessage?.({ prompt: message + mcpSuffix });
+}, []);
+```
+
+#### 3. Inkludera JSON-exempel i prompten
+```javascript
+const message = `Visa lönestatistik för "Utvecklare" i Stockholm.
+
+Anropa med denna data:
+{
+  "widgetSessionId": "ws_abc123",
+  "jobContext": { "title": "Utvecklare", "location": "Stockholm" },
+  "info": {
+    "type": "compensation",
+    "data": { "avg": [genomsnitt], "min": [lägsta], "max": [högsta] },
+    "sources": ["SCB", "Unionen"]
+  }
+}`;
+
+sendToChatGPT(message, 'update_widget_info');
+```
+
+### Varför detta fungerar:
+| Element | Effekt |
+|---------|--------|
+| `(Smidra MCP)` i title | ChatGPT förstår vilken plugin |
+| `VIKTIGT: SKRIV INGEN TEXT` | Tydlig instruktion på svenska |
+| MCP-suffix i varje prompt | Konsekvent påminnelse |
+| JSON-exempel | ChatGPT vet exakt format |
+| `content: []` i tool-svar | Inget att säga = tyst |
+
+---
+
 ## 🔑 VIKTIGT: Två-stegs Tool-flöde (Fungerar!)
 
 ### Problemet
@@ -168,25 +224,48 @@ return {
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Widget-kod (requestSalary) - ENKEL VERSION
+### Widget-kod (requestSalary) - MED sendToChatGPT HELPER
 
 ```javascript
+// Helper: Lägger alltid till MCP-instruktion på slutet
+const sendToChatGPT = useCallback((message, toolName = null) => {
+  const mcpSuffix = toolName
+    ? `\n\n[Använd endast ${toolName} verktyget från Smidra MCP. Skicka ingen text - anropa bara verktyget.]`
+    : '\n\n[Använd verktygen från Smidra MCP. Skicka ingen text - anropa bara verktygen.]';
+
+  const fullMessage = message + mcpSuffix;
+  console.log('📤 sendToChatGPT:', fullMessage);
+  window.openai?.sendFollowUpMessage?.({ prompt: fullMessage });
+}, []);
+
+// Användning:
 const requestSalary = useCallback((job) => {
   setSalaryLoading(true);
   setSalaryData(null);
 
-  // ENKEL prompt - säg explicit "Sök på webben"!
-  window.openai?.sendFollowUpMessage?.({
-    prompt: `Sök på webben efter aktuell lönestatistik för "${job.title}" i ${job.location || 'Sverige'}.
+  // Inkludera JSON-exempel så ChatGPT vet exakt format!
+  const message = `Visa lönestatistik för "${job.title}" i ${job.location || 'Sverige'}.
 
-När du hittat information, använd update_widget_info verktyget för att visa resultatet i min widget.
+Anropa med denna data:
+{
+  "widgetSessionId": "${widgetSessionId}",
+  "jobContext": { "title": "${job.title}", "location": "${job.location || 'Sverige'}" },
+  "info": {
+    "type": "compensation",
+    "data": { "avg": [genomsnitt], "min": [lägsta], "max": [högsta] },
+    "tips": ["förhandlingstips..."],
+    "sources": ["SCB", "Unionen", "Sveriges Ingenjörer"]
+  }
+}`;
 
-Inkludera: genomsnitt, min/max, och förhandlingstips.
-
-widget_session: ${widgetSessionId}`
-  });
-}, [widgetSessionId]);
+  sendToChatGPT(message, 'update_widget_info');
+}, [widgetSessionId, sendToChatGPT]);
 ```
+
+**Varför detta fungerar:**
+1. `sendToChatGPT` helper lägger ALLTID till MCP-suffix
+2. JSON-exempel visar ChatGPT exakt format
+3. `[Använd endast X verktyget från Smidra MCP. Skicka ingen text - anropa bara verktyget.]`
 
 ### Server-kod (update_widget_info) - NEUTRAL NAMNGIVNING
 
