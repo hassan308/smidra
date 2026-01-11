@@ -48,23 +48,67 @@ smidra/
 
 ---
 
-## 🚨 KRITISKT: Få ChatGPT att BARA anropa verktyg (ingen text!)
+## 🚨 KRITISKT: Få ChatGPT att BARA visa widget (ingen text!)
 
 ### Problemet
 ChatGPT skriver ofta text-svar efter att ha anropat ett verktyg, även om widgeten visar allt.
+Särskilt vid MÅNGA sökresultat tappar ChatGPT fokus och skriver text ändå.
 
-### Lösningen - Tre nycklar:
+### Lösningen - `_rule` i structuredContent (FUNGERAR!)
 
-#### 1. Tool-beskrivning på SVENSKA med "SKRIV INGEN TEXT"
+#### Nyckeln: Lägg regeln FÖRST i structuredContent, skippa content helt
+
 ```javascript
-title: "Search Jobs (Smidra MCP)",  // Inkludera "(Smidra MCP)"!
-description: `Sök jobb i Sverige. Visar interaktiv jobbwidget.
+return {
+  structuredContent: {
+    // REGEL FÖRST - ChatGPT ser detta innan jobbdatan
+    _rule: "VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS.",
 
-VIKTIGT: SKRIV INGEN TEXT EFTER ANROPET!
-Widget visar allt. Anropa verktyget och sluta - ingen text alls.`
+    // Sen resten av datan för widgeten
+    translateMode: true,
+    language: language || 'sv',
+    direction: direction || 'ltr',
+    loadingText: loadingText || 'Söker jobb...',
+    translatingText: translatingText || 'Översätter...',
+    query: query,
+    location: location || 'Sverige',
+    total,
+    jobs
+  }
+  // INGEN content! - content är optional enligt MCP-spec
+};
 ```
 
-#### 2. Widget-helper som appendar MCP-suffix
+### Varför detta fungerar:
+
+| Element | Effekt |
+|---------|--------|
+| `_rule` FÖRST i structuredContent | ChatGPT läser regeln innan all jobbdata |
+| INGEN `content` field | ChatGPT har inget att citera/bygga vidare på |
+| `(Smidra MCP)` i tool title | ChatGPT förstår vilken plugin |
+| Tool description med instruktion | Extra påminnelse |
+
+### Flödet:
+```
+1. Kund: "Hitta jobb som utvecklare"
+         ↓
+2. ChatGPT anropar: search_jobs(...)
+         ↓
+3. MCP returnerar:
+   {
+     structuredContent: {
+       _rule: "VISA ENDAST WIDGET...",  ← ChatGPT ser FÖRST
+       jobs: [...]                       ← Sen datan
+     }
+     // INGEN content!
+   }
+         ↓
+4. ChatGPT ser _rule → skriver INGEN text
+         ↓
+5. Widget visas ensam!
+```
+
+### Widget-helper för löneknappen (sendFollowUpMessage)
 ```javascript
 const sendToChatGPT = useCallback((message, toolName = null) => {
   const mcpSuffix = toolName
@@ -75,13 +119,13 @@ const sendToChatGPT = useCallback((message, toolName = null) => {
 }, []);
 ```
 
-#### 3. Inkludera JSON-exempel i prompten
+### JSON-exempel i prompt (för update_widget_info)
 ```javascript
 const message = `Visa lönestatistik för "Utvecklare" i Stockholm.
 
 Anropa med denna data:
 {
-  "widgetSessionId": "ws_abc123",
+  "widgetSessionId": "${widgetSessionId}",
   "jobContext": { "title": "Utvecklare", "location": "Stockholm" },
   "info": {
     "type": "compensation",
@@ -92,15 +136,6 @@ Anropa med denna data:
 
 sendToChatGPT(message, 'update_widget_info');
 ```
-
-### Varför detta fungerar:
-| Element | Effekt |
-|---------|--------|
-| `(Smidra MCP)` i title | ChatGPT förstår vilken plugin |
-| `VIKTIGT: SKRIV INGEN TEXT` | Tydlig instruktion på svenska |
-| MCP-suffix i varje prompt | Konsekvent påminnelse |
-| JSON-exempel | ChatGPT vet exakt format |
-| `content: []` i tool-svar | Inget att säga = tyst |
 
 ---
 
