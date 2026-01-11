@@ -435,7 +435,8 @@ noExperience: När true, filtrera bort "senior"-titlar och anropa display_jobs.`
       noExperience: z.boolean().optional().describe("Only use when user asks for jobs without experience. When true, filter out jobs with 'senior' in title, then call display_jobs")
     },
     _meta: {
-      "openai/outputTemplate": "ui://widget/job-list.html"  // Show widget immediately (except noExperience)
+      "openai/outputTemplate": "ui://widget/job-list.html",
+      "openai/widgetDescription": "Visar en interaktiv lista med lediga jobb. Användaren kan filtrera, se karta, spara favoriter och klicka för detaljer. Ingen ytterligare text behövs."
     }
   },
   async ({ query, location, limit, language, direction, loadingText, translatingText, remote, fulltime, parttime, drivingLicense, trainee, abroad, jobLanguage, noExperience }) => {
@@ -572,7 +573,8 @@ Används efter filtrering av noExperience-resultat. För vanliga sökningar hant
       }))
     },
     _meta: {
-      "openai/outputTemplate": "ui://widget/job-list.html"
+      "openai/outputTemplate": "ui://widget/job-list.html",
+      "openai/widgetDescription": "Visar filtrerade jobbresultat i en interaktiv lista. Ingen ytterligare text behövs."
     }
   },
   async ({ language, direction, query, querySwedish, location, locationSwedish, total, loadingText, translatingText, jobs }) => {
@@ -623,7 +625,8 @@ Widget visar alla detaljer. Anropa verktyget och sluta - ingen text alls.`,
       })
     },
     _meta: {
-      "openai/outputTemplate": "ui://widget/job-detail.html"
+      "openai/outputTemplate": "ui://widget/job-detail.html",
+      "openai/widgetDescription": "Visar detaljerad jobbinformation med beskrivning, krav och ansökningslänk. Ingen ytterligare text behövs."
     }
   },
   async ({ jobId, language, direction, labels }) => {
