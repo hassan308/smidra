@@ -1469,20 +1469,18 @@
         setSalaryLoading(false);
       }, []);
 
-      // Request market info via ChatGPT - neutral wording to avoid approval
+      // Request market info via ChatGPT - two-step: web search → tool call
       const requestSalary = useCallback((job) => {
         setSalaryLoading(true);
         setSalaryData(null);
 
-        // Use neutral words: "arbetsmarknadsinfo", "ersättningsnivåer", "branschstandard"
-        // Avoid: "lön", "salary", "inkomst", "pengar"
+        // Two-step prompt: 1) Search web 2) Call tool
         window.openai?.sendFollowUpMessage?.({
-          prompt: `Hitta arbetsmarknadsinfo för denna tjänst och visa i min widget:
+          prompt: `Sök på webben efter aktuell lönestatistik för "${job.title}" i ${job.location || 'Sverige'}.
 
-Position: ${job.title}
-Område: ${job.location || 'Sverige'}
+När du hittat information, använd update_widget_info verktyget för att visa resultatet i min widget.
 
-Jag vill veta: typiska ersättningsnivåer, branschstandard, och tips för förhandling.
+Inkludera: genomsnitt, min/max, och förhandlingstips.
 
 widget_session: ${widgetSessionId}`
         });

@@ -995,7 +995,7 @@ Use job details and user's background to create a tailored CV.`,
   }
 );
 
-console.log("✅ Tools: search_jobs, display_jobs, get_job_details, show_salary_inline, display_salary, display_cv");
+console.log("✅ Tools: search_jobs, display_jobs, get_job_details, update_widget_info, display_salary, display_cv");
 
 // HTTP Server
 const transports = new Map();
