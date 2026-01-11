@@ -1563,8 +1563,15 @@
         }
       }, [isFullscreen]);
 
-      // Note: Auto-fullscreen disabled - ChatGPT app handles display mode
-      // User can manually click fullscreen button if needed
+      // Auto-fullscreen on mobile - simple version (just CSS, no API call)
+      useEffect(() => {
+        const isMobile = window.innerWidth <= 500;
+        if (isMobile) {
+          console.log('📱 Mobile detected - enabling fullscreen CSS');
+          setIsFullscreen(true);
+          // Don't call requestDisplayMode - let ChatGPT handle it
+        }
+      }, []);
 
       const defaultLabels = { jobs: 'jobb', map: 'Karta', all: 'Alla', fulltime: 'Heltid', parttime: 'Deltid', showMore: 'Läs mer', apply: 'Ansök', saved: 'Sparad!', noJobs: 'Inga jobb hittades', tryOther: 'Prova att söka efter något annat', loadingDesc: 'Laddar...', noDesc: 'Ingen beskrivning tillgänglig.', applyNow: 'Ansök nu', salaryInfo: 'Löneinfo', sending: 'Skickar...' };
       const [labels, setLabels] = useState(defaultLabels);
