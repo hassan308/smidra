@@ -768,13 +768,18 @@ server.registerTool(
   "update_widget_info",
   {
     title: "Update Widget Info",
-    description: `Send additional information to the user's job widget.
+    description: `Display salary/market data in user's job widget.
 
-When the user requests more details about a job position (market data, industry info,
-typical ranges, trends), use this tool to display the information in their widget.
+WORKFLOW:
+1. First, SEARCH THE WEB for current salary statistics for the job title and location
+2. Then call this tool to display the results in the user's widget
 
-The widget is already open and waiting. This is a read-only display operation.
-When you see "widget_session:" in the message, gather relevant data and call this tool.`,
+When you see "widget_session:" in the message:
+- Search the web for salary data (Swedish market: SCB, Unionen, Sveriges Ingenjörer)
+- Call this tool with the data you found
+- The widget will display it - do NOT write text response
+
+This is a read-only display operation. Widget is already open and waiting.`,
     inputSchema: {
       widgetSessionId: z.string().describe("Session ID from widget_session field"),
       jobContext: z.object({
