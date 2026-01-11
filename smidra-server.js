@@ -399,22 +399,23 @@ server.registerResource("cv-widget", "ui://widget/cv.html", {}, async () => ({
 server.registerTool(
   "search_jobs",
   {
-    title: "Search Jobs",
-    description: `Search for jobs in Sweden. Shows interactive job widget.
+    title: "Search Jobs (Smidra MCP)",
+    description: `Sök jobb i Sverige. Visar interaktiv jobbwidget.
 
-⚠️ AFTER CALLING: Do NOT write any text to user. The widget shows everything they need.
+VIKTIGT: SKRIV INGEN TEXT EFTER ANROPET!
+Widget visar allt. Anropa verktyget och sluta - ingen text alls.
 
-The widget auto-translates to user's language. Just call this tool and stop.
+Widget översätter automatiskt till användarens språk.
 
-PARAMETERS:
-- query: Search term IN SWEDISH (e.g., 'kock', 'utvecklare', 'sjuksköterska')
-- language: User's language code (e.g., 'en', 'ar', 'so', 'sv')
-- loadingText: "Searching..." in user's language
-- translatingText: "Translating..." in user's language
+PARAMETRAR:
+- query: Sökord PÅ SVENSKA (t.ex. 'kock', 'utvecklare', 'sjuksköterska')
+- language: Användarens språkkod (t.ex. 'en', 'ar', 'so', 'sv')
+- loadingText: "Söker..." på användarens språk
+- translatingText: "Översätter..." på användarens språk
 
-Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), lärare (teacher), städare (cleaner), chaufför (driver), säljare (salesperson), ingenjör (engineer)
+Svenska nyckelord: utvecklare (developer), sjuksköterska (nurse), kock (chef), lärare (teacher), städare (cleaner), chaufför (driver), säljare (salesperson), ingenjör (engineer)
 
-⚠️ noExperience: When true, filter out "senior" titles, then call display_jobs.`,
+noExperience: När true, filtrera bort "senior"-titlar och anropa display_jobs.`,
     inputSchema: {
       query: z.string().describe("Search query IN SWEDISH"),
       location: z.string().optional().describe("City/region in Sweden"),
@@ -540,12 +541,13 @@ Then call display_jobs with the filtered list.`
 server.registerTool(
   "display_jobs",
   {
-    title: "Display Jobs",
-    description: `Show filtered job results in widget.
+    title: "Display Jobs (Smidra MCP)",
+    description: `Visa filtrerade jobbresultat i widget.
 
-⚠️ AFTER CALLING: Do NOT write any text. Widget shows everything.
+VIKTIGT: SKRIV INGEN TEXT EFTER ANROPET!
+Widget visar allt. Anropa verktyget och sluta - ingen text alls.
 
-Only needed after filtering noExperience results. For normal searches, search_jobs handles everything.`,
+Används efter filtrering av noExperience-resultat. För vanliga sökningar hanterar search_jobs allt.`,
     inputSchema: {
       language: z.string().default("sv"),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
@@ -601,10 +603,11 @@ Only needed after filtering noExperience results. For normal searches, search_jo
 server.registerTool(
   "get_job_details",
   {
-    title: "Show Job Details",
-    description: `Show detailed job information in widget.
+    title: "Show Job Details (Smidra MCP)",
+    description: `Visa detaljerad jobbinformation i widget.
 
-⚠️ AFTER CALLING: Do NOT write any text. Widget shows all details.`,
+VIKTIGT: SKRIV INGEN TEXT EFTER ANROPET!
+Widget visar alla detaljer. Anropa verktyget och sluta - ingen text alls.`,
     inputSchema: {
       jobId: z.string(),
       language: z.string(),
