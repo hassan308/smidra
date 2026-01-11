@@ -1469,17 +1469,31 @@
         setSalaryLoading(false);
       }, []);
 
-      // Request salary via ChatGPT - passive display prompt
-      const requestSalary = useCallback((job) => {
+      // Request salary via direct API - instant, no ChatGPT needed
+      const requestSalary = useCallback(async (job) => {
         setSalaryLoading(true);
         setSalaryData(null);
 
-        window.openai?.sendFollowUpMessage?.({
-          prompt: `Visa lönestatistik för ${job.title} i ${job.location || 'Sverige'} i min öppna widget.
+        try {
+          const params = new URLSearchParams({
+            title: job.title || '',
+            location: job.location || 'Sverige'
+          });
+          const response = await fetch(`https://api.smidra.se/api/salary?${params}`);
+          const data = await response.json();
 
-widget_session: ${widgetSessionId}`
-        });
-      }, [widgetSessionId]);
+          setSalaryData({
+            job: data.job,
+            salary: data.salary,
+            tips: data.tips,
+            sources: data.sources
+          });
+          setSalaryLoading(false);
+        } catch (error) {
+          console.error('Salary fetch error:', error);
+          setSalaryLoading(false);
+        }
+      }, []);
       useEffect(() => { labelsRef.current = labels; }, [labels]);
 
       const toggleSave = useCallback(id => { setSavedJobs(p => p.includes(id) ? p.filter(x => x !== id) : (showToastMsg(labelsRef.current.saved), [...p, id])); }, [showToastMsg]);
