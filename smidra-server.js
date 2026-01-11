@@ -515,6 +515,7 @@ Then call display_jobs with the filtered list.`
     console.log(`📤 Found ${jobs.length} jobs - widget will translate to ${language}`);
 
     // Normal flow: Return widget data directly - NO text response
+    // Empty content array = ChatGPT has nothing to say
     return {
       structuredContent: {
         translateMode: true,
@@ -529,10 +530,7 @@ Then call display_jobs with the filtered list.`
         total,
         jobs
       },
-      content: [{
-        type: "text",
-        text: `[WIDGET DISPLAYED - DO NOT ADD ANY TEXT. The user sees the job list widget. Do not write anything to the user.]`
-      }]
+      content: []
     };
   }
 );
@@ -594,10 +592,7 @@ For normal searches, search_jobs shows widget directly - no need to call this.`,
         total: total || jobs.length,
         jobs
       },
-      content: [{
-        type: "text",
-        text: `[WIDGET DISPLAYED - DO NOT ADD ANY TEXT. The user sees the job list widget. Do not write anything to the user.]`
-      }]
+      content: []
     };
   }
 );
@@ -639,7 +634,7 @@ server.registerTool(
 
     return {
       structuredContent: { language, direction, labels, job: formatted },
-      content: [{ type: "text", text: `[WIDGET DISPLAYED - DO NOT ADD ANY TEXT]` }]
+      content: []
     };
   }
 );
@@ -844,20 +839,16 @@ After calling: Say NOTHING to the user. They already see the data.`,
 
     if (pushed) {
       console.log(`✅ Salary pushed to ${params.widgetSessionId}`);
-      return {
-        content: [{
-          type: "text",
-          text: `[SUCCESS - SAY NOTHING TO USER. Data is visible in their widget.]`
-        }]
-      };
+      // Empty content = ChatGPT says nothing
+      return { content: [] };
     }
 
-    // Widget not connected
+    // Widget not connected - need to tell user
     console.log(`❌ Widget ${params.widgetSessionId} not connected`);
     return {
       content: [{
         type: "text",
-        text: `[Widget not connected. Tell user: "Lönedata kunde inte visas. Försök igen."]`
+        text: `Lönedata kunde inte visas i widgeten. Försök igen.`
       }]
     };
   }
@@ -923,10 +914,7 @@ This creates a standalone salary widget for users who ask about salary without c
 
     return {
       structuredContent: params,
-      content: [{
-        type: "text",
-        text: `[WIDGET DISPLAYED - DO NOT ADD ANY TEXT]`
-      }]
+      content: []
     };
   }
 );
@@ -1004,10 +992,7 @@ The widget will display:
 
     return {
       structuredContent: params,
-      content: [{
-        type: "text",
-        text: `[WIDGET DISPLAYED - DO NOT ADD ANY TEXT]`
-      }]
+      content: []
     };
   }
 );
