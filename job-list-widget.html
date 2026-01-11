@@ -2,312 +2,326 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smidra - Jobsearch</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Smidra - Job Search</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
+    :root {
+      --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --brand-primary: #6366f1;
+      --brand-primary-light: #818cf8;
+      --brand-secondary: #ec4899;
+      --brand-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+      --brand-gradient-subtle: linear-gradient(135deg, rgba(99,102,241,0.1) 0%, rgba(139,92,246,0.1) 50%, rgba(236,72,153,0.1) 100%);
+      --success: #10b981;
+      --success-light: #d1fae5;
+      --warning: #f59e0b;
+      --urgent: #ef4444;
+      --urgent-light: #fee2e2;
+      --bg-primary: #fafbfc;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #f1f5f9;
+      --bg-card: #ffffff;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --border: #e2e8f0;
+      --border-light: #f1f5f9;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,0.12);
+      --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.15);
+      --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+      --shadow-card-hover: 0 8px 30px rgba(0,0,0,0.12);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --radius-full: 9999px;
+    }
+
+    [data-theme="dark"] {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-tertiary: #334155;
+      --bg-card: #1e293b;
+      --text-primary: #f8fafc;
+      --text-secondary: #cbd5e1;
+      --text-muted: #64748b;
+      --border: #334155;
+      --border-light: #1e293b;
+      --shadow-card: 0 1px 3px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.15);
+      --shadow-card-hover: 0 8px 30px rgba(0,0,0,0.4);
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; height: 100%; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      background: #f0f2f5;
-      color: #1c1e21;
+      font-family: var(--font-main);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100%;
+      line-height: 1.5;
     }
 
-    .container { max-width: 920px; margin: 0 auto; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-    /* Header */
+    .container { max-width: 960px; margin: 0 auto; }
+
     .header {
-      padding: 16px 20px;
-      background: #fff;
-      border-bottom: 1px solid #dddfe2;
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      background: var(--brand-gradient);
+      padding: 24px 20px;
+      position: relative;
+      overflow: hidden;
     }
 
-    .header-top {
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 60%);
+    }
+
+    .header-content { position: relative; z-index: 1; }
+    .header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+    .header-title { font-size: 24px; font-weight: 800; color: white; line-height: 1.2; }
+
+    .header-count {
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(10px);
+      padding: 8px 14px;
+      border-radius: var(--radius-full);
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
     }
-
-    .header-title { font-size: 20px; font-weight: 700; color: #1c1e21; }
-    .header-count { font-size: 15px; color: #65676b; display: flex; align-items: center; gap: 8px; }
-    .header-subtitle { font-size: 15px; color: #65676b; margin-top: 2px; }
 
     .header-loading {
-      width: 16px; height: 16px;
-      border: 2px solid #e4e6eb;
-      border-top-color: #1877f2;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Controls */
+    .header-subtitle { font-size: 14px; color: rgba(255,255,255,0.85); display: flex; align-items: center; gap: 6px; }
+    .header-subtitle svg { width: 16px; height: 16px; opacity: 0.9; }
+
     .controls {
       display: flex;
       gap: 8px;
-      padding: 12px 20px;
-      background: #fff;
-      border-bottom: 1px solid #dddfe2;
+      padding: 16px 20px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-light);
       flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
 
     .control-btn {
-      padding: 8px 16px;
+      padding: 10px 18px;
       border: none;
-      border-radius: 20px;
-      font-size: 15px;
+      border-radius: var(--radius-full);
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s;
-      background: #e4e6eb;
-      color: #050505;
+      transition: all 0.2s ease;
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    .control-btn:hover { background: #d8dadf; }
-    .control-btn.active { background: #e7f3ff; color: #1877f2; }
-    .control-btn.primary { background: #1877f2; color: #fff; }
-    .control-btn.primary:hover { background: #166fe5; }
-    .control-btn svg { width: 16px; height: 16px; vertical-align: -3px; margin-right: 6px; }
+    .control-btn:hover { background: var(--border); }
+    .control-btn.active { background: var(--brand-gradient-subtle); color: var(--brand-primary); }
+    .control-btn.primary { background: var(--brand-gradient); color: white; }
+    .control-btn.primary:hover { opacity: 0.9; box-shadow: var(--shadow-glow); }
+    .control-btn svg { width: 16px; height: 16px; }
 
-    /* Map */
-    .map-section {
-      background: #fff;
-      border-bottom: 1px solid #dddfe2;
-      overflow: hidden;
-      transition: height 0.3s ease;
-    }
-
+    .map-section { background: var(--bg-secondary); border-bottom: 1px solid var(--border-light); overflow: hidden; transition: height 0.3s ease; }
     .map-section.collapsed { height: 0 !important; }
-    .map-wrapper { height: 300px; position: relative; }
+    .map-wrapper { height: 280px; position: relative; }
     #map { width: 100%; height: 100%; }
 
     .map-info {
       position: absolute;
-      bottom: 12px; left: 12px;
-      background: #fff;
-      padding: 8px 14px;
-      border-radius: 8px;
-      font-size: 13px; font-weight: 600;
-      color: #1877f2;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      bottom: 16px; left: 16px;
+      background: var(--bg-secondary);
+      padding: 10px 16px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--brand-primary);
+      box-shadow: var(--shadow-md);
       z-index: 1000;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
+      border: 1px solid var(--border-light);
     }
 
-    .map-info .dot {
-      width: 8px; height: 8px;
-      background: #1877f2;
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-    }
+    .map-info .dot { width: 8px; height: 8px; background: var(--brand-primary); border-radius: 50%; animation: pulse 2s infinite; }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(1.2); }
-    }
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.3); } }
 
-    /* Job Grid */
-    .job-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 16px;
-      padding: 16px;
-    }
+    .job-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; padding: 20px; }
 
-    /* Job Card */
     .job-card {
-      background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card);
       overflow: hidden;
-      transition: box-shadow 0.2s;
+      transition: all 0.25s ease;
       cursor: pointer;
+      border: 1px solid var(--border-light);
     }
 
-    .job-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
-    .job-card-header { padding: 16px; }
+    .job-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-card-hover); border-color: var(--brand-primary-light); }
+    .job-card-header { padding: 20px 20px 16px; }
+    .job-card-company { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
 
-    .job-card-company {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-
-    .company-logo {
-      width: 48px;
-      height: 48px;
-      border-radius: 8px;
-      object-fit: cover;
-      background: #f0f2f5;
-    }
+    .company-logo { width: 52px; height: 52px; border-radius: var(--radius-md); object-fit: cover; background: var(--bg-tertiary); }
 
     .company-logo-fallback {
-      width: 48px;
-      height: 48px;
-      border-radius: 8px;
-      background: linear-gradient(135deg, #1877f2, #42b72a);
+      width: 52px; height: 52px;
+      border-radius: var(--radius-md);
+      background: var(--brand-gradient);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #fff;
+      color: white;
       font-weight: 700;
       font-size: 18px;
     }
 
     .company-info { flex: 1; min-width: 0; }
-    .company-name { font-size: 15px; font-weight: 600; color: #1c1e21; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .company-name { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     .job-type-badge {
-      display: inline-block;
-      font-size: 12px;
-      color: #1877f2;
-      background: #e7f3ff;
-      padding: 2px 8px;
-      border-radius: 4px;
+      display: inline-flex;
+      font-size: 11px;
+      color: var(--brand-primary);
+      background: var(--brand-gradient-subtle);
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
       font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
     }
 
     .job-card-title {
       font-size: 17px;
-      font-weight: 600;
-      color: #1c1e21;
-      line-height: 1.3;
-      margin-bottom: 8px;
-    }
-
-    .job-card-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-      font-size: 14px;
-      color: #65676b;
-    }
-
-    .job-meta-item { display: flex; align-items: center; gap: 6px; }
-    .job-meta-item svg { width: 16px; height: 16px; color: #65676b; }
-
-    .job-card-desc {
-      padding: 0 16px;
-      font-size: 14px;
-      color: #65676b;
-      line-height: 1.5;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.35;
+      margin-bottom: 12px;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
 
-    .job-card-footer {
-      display: flex;
-      padding: 12px 16px;
-      gap: 8px;
-      border-top: 1px solid #e4e6eb;
-      margin-top: 12px;
-    }
+    .job-card-meta { display: flex; flex-wrap: wrap; gap: 12px; }
+    .job-meta-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); font-weight: 500; }
+    .job-meta-item svg { width: 14px; height: 14px; color: var(--text-muted); }
 
-    /* Buttons */
+    .job-card-footer { display: flex; padding: 14px 20px; gap: 10px; background: var(--bg-tertiary); border-top: 1px solid var(--border-light); }
+
     .btn {
       flex: 1;
-      padding: 10px 16px;
+      padding: 12px 16px;
       border: none;
-      border-radius: 6px;
-      font-size: 15px;
+      border-radius: var(--radius-md);
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 8px;
     }
 
-    .btn-primary { background: #1877f2; color: #fff; }
-    .btn-primary:hover { background: #166fe5; }
-    .btn-secondary { background: #e4e6eb; color: #050505; }
-    .btn-secondary:hover { background: #d8dadf; }
-    .btn-icon { width: 44px; flex: none; }
-    .btn-icon.saved { color: #f3425f; background: #fce4ec; }
+    .btn svg { width: 16px; height: 16px; }
+    .btn-primary { background: var(--brand-gradient); color: white; }
+    .btn-primary:hover { opacity: 0.9; box-shadow: var(--shadow-glow); transform: scale(1.02); }
+    .btn-secondary { background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--brand-primary); color: var(--brand-primary); }
+    .btn-icon { width: 44px; flex: none; padding: 12px; }
+    .btn-icon.saved { color: var(--urgent); background: var(--urgent-light); border-color: transparent; }
 
-    /* Pagination */
     .pagination {
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 4px;
-      padding: 20px;
-      background: #fff;
-      margin: 16px;
-      border-radius: 8px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      gap: 6px;
+      padding: 24px 20px;
+      background: var(--bg-secondary);
+      margin: 0 20px 20px;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card);
     }
 
     .page-btn {
-      min-width: 40px; height: 40px;
+      min-width: 42px; height: 42px;
       border: none;
-      border-radius: 6px;
-      background: #e4e6eb;
-      font-size: 15px; font-weight: 600;
-      color: #1c1e21;
+      border-radius: var(--radius-md);
+      background: var(--bg-tertiary);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
     }
 
-    .page-btn:hover:not(:disabled) { background: #d8dadf; }
-    .page-btn.active { background: #1877f2; color: #fff; }
+    .page-btn:hover:not(:disabled) { background: var(--border); color: var(--text-primary); }
+    .page-btn.active { background: var(--brand-gradient); color: white; }
     .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .page-dots { padding: 0 8px; color: #65676b; }
+    .page-dots { padding: 0 8px; color: var(--text-muted); }
 
-    /* States */
     .empty-state, .loading-state {
-      padding: 60px 20px;
+      padding: 80px 20px;
       text-align: center;
-      background: #fff;
-      margin: 16px;
-      border-radius: 8px;
+      background: var(--bg-secondary);
+      margin: 20px;
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border-light);
     }
 
-    .empty-icon, .spinner-wrap {
-      width: 80px; height: 80px;
-      margin: 0 auto 20px;
-      background: #e4e6eb;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
+    .empty-icon, .spinner-wrap { width: 100px; height: 100px; margin: 0 auto 24px; background: var(--bg-tertiary); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
     .spinner-wrap { background: transparent; }
+    .spinner-large { width: 56px; height: 56px; border: 4px solid var(--border); border-top-color: var(--brand-primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    .empty-icon svg { width: 48px; height: 48px; color: var(--text-muted); }
+    .empty-title { font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+    .empty-text { color: var(--text-muted); font-size: 15px; }
 
-    .spinner-large {
-      width: 48px; height: 48px;
-      border: 4px solid #e4e6eb;
-      border-top-color: #1877f2;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    .empty-icon svg { width: 40px; height: 40px; color: #65676b; }
-    .empty-title { font-size: 20px; font-weight: 700; color: #1c1e21; margin-bottom: 8px; }
-    .empty-text, .loading-text { color: #65676b; font-size: 15px; }
-
-    /* Modal */
     .modal-overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(244,244,244,0.8);
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
       z-index: 2000;
       align-items: center;
       justify-content: center;
@@ -317,410 +331,198 @@
     .modal-overlay.show { display: flex; }
 
     .modal {
-      background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 12px 28px rgba(0,0,0,0.15);
-      max-width: 600px;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg);
+      max-width: 560px;
       width: 100%;
       max-height: 85vh;
-      overflow-y: auto;
+      overflow: hidden;
+      animation: modalIn 0.3s ease;
     }
 
-    .modal-header {
-      padding: 20px;
-      border-bottom: 1px solid #e4e6eb;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      position: sticky;
-      top: 0;
-      background: #fff;
-    }
+    @keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+    .modal-header { padding: 24px; background: var(--brand-gradient); color: white; position: relative; }
+    .modal-header::before { content: ''; position: absolute; top: -50%; right: -20%; width: 300px; height: 300px; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%); }
+    .modal-header-content { position: relative; z-index: 1; padding-right: 50px; }
 
     .modal-close {
-      width: 36px; height: 36px;
+      position: absolute;
+      top: 20px; right: 20px;
+      width: 40px; height: 40px;
       border: none;
-      border-radius: 50%;
-      background: #e4e6eb;
+      border-radius: var(--radius-md);
+      background: rgba(255,255,255,0.2);
+      color: white;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
+      transition: all 0.2s ease;
+      z-index: 2;
     }
 
-    .modal-close:hover { background: #d8dadf; }
-    .modal-body { padding: 20px; }
+    .modal-close:hover { background: rgba(255,255,255,0.3); }
+    .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; line-height: 1.3; }
+    .modal-company { font-size: 15px; opacity: 0.9; }
+    .modal-body { padding: 24px; overflow-y: auto; max-height: calc(85vh - 200px); }
+    .modal-meta { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+    .modal-meta-item { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--bg-tertiary); border-radius: var(--radius-md); font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+    .modal-meta-item svg { width: 16px; height: 16px; color: var(--brand-primary); }
 
     .modal-desc {
-      font-size: 15px;
-      line-height: 1.6;
-      color: #1c1e21;
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text-secondary);
       white-space: pre-wrap;
-      margin-bottom: 20px;
+      padding: 20px;
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-light);
+      max-height: 300px;
+      overflow-y: auto;
     }
 
-    .modal-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .modal-actions { display: flex; gap: 10px; padding: 20px 24px; background: var(--bg-tertiary); border-top: 1px solid var(--border-light); }
+    .modal-actions .btn { flex: 1; padding: 14px 20px; }
 
-    /* Toast */
     .toast {
       position: fixed;
       bottom: 24px; left: 50%;
       transform: translateX(-50%) translateY(100px);
-      background: #1c1e21;
-      color: #fff;
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-size: 15px; font-weight: 600;
+      background: var(--text-primary);
+      color: var(--bg-primary);
+      padding: 14px 24px;
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      font-weight: 600;
       opacity: 0;
-      transition: all 0.3s;
+      transition: all 0.3s ease;
       z-index: 3000;
+      box-shadow: var(--shadow-lg);
     }
 
     .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
-    /* Leaflet popups */
-    .leaflet-popup-content-wrapper { border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+    .leaflet-popup-content-wrapper { border-radius: var(--radius-md); box-shadow: var(--shadow-lg); }
     .map-popup { padding: 4px; }
-    .map-popup-title { font-weight: 600; color: #1c1e21; margin-bottom: 4px; }
-    .map-popup-company { color: #65676b; font-size: 13px; }
-
-    .map-popup-btn {
-      margin-top: 8px;
-      padding: 6px 12px;
-      background: #1877f2;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      font-size: 13px; font-weight: 600;
-      cursor: pointer;
-      width: 100%;
-    }
+    .map-popup-title { font-weight: 700; color: var(--text-primary); margin-bottom: 4px; font-size: 14px; }
+    .map-popup-company { color: var(--text-muted); font-size: 12px; }
+    .map-popup-btn { margin-top: 10px; padding: 8px 14px; background: var(--brand-gradient); color: white; border: none; border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; cursor: pointer; width: 100%; }
 
     @media (max-width: 640px) {
-      .job-grid { grid-template-columns: 1fr; padding: 8px; gap: 8px; }
-      .map-wrapper { height: 220px; }
-      .controls { padding: 8px 12px; }
+      .header { padding: 20px 16px; }
+      .header-title { font-size: 20px; }
+      .header-count { padding: 6px 12px; font-size: 13px; }
+      .controls { padding: 12px 16px; gap: 6px; overflow-x: auto; flex-wrap: nowrap; }
+      .control-btn { padding: 8px 14px; font-size: 13px; flex-shrink: 0; }
+      .map-wrapper { height: 200px; }
+      .job-grid { grid-template-columns: 1fr; padding: 12px; gap: 12px; }
+      .job-card-header { padding: 16px; }
+      .company-logo, .company-logo-fallback { width: 44px; height: 44px; font-size: 14px; }
+      .job-card-title { font-size: 16px; }
+      .job-card-footer { padding: 12px 16px; }
+      .btn { padding: 11px 14px; font-size: 13px; }
+      .pagination { padding: 16px; margin: 12px; }
+      .page-btn { min-width: 38px; height: 38px; font-size: 13px; }
+      .empty-state, .loading-state { padding: 50px 16px; margin: 12px; }
+      .modal-overlay { padding: 0; align-items: flex-end; }
+      .modal { max-height: 92vh; border-radius: var(--radius-xl) var(--radius-xl) 0 0; animation: slideUp 0.3s ease; }
+      @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+      .modal-header { padding: 20px; }
+      .modal-body { padding: 16px; }
+      .modal-actions { padding: 16px; flex-direction: column; }
     }
+
+    [dir="rtl"] .header-top { flex-direction: row-reverse; }
+    [dir="rtl"] .job-card-company { flex-direction: row-reverse; }
+    [dir="rtl"] .job-card-footer { flex-direction: row-reverse; }
+    [dir="rtl"] .controls { flex-direction: row-reverse; }
   </style>
 </head>
 <body>
   <div id="root"></div>
-
   <script type="text/babel">
     const { useState, useEffect, useRef, useCallback } = React;
-
     const JOBS_PER_PAGE = 12;
     const BATCH_SIZE = 100;
 
-    // City coordinates for map - comprehensive Swedish cities
     const cityCoords = {
-      // Major cities
-      'stockholm': [59.3293, 18.0686],
-      'göteborg': [57.7089, 11.9746],
-      'gothenburg': [57.7089, 11.9746],
-      'malmö': [55.6050, 13.0038],
-      'malmo': [55.6050, 13.0038],
-      'uppsala': [59.8586, 17.6389],
-      'linköping': [58.4108, 15.6214],
-      'linkoping': [58.4108, 15.6214],
-      'örebro': [59.2753, 15.2134],
-      'orebro': [59.2753, 15.2134],
-      'västerås': [59.6099, 16.5448],
-      'vasteras': [59.6099, 16.5448],
-      'helsingborg': [56.0465, 12.6945],
-      'norrköping': [58.5877, 16.1924],
-      'norrkoping': [58.5877, 16.1924],
-      'jönköping': [57.7826, 14.1618],
-      'jonkoping': [57.7826, 14.1618],
-      'lund': [55.7047, 13.1910],
-      'umeå': [63.8258, 20.2630],
-      'umea': [63.8258, 20.2630],
-      'gävle': [60.6749, 17.1413],
-      'gavle': [60.6749, 17.1413],
-      'borås': [57.7210, 12.9401],
-      'boras': [57.7210, 12.9401],
-      'sundsvall': [62.3908, 17.3069],
-      'luleå': [65.5848, 22.1547],
-      'lulea': [65.5848, 22.1547],
-      'halmstad': [56.6745, 12.8578],
-      // More cities
-      'växjö': [56.8777, 14.8091],
-      'vaxjo': [56.8777, 14.8091],
-      'kalmar': [56.6634, 16.3566],
-      'karlstad': [59.4022, 13.5115],
-      'eskilstuna': [59.3666, 16.5077],
-      'trollhättan': [58.2837, 12.2886],
-      'trollhattan': [58.2837, 12.2886],
-      'östersund': [63.1792, 14.6357],
-      'ostersund': [63.1792, 14.6357],
-      'skellefteå': [64.7507, 20.9528],
-      'skelleftea': [64.7507, 20.9528],
-      'karlskrona': [56.1612, 15.5869],
-      'kristianstad': [56.0294, 14.1567],
-      'södertälje': [59.1955, 17.6253],
-      'sodertalje': [59.1955, 17.6253],
-      'täby': [59.4439, 18.0687],
-      'taby': [59.4439, 18.0687],
-      'solna': [59.3630, 18.0049],
-      'nacka': [59.3108, 18.1636],
-      'huddinge': [59.2373, 17.9812],
-      'haninge': [59.1739, 18.1367],
-      'botkyrka': [59.2000, 17.8167],
-      'järfälla': [59.4333, 17.8500],
-      'jarfalla': [59.4333, 17.8500],
-      'sollentuna': [59.4281, 17.9514],
-      'mölndal': [57.6556, 12.0136],
-      'molndal': [57.6556, 12.0136],
-      'partille': [57.7394, 12.1064],
-      'kungsbacka': [57.4869, 12.0761],
-      'varberg': [57.1058, 12.2508],
-      'falkenberg': [56.9053, 12.4914],
-      'uddevalla': [58.3489, 11.9419],
-      'skövde': [58.3911, 13.8458],
-      'skovde': [58.3911, 13.8458],
-      'lidköping': [58.5053, 13.1578],
-      'lidkoping': [58.5053, 13.1578],
-      'falun': [60.6065, 15.6355],
-      'borlänge': [60.4858, 15.4364],
-      'borlange': [60.4858, 15.4364],
-      'mora': [61.0049, 14.5451],
-      'avesta': [60.1456, 16.1689],
-      'ludvika': [60.1497, 15.1872],
-      'visby': [57.6348, 18.2948],
-      'gotland': [57.6348, 18.2948],
-      'nyköping': [58.7530, 17.0086],
-      'nykoping': [58.7530, 17.0086],
-      'katrineholm': [58.9958, 16.2069],
-      'strängnäs': [59.3792, 17.0317],
-      'strangas': [59.3792, 17.0317],
-      'enköping': [59.6358, 17.0775],
-      'enkoping': [59.6358, 17.0775],
-      'norrtälje': [59.7581, 18.7042],
-      'norrtalje': [59.7581, 18.7042],
-      'motala': [58.5372, 15.0364],
-      'mjölby': [58.3233, 15.1247],
-      'mjolby': [58.3233, 15.1247],
-      'nässjö': [57.6531, 14.6967],
-      'nassjo': [57.6531, 14.6967],
-      'vetlanda': [57.4289, 15.0786],
-      'eksjö': [57.6667, 14.9667],
-      'eksjo': [57.6667, 14.9667],
-      'värnamo': [57.1861, 14.0400],
-      'varnamo': [57.1861, 14.0400],
-      'huskvarna': [57.7858, 14.2683],
-      'tranås': [58.0375, 14.9778],
-      'tranas': [58.0375, 14.9778],
-      'ängelholm': [56.2428, 12.8622],
-      'angelholm': [56.2428, 12.8622],
-      'landskrona': [55.8708, 12.8303],
-      'trelleborg': [55.3758, 13.1572],
-      'ystad': [55.4297, 13.8200],
-      'simrishamn': [55.5564, 14.3500],
-      'eslöv': [55.8392, 13.3036],
-      'eslov': [55.8392, 13.3036],
-      'höganäs': [56.1997, 12.5581],
-      'hoganas': [56.1997, 12.5581],
-      'staffanstorp': [55.6417, 13.2067],
-      'lomma': [55.6733, 13.0683],
-      'burlöv': [55.6333, 13.0833],
-      'burlov': [55.6333, 13.0833],
-      'vellinge': [55.4717, 13.0233],
-      'svedala': [55.5067, 13.2333],
-      'örnsköldsvik': [63.2908, 18.7156],
-      'ornskoldsvik': [63.2908, 18.7156],
-      'härnösand': [62.6323, 17.9379],
-      'harnosand': [62.6323, 17.9379],
-      'sollefteå': [63.1667, 17.2667],
-      'solleftea': [63.1667, 17.2667],
-      'kramfors': [62.9333, 17.8000],
-      'timrå': [62.4833, 17.3167],
-      'timra': [62.4833, 17.3167],
-      'piteå': [65.3172, 21.4794],
-      'pitea': [65.3172, 21.4794],
-      'boden': [66.0061, 21.6886],
-      'kiruna': [67.8558, 20.2253],
-      'gällivare': [67.1333, 20.6500],
-      'gallivare': [67.1333, 20.6500],
-      'arvidsjaur': [65.5917, 19.1750],
-      'lycksele': [64.5958, 18.6764],
-      // Regions/län
-      'stockholms län': [59.3293, 18.0686],
-      'västra götalands län': [57.7089, 11.9746],
-      'vastra gotalands lan': [57.7089, 11.9746],
-      'skåne län': [55.6050, 13.0038],
-      'skane lan': [55.6050, 13.0038],
-      'hallands län': [56.6745, 12.8578],
-      'hallands lan': [56.6745, 12.8578],
-      'jämtlands län': [63.1792, 14.6357],
-      'jamtlands lan': [63.1792, 14.6357],
-      'västernorrlands län': [62.6323, 17.9379],
-      'vasternorrlands lan': [62.6323, 17.9379],
-      'norrbottens län': [65.5848, 22.1547],
-      'norrbottens lan': [65.5848, 22.1547],
-      'västerbottens län': [63.8258, 20.2630],
-      'vasterbottens lan': [63.8258, 20.2630],
-      'gävleborgs län': [60.6749, 17.1413],
-      'gavleborgs lan': [60.6749, 17.1413],
-      'dalarnas län': [60.6065, 15.6355],
-      'dalarnas lan': [60.6065, 15.6355],
-      'värmlands län': [59.4022, 13.5115],
-      'varmlands lan': [59.4022, 13.5115],
-      'örebro län': [59.2753, 15.2134],
-      'orebro lan': [59.2753, 15.2134],
-      'västmanlands län': [59.6099, 16.5448],
-      'vastmanlands lan': [59.6099, 16.5448],
-      'södermanlands län': [59.1955, 17.6253],
-      'sodermanlands lan': [59.1955, 17.6253],
-      'uppsala län': [59.8586, 17.6389],
-      'uppsala lan': [59.8586, 17.6389],
-      'östergötlands län': [58.4108, 15.6214],
-      'ostergotlands lan': [58.4108, 15.6214],
-      'jönköpings län': [57.7826, 14.1618],
-      'jonkopings lan': [57.7826, 14.1618],
-      'kronobergs län': [56.8777, 14.8091],
-      'kronobergs lan': [56.8777, 14.8091],
-      'kalmar län': [56.6634, 16.3566],
-      'kalmar lan': [56.6634, 16.3566],
-      'gotlands län': [57.6348, 18.2948],
-      'gotlands lan': [57.6348, 18.2948],
-      'blekinge län': [56.1612, 15.5869],
-      'blekinge lan': [56.1612, 15.5869],
-      // Default
+      'stockholm': [59.3293, 18.0686], 'goteborg': [57.7089, 11.9746], 'malmo': [55.6050, 13.0038],
+      'uppsala': [59.8586, 17.6389], 'linkoping': [58.4108, 15.6214], 'orebro': [59.2753, 15.2134],
+      'vasteras': [59.6099, 16.5448], 'helsingborg': [56.0465, 12.6945], 'jonkoping': [57.7826, 14.1618],
+      'lund': [55.7047, 13.1910], 'umea': [63.8258, 20.2630], 'gavle': [60.6749, 17.1413],
       'default': [62.0, 15.0]
     };
 
-    // Deterministic hash from string (for consistent positioning)
-    const hashCode = (str) => {
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) {
-        hash = ((hash << 5) - hash) + str.charCodeAt(i);
-        hash |= 0;
-      }
-      return hash;
-    };
+    const hashCode = (str) => { let hash = 0; for (let i = 0; i < str.length; i++) { hash = ((hash << 5) - hash) + str.charCodeAt(i); hash |= 0; } return hash; };
 
-    // Get coordinates - use API coords if available, fallback to city lookup
     const getCoords = (job) => {
-      // Use real coordinates from API if available
-      if (job.lat && job.lng) {
-        return [job.lat, job.lng];
-      }
-
-      // Fallback: lookup by city name with small offset
+      if (job.lat && job.lng) return [job.lat, job.lng];
       const hash = hashCode(job.id || job.location || 'default');
       const offsetLat = ((hash % 1000) / 1000 - 0.5) * 0.03;
       const offsetLng = (((hash >> 10) % 1000) / 1000 - 0.5) * 0.03;
-
-      const location = job.location;
-      if (!location) {
-        return [cityCoords.default[0] + offsetLat, cityCoords.default[1] + offsetLng];
-      }
-
-      const loc = location.toLowerCase().replace(/[åä]/g, 'a').replace(/ö/g, 'o');
+      const loc = (job.location || '').toLowerCase().replace(/[åäö]/g, c => c === 'ö' ? 'o' : 'a');
       for (const [city, coords] of Object.entries(cityCoords)) {
-        if (loc.includes(city)) {
-          return [coords[0] + offsetLat, coords[1] + offsetLng];
-        }
+        if (loc.includes(city)) return [coords[0] + offsetLat, coords[1] + offsetLng];
       }
       return [cityCoords.default[0] + offsetLat, cityCoords.default[1] + offsetLng];
     };
 
-    // Get company initials
-    const getInitials = (name) => {
-      return name ? name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase() : '?';
+    const getInitials = (name) => name ? name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase() : '?';
+
+    const translateText = async (text, lang) => {
+      if (!text || lang === 'sv') return text;
+      try {
+        const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=sv&tl=${lang}&dt=t&q=${encodeURIComponent(text)}`);
+        const data = await res.json();
+        return data?.[0]?.map(i => i[0]).join('') || text;
+      } catch { return text; }
     };
 
-    // Try to get company domain from name
-    const getCompanyDomain = (name) => {
-      if (!name) return null;
-      const cleaned = name.toLowerCase()
-        .replace(/\s*(ab|aktiebolag|hb|kb|ek\s*för|ekonomisk förening|stiftelsen|föreningen)\s*/gi, '')
-        .replace(/[^a-zåäö0-9]/gi, '')
-        .replace(/[åä]/g, 'a')
-        .replace(/ö/g, 'o');
-      return cleaned.length > 2 ? `${cleaned}.se` : null;
+    const translateBatch = async (texts, lang) => {
+      if (!texts.length || lang === 'sv') return texts;
+      try {
+        const d = ' ||| ';
+        const translated = await translateText(texts.join(d), lang);
+        return translated.split(d).map(t => t.trim());
+      } catch { return texts; }
     };
 
-    // Company Logo component with fallback chain:
-    // 1. Job's logoUrl from API
-    // 2. Clearbit logo from domain
-    // 3. UI Avatars colorful initials
-    // 4. Styled initials fallback
-    const CompanyLogo = ({ name, logoUrl, size = 48 }) => {
-      const [currentSource, setCurrentSource] = useState(0);
-      const domain = getCompanyDomain(name);
-
-      const sources = [
-        logoUrl, // From Arbetsförmedlingen API
-        domain ? `https://logo.clearbit.com/${domain}` : null,
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(name || '?')}&background=random&color=fff&size=${size * 2}&bold=true&format=svg`
-      ].filter(Boolean);
-
-      const handleError = () => {
-        if (currentSource < sources.length - 1) {
-          setCurrentSource(prev => prev + 1);
-        } else {
-          setCurrentSource(-1); // Use fallback
-        }
-      };
-
-      if (currentSource === -1 || sources.length === 0) {
-        return (
-          <div className="company-logo-fallback" style={{ width: size, height: size }}>
-            {getInitials(name)}
-          </div>
-        );
-      }
-
-      return (
-        <img
-          src={sources[currentSource]}
-          alt={name}
-          className="company-logo"
-          style={{ width: size, height: size }}
-          onError={handleError}
-        />
-      );
+    const translateJobs = async (jobs, lang) => {
+      if (!jobs.length || lang === 'sv') return jobs;
+      const [titles, locs] = await Promise.all([translateBatch(jobs.map(j => j.title), lang), translateBatch(jobs.map(j => j.location), lang)]);
+      return jobs.map((j, i) => ({ ...j, title: titles[i] || j.title, location: locs[i] || j.location }));
     };
 
-    // Icons
-    const MapIcon = () => (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-        <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-      </svg>
-    );
+    const translateLabels = async (labels, lang) => {
+      if (lang === 'sv') return labels;
+      const keys = Object.keys(labels);
+      const vals = await translateBatch(Object.values(labels), lang);
+      return keys.reduce((acc, k, i) => ({ ...acc, [k]: vals[i] || labels[k] }), {});
+    };
 
-    const ClockIcon = () => (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-      </svg>
-    );
+    const CompanyLogo = ({ name, logoUrl, size = 52 }) => {
+      const [src, setSrc] = useState(0);
+      const domain = name?.toLowerCase().replace(/\s*(ab|hb|kb)\s*/gi, '').replace(/[^a-z0-9]/gi, '').replace(/[åäö]/g, c => c === 'ö' ? 'o' : 'a');
+      const sources = [logoUrl, domain?.length > 2 && `https://logo.clearbit.com/${domain}.se`, `https://ui-avatars.com/api/?name=${encodeURIComponent(name || '?')}&background=random&color=fff&size=${size * 2}&bold=true&format=svg`].filter(Boolean);
+      if (src === -1 || !sources.length) return <div className="company-logo-fallback" style={{ width: size, height: size }}>{getInitials(name)}</div>;
+      return <img src={sources[src]} alt={name} className="company-logo" style={{ width: size, height: size }} onError={() => setSrc(p => p < sources.length - 1 ? p + 1 : -1)} />;
+    };
 
-    const HeartIcon = ({ filled }) => (
-      <svg viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" width="20" height="20">
-        <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
-      </svg>
-    );
+    const MapIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
+    const ClockIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
+    const HeartIcon = ({ filled }) => <svg viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" width="18" height="18"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>;
+    const CloseIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20"><path d="M18 6L6 18M6 6l12 12"/></svg>;
+    const SearchIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>;
+    const ExternalIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>;
 
-    const CloseIcon = () => (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
-        <path d="M18 6L6 18M6 6l12 12"/>
-      </svg>
-    );
-
-    const SearchIcon = () => (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-      </svg>
-    );
-
-    // Job Card component - minimal view, details loaded on click
-    const JobCard = ({ job, isSaved, onSave, onClick }) => (
+    const JobCard = ({ job, isSaved, onSave, onClick, labels }) => (
       <div className="job-card" onClick={() => onClick(job)}>
         <div className="job-card-header">
           <div className="job-card-company">
-            <CompanyLogo name={job.employer} logoUrl={job.logoUrl} size={48} />
+            <CompanyLogo name={job.employer} logoUrl={job.logoUrl} />
             <div className="company-info">
               <div className="company-name">{job.employer}</div>
               {job.employmentType && <span className="job-type-badge">{job.employmentType}</span>}
@@ -728,188 +530,81 @@
           </div>
           <div className="job-card-title">{job.title}</div>
           <div className="job-card-meta">
-            <span className="job-meta-item">
-              <MapIcon />
-              {job.location || 'Sverige'}
-            </span>
-            {job.deadline && (
-              <span className="job-meta-item">
-                <ClockIcon />
-                {job.deadline}
-              </span>
-            )}
+            <span className="job-meta-item"><MapIcon />{job.location || 'Sverige'}</span>
+            {job.deadline && <span className="job-meta-item"><ClockIcon />{job.deadline}</span>}
           </div>
         </div>
         <div className="job-card-footer">
-          <button
-            className="btn btn-secondary"
-            onClick={(e) => { e.stopPropagation(); onClick(job); }}
-          >
-            Visa mer
-          </button>
-          <button
-            className="btn btn-primary"
-            onClick={(e) => { e.stopPropagation(); window.openai?.openExternal?.({ href: job.url }); }}
-          >
-            Ansök
-          </button>
-          <button
-            className={`btn btn-secondary btn-icon ${isSaved ? 'saved' : ''}`}
-            onClick={(e) => { e.stopPropagation(); onSave(job.id); }}
-          >
-            <HeartIcon filled={isSaved} />
-          </button>
+          <button className="btn btn-secondary" onClick={e => { e.stopPropagation(); onClick(job); }}>{labels.showMore}</button>
+          <button className="btn btn-primary" onClick={e => { e.stopPropagation(); window.openai?.openExternal?.({ href: job.url }); }}><ExternalIcon />{labels.apply}</button>
+          <button className={`btn btn-secondary btn-icon ${isSaved ? 'saved' : ''}`} onClick={e => { e.stopPropagation(); onSave(job.id); }}><HeartIcon filled={isSaved} /></button>
         </div>
       </div>
     );
 
-    // Pagination component
     const Pagination = ({ currentPage, totalPages, onPageChange }) => {
       if (totalPages <= 1) return null;
-
       const pages = [];
-      if (totalPages <= 5) {
-        for (let i = 1; i <= totalPages; i++) pages.push(i);
-      } else if (currentPage <= 3) {
-        pages.push(1, 2, 3, 4, '...', totalPages);
-      } else if (currentPage >= totalPages - 2) {
-        pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
-      } else {
-        pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
-      }
-
+      if (totalPages <= 5) for (let i = 1; i <= totalPages; i++) pages.push(i);
+      else if (currentPage <= 3) pages.push(1, 2, 3, 4, '...', totalPages);
+      else if (currentPage >= totalPages - 2) pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      else pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
       return (
         <div className="pagination">
-          <button
-            className="page-btn"
-            onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-          >‹</button>
-
-          {pages.map((p, i) => (
-            p === '...'
-              ? <span key={`dots-${i}`} className="page-dots">…</span>
-              : <button
-                  key={p}
-                  className={`page-btn ${p === currentPage ? 'active' : ''}`}
-                  onClick={() => onPageChange(p)}
-                >{p}</button>
-          ))}
-
-          <button
-            className="page-btn"
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-          >›</button>
+          <button className="page-btn" onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1}>‹</button>
+          {pages.map((p, i) => p === '...' ? <span key={`d${i}`} className="page-dots">…</span> : <button key={p} className={`page-btn ${p === currentPage ? 'active' : ''}`} onClick={() => onPageChange(p)}>{p}</button>)}
+          <button className="page-btn" onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages}>›</button>
         </div>
       );
     };
 
-    // Modal component - fetches job details on demand
-    const Modal = ({ job, onClose, showToast }) => {
+    const Modal = ({ job, onClose, showToast, labels, targetLanguage }) => {
       const [details, setDetails] = useState(null);
-      const [loadingDetails, setLoadingDetails] = useState(false);
+      const [loading, setLoading] = useState(false);
+      const [desc, setDesc] = useState(null);
 
-      // Fetch job details when modal opens
       useEffect(() => {
-        if (!job || details?.id === job.id) return;
-
-        // If we already have description, use it
-        if (job.fullDescription || job.description) {
-          setDetails(job);
-          return;
-        }
-
-        // Fetch from API
-        setLoadingDetails(true);
-        fetch(`https://api.smidra.se/api/job/${job.id}`)
-          .then(r => r.json())
-          .then(data => {
-            setDetails({ ...job, ...data });
-            setLoadingDetails(false);
-          })
-          .catch(err => {
-            console.error('Failed to fetch job details:', err);
-            setDetails(job);
-            setLoadingDetails(false);
-          });
-      }, [job]);
+        if (!job) return;
+        (async () => {
+          let data = job;
+          if (!job.fullDescription && !job.description) {
+            setLoading(true);
+            try { const r = await fetch(`https://api.smidra.se/api/job/${job.id}`); data = { ...job, ...await r.json() }; setDetails(data); } catch { setDetails(job); setLoading(false); return; }
+          } else setDetails(job);
+          const d = data.fullDescription || data.description || '';
+          setDesc(targetLanguage && targetLanguage !== 'sv' ? await translateText(d, targetLanguage) : d);
+          setLoading(false);
+        })();
+      }, [job, targetLanguage]);
 
       if (!job) return null;
-
-      const displayJob = details || job;
-
-      const handleAction = (action) => {
-        onClose();
-
-        if (action === 'apply') {
-          window.openai?.openExternal?.({ href: displayJob.url });
-          return;
-        }
-
-        let msg = '';
-        if (action === 'salary') {
-          msg = `Visa lönestatistik för: ${displayJob.title} i ${displayJob.location || 'Sverige'}. Sök på nätet och anropa display_salary.`;
-        } else if (action === 'help') {
-          msg = `Hjälp mig skriva personligt brev för: ${displayJob.title} hos ${displayJob.employer}. Beskriving: ${(displayJob.description || '').substring(0, 200)}`;
-        }
-
-        if (msg && window.openai?.sendFollowUpMessage) {
-          showToast('Skickar...');
-          window.openai.sendFollowUpMessage({ prompt: msg });
-        }
-      };
+      const d = details || job;
 
       return (
         <div className="modal-overlay show" onClick={onClose}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <div>
-                <div className="job-card-title">{displayJob.title}</div>
-                <div className="company-name">{displayJob.employer}</div>
-              </div>
-              <button className="modal-close" onClick={onClose}>
-                <CloseIcon />
-              </button>
+              <div className="modal-header-content"><div className="modal-title">{d.title}</div><div className="modal-company">{d.employer}</div></div>
+              <button className="modal-close" onClick={onClose}><CloseIcon /></button>
             </div>
             <div className="modal-body">
-              <div className="job-card-meta" style={{ marginBottom: 16 }}>
-                <span className="job-meta-item">
-                  <MapIcon />
-                  {displayJob.location || 'Sverige'}
-                </span>
-                {displayJob.deadline && (
-                  <span className="job-meta-item">
-                    <ClockIcon />
-                    {displayJob.deadline}
-                  </span>
-                )}
+              <div className="modal-meta">
+                <span className="modal-meta-item"><MapIcon />{d.location || 'Sverige'}</span>
+                {d.deadline && <span className="modal-meta-item"><ClockIcon />{d.deadline}</span>}
               </div>
-              {loadingDetails ? (
-                <div style={{ textAlign: 'center', padding: '20px' }}>
-                  <div className="spinner-large" style={{ margin: '0 auto 12px' }}></div>
-                  <div style={{ color: '#65676b' }}>Laddar beskrivning...</div>
-                </div>
-              ) : (
-                <div className="modal-desc">{displayJob.fullDescription || displayJob.description || 'Ingen beskrivning tillgänglig.'}</div>
-              )}
-              <div className="modal-actions">
-                <button className="btn btn-primary" onClick={() => handleAction('apply')}>Ansök nu</button>
-                <button className="btn btn-secondary" onClick={() => handleAction('salary')}>Löneinfo</button>
-                <button className="btn btn-secondary" onClick={() => handleAction('help')}>Skriv brev</button>
-              </div>
+              {loading ? <div style={{ textAlign: 'center', padding: 30 }}><div className="spinner-large" style={{ margin: '0 auto 16px' }} /><div style={{ color: 'var(--text-muted)' }}>{labels.loadingDesc}</div></div> : <div className="modal-desc">{desc || labels.noDesc}</div>}
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-primary" onClick={() => window.openai?.openExternal?.({ href: d.url })}><ExternalIcon />{labels.applyNow}</button>
+              <button className="btn btn-secondary" onClick={() => { showToast(labels.sending); window.openai?.sendFollowUpMessage?.({ prompt: `Visa lönestatistik för: ${d.title} i ${d.location || 'Sverige'}. Sök på nätet och anropa display_salary.` }); }}>{labels.salaryInfo}</button>
             </div>
           </div>
         </div>
       );
     };
 
-    // Toast component
-    const Toast = ({ message, visible }) => (
-      <div className={`toast ${visible ? 'show' : ''}`}>{message}</div>
-    );
+    const Toast = ({ message, visible }) => <div className={`toast ${visible ? 'show' : ''}`}>{message}</div>;
 
-    // Main App component
     const App = () => {
       const [jobs, setJobs] = useState([]);
       const [query, setQuery] = useState('');
@@ -920,367 +615,145 @@
       const [savedJobs, setSavedJobs] = useState([]);
       const [selectedJob, setSelectedJob] = useState(null);
       const [loading, setLoading] = useState(true);
+      const [loadingText, setLoadingText] = useState('Laddar jobb...');
       const [totalAvailable, setTotalAvailable] = useState(0);
       const [loadedCount, setLoadedCount] = useState(0);
-      const [isLoadingMore, setIsLoadingMore] = useState(false);
       const [toast, setToast] = useState({ message: '', visible: false });
+      const [targetLanguage, setTargetLanguage] = useState('sv');
+
+      const defaultLabels = { jobs: 'jobb', map: 'Karta', all: 'Alla', fulltime: 'Heltid', parttime: 'Deltid', showMore: 'Visa mer', apply: 'Ansök', saved: 'Sparad!', noJobs: 'Inga jobb hittades', tryOther: 'Försök med andra sökord', loadingDesc: 'Laddar...', noDesc: 'Ingen beskrivning.', applyNow: 'Ansök nu', salaryInfo: 'Löneinfo', sending: 'Skickar...' };
+      const [labels, setLabels] = useState(defaultLabels);
 
       const mapRef = useRef(null);
-      const mapInstanceRef = useRef(null);
-      const markersRef = useRef([]);
-      const loadingMoreRef = useRef(false);
-      const loadedCountRef = useRef(0);
-      const totalAvailableRef = useRef(0);
-      const searchParamsRef = useRef({ query: '', location: '' });
-      const searchIdRef = useRef(0); // To cancel old progressive loading
+      const mapInstance = useRef(null);
+      const markers = useRef([]);
+      const markerIds = useRef(new Set());
+      const searchId = useRef(0);
+      const loadingMore = useRef(false);
+      const loadedRef = useRef(0);
+      const totalRef = useRef(0);
+      const searchParams = useRef({ query: '', location: '' });
+      const langRef = useRef('sv');
+      const labelsRef = useRef(defaultLabels);
 
-      // Toast helper
-      const showToast = useCallback((msg) => {
-        setToast({ message: msg, visible: true });
-        setTimeout(() => setToast(t => ({ ...t, visible: false })), 2500);
+      const showToastMsg = useCallback(msg => { setToast({ message: msg, visible: true }); setTimeout(() => setToast(t => ({ ...t, visible: false })), 2500); }, []);
+      useEffect(() => { labelsRef.current = labels; }, [labels]);
+
+      const toggleSave = useCallback(id => { setSavedJobs(p => p.includes(id) ? p.filter(x => x !== id) : (showToastMsg(labelsRef.current.saved), [...p, id])); }, [showToastMsg]);
+
+      const filtered = jobs.filter(j => filter === 'all' || (j.employmentType || '').toLowerCase().includes(filter === 'fulltime' ? 'heltid' : 'deltid'));
+      const totalPages = Math.ceil(filtered.length / JOBS_PER_PAGE);
+      const pageJobs = filtered.slice((currentPage - 1) * JOBS_PER_PAGE, currentPage * JOBS_PER_PAGE);
+
+      useEffect(() => {
+        if (!mapRef.current || mapInstance.current) return;
+        mapInstance.current = L.map(mapRef.current).setView([62, 15], 5);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '© OSM © CARTO', maxZoom: 18 }).addTo(mapInstance.current);
       }, []);
 
-      // Toggle saved jobs
-      const toggleSave = useCallback((jobId) => {
-        setSavedJobs(prev => {
-          if (prev.includes(jobId)) {
-            return prev.filter(id => id !== jobId);
-          }
-          showToast('Sparad!');
-          return [...prev, jobId];
-        });
-      }, [showToast]);
-
-      // Filter jobs
-      const filteredJobs = jobs.filter(job => {
-        if (filter === 'fulltime') return (job.employmentType || '').toLowerCase().includes('heltid');
-        if (filter === 'parttime') return (job.employmentType || '').toLowerCase().includes('deltid');
-        return true;
-      });
-
-      const totalPages = Math.ceil(filteredJobs.length / JOBS_PER_PAGE);
-      const pageJobs = filteredJobs.slice((currentPage - 1) * JOBS_PER_PAGE, currentPage * JOBS_PER_PAGE);
-
-      // Initialize map
       useEffect(() => {
-        if (!mapRef.current || mapInstanceRef.current) return;
-
-        mapInstanceRef.current = L.map(mapRef.current, { zoomControl: true }).setView([62.0, 15.0], 5);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-          attribution: '© OpenStreetMap © CARTO',
-          maxZoom: 18
-        }).addTo(mapInstanceRef.current);
-      }, []);
-
-      // Track which job IDs have markers
-      const markerJobIds = useRef(new Set());
-
-      // Update markers when jobs change - only add NEW markers
-      useEffect(() => {
-        if (!mapInstanceRef.current || !showMap) return;
-        if (filteredJobs.length === 0) {
-          // Clear all if no jobs
-          markersRef.current.forEach(m => mapInstanceRef.current.removeLayer(m));
-          markersRef.current = [];
-          markerJobIds.current.clear();
-          return;
-        }
-
-        // Only add markers for jobs we haven't added yet
-        const newJobs = filteredJobs.filter(job => !markerJobIds.current.has(job.id));
-
-        if (newJobs.length === 0) return;
-
+        if (!mapInstance.current || !showMap || !filtered.length) { markers.current.forEach(m => mapInstance.current?.removeLayer(m)); markers.current = []; markerIds.current.clear(); return; }
+        const newJobs = filtered.filter(j => !markerIds.current.has(j.id));
+        if (!newJobs.length) return;
         const bounds = [];
-        newJobs.forEach(job => {
-          const coords = getCoords(job);
-          bounds.push(coords);
-
-          const marker = L.circleMarker(coords, {
-            radius: 7,
-            fillColor: '#1877f2',
-            color: '#fff',
-            weight: 2,
-            fillOpacity: 0.9
-          }).addTo(mapInstanceRef.current);
-
-          marker.bindPopup(`
-            <div class="map-popup">
-              <div class="map-popup-title">${job.title}</div>
-              <div class="map-popup-company">${job.employer}</div>
-              <button class="map-popup-btn" onclick="window.openJobFromMap('${job.id}')">Visa jobb</button>
-            </div>
-          `);
-
-          marker.jobId = job.id;
-          markersRef.current.push(marker);
-          markerJobIds.current.add(job.id);
+        newJobs.forEach(j => {
+          const c = getCoords(j); bounds.push(c);
+          const m = L.circleMarker(c, { radius: 8, fillColor: '#6366f1', color: '#fff', weight: 2, fillOpacity: 0.9 }).addTo(mapInstance.current);
+          m.bindPopup(`<div class="map-popup"><div class="map-popup-title">${j.title}</div><div class="map-popup-company">${j.employer}</div><button class="map-popup-btn" onclick="window.openJobFromMap('${j.id}')">Visa</button></div>`);
+          markers.current.push(m); markerIds.current.add(j.id);
         });
+        if (markers.current.length === newJobs.length) mapInstance.current.fitBounds(bounds, { padding: [40, 40], maxZoom: 7 });
+      }, [filtered, showMap]);
 
-        // Fit bounds only on first load (when we go from 0 to some markers)
-        if (markersRef.current.length === newJobs.length && bounds.length > 0) {
-          mapInstanceRef.current.fitBounds(bounds, { padding: [40, 40], maxZoom: 7 });
-        }
-      }, [filteredJobs, showMap]);
+      const prevFilter = useRef(filter);
+      useEffect(() => { if (prevFilter.current !== filter) { markers.current.forEach(m => mapInstance.current?.removeLayer(m)); markers.current = []; markerIds.current.clear(); prevFilter.current = filter; } }, [filter]);
+      useEffect(() => { mapInstance.current && setTimeout(() => mapInstance.current.invalidateSize(), 350); }, [showMap]);
+      useEffect(() => { window.openJobFromMap = id => { const j = jobs.find(x => x.id === id); if (j) setSelectedJob(j); }; return () => delete window.openJobFromMap; }, [jobs]);
 
-      // Handle filter change - need to rebuild markers
-      const prevFilterRef = useRef(filter);
-      useEffect(() => {
-        if (prevFilterRef.current !== filter) {
-          // Filter changed - clear all markers and rebuild
-          markersRef.current.forEach(m => mapInstanceRef.current?.removeLayer(m));
-          markersRef.current = [];
-          markerJobIds.current.clear();
-          prevFilterRef.current = filter;
-        }
-      }, [filter]);
-
-      // Handle map visibility
-      useEffect(() => {
-        if (mapInstanceRef.current) {
-          setTimeout(() => mapInstanceRef.current.invalidateSize(), 350);
-        }
-      }, [showMap]);
-
-      // Global job opener for map popups
-      useEffect(() => {
-        window.openJobFromMap = (jobId) => {
-          const job = jobs.find(j => j.id === jobId);
-          if (job) setSelectedJob(job);
-        };
-        return () => { delete window.openJobFromMap; };
-      }, [jobs]);
-
-      // Load more jobs progressively - uses refs to avoid stale closures
-      const loadMoreJobs = useCallback(async (mySearchId) => {
-        if (loadingMoreRef.current) return;
-        if (loadedCountRef.current >= totalAvailableRef.current) return;
-        // Cancel if new search started
-        if (mySearchId !== searchIdRef.current) {
-          console.log('Cancelling old progressive load');
-          return;
-        }
-
-        loadingMoreRef.current = true;
-        setIsLoadingMore(true);
-
+      const loadMore = useCallback(async sid => {
+        if (loadingMore.current || loadedRef.current >= totalRef.current || sid !== searchId.current) return;
+        loadingMore.current = true;
         try {
-          const currentOffset = loadedCountRef.current;
-          const params = new URLSearchParams({
-            q: searchParamsRef.current.query || 'jobb',
-            limit: BATCH_SIZE.toString(),
-            offset: currentOffset.toString()
-          });
-          if (searchParamsRef.current.location) {
-            params.set('location', searchParamsRef.current.location);
+          const p = new URLSearchParams({ q: searchParams.current.query || 'jobb', limit: BATCH_SIZE, offset: loadedRef.current });
+          if (searchParams.current.location) p.set('location', searchParams.current.location);
+          const r = await fetch(`https://api.smidra.se/api/search?${p}`);
+          const d = await r.json();
+          if (sid !== searchId.current) { loadingMore.current = false; return; }
+          if (d.jobs?.length) {
+            let nj = d.jobs;
+            if (langRef.current !== 'sv') nj = await translateJobs(nj, langRef.current);
+            setJobs(p => [...p, ...nj]);
+            loadedRef.current += nj.length;
+            setLoadedCount(loadedRef.current);
+            if (loadedRef.current < totalRef.current) { loadingMore.current = false; setTimeout(() => loadMore(sid), 150); return; }
           }
+        } catch {}
+        loadingMore.current = false;
+      }, []);
 
-          console.log(`Fetching offset ${currentOffset} for search #${mySearchId}...`);
-          const res = await fetch(`https://api.smidra.se/api/search?${params}`);
-          const data = await res.json();
-
-          // Check again after fetch - might have been cancelled
-          if (mySearchId !== searchIdRef.current) {
-            console.log('Search cancelled during fetch');
-            loadingMoreRef.current = false;
-            return;
-          }
-
-          if (data.jobs?.length > 0) {
-            setJobs(prev => [...prev, ...data.jobs]);
-            loadedCountRef.current += data.jobs.length;
-            setLoadedCount(loadedCountRef.current);
-
-            console.log(`Loaded ${loadedCountRef.current}/${totalAvailableRef.current}`);
-
-            if (loadedCountRef.current < totalAvailableRef.current) {
-              loadingMoreRef.current = false;
-              setTimeout(() => loadMoreJobs(mySearchId), 150);
-              return;
-            }
-          }
-        } catch (err) {
-          console.error('Load error:', err);
-        }
-
-        loadingMoreRef.current = false;
-        setIsLoadingMore(false);
-      }, []); // No dependencies - uses refs
-
-      // Handle incoming data
-      const handleData = useCallback((data, shouldLoadMore = false) => {
+      const handleData = useCallback(async (data, more = false) => {
         if (!data) return;
+        searchId.current++;
+        const sid = searchId.current;
+        loadingMore.current = false;
+        if (mapInstance.current) { markers.current.forEach(m => mapInstance.current.removeLayer(m)); markers.current = []; markerIds.current.clear(); }
+        const init = data.jobs?.length || 0;
+        const total = data.total || init;
+        loadedRef.current = init; totalRef.current = total;
+        searchParams.current = { query: data.querySwedish || data.query || '', location: data.locationSwedish || '' };
+        const lang = data.language || 'sv';
+        setTargetLanguage(lang); langRef.current = lang;
 
-        // Increment search ID to cancel any ongoing progressive loading
-        searchIdRef.current += 1;
-        const currentSearchId = searchIdRef.current;
-        loadingMoreRef.current = false; // Reset loading flag
+        if (data.translateMode && lang !== 'sv' && data.jobs?.length) {
+          setLoading(true); setLoadingText(data.translatingText || 'Translating...');
+          try {
+            const [tj, tq, tl, tlb] = await Promise.all([translateJobs(data.jobs, lang), translateText(data.querySwedish || data.query || '', lang), translateText(data.locationSwedish || data.location || '', lang), translateLabels(defaultLabels, lang)]);
+            if (sid !== searchId.current) return;
+            setJobs(tj); setQuery(tq); setLocation(tl); setLabels(tlb);
+          } catch { setJobs(data.jobs || []); setQuery(data.querySwedish || data.query || ''); setLocation(data.locationSwedish || data.location || ''); }
+          setLoading(false);
+        } else { setJobs(data.jobs || []); setQuery(data.query || data.querySwedish || ''); setLocation(data.location || data.locationSwedish || ''); setLoading(false); }
+        setTotalAvailable(total); setLoadedCount(init); setCurrentPage(1);
+        if (more && init < total) setTimeout(() => loadMore(sid), 500);
+      }, [loadMore]);
 
-        // Clear markers for new search
-        if (mapInstanceRef.current) {
-          markersRef.current.forEach(m => mapInstanceRef.current.removeLayer(m));
-          markersRef.current = [];
-          markerJobIds.current.clear();
-        }
-
-        // Update refs for loadMoreJobs
-        const initialCount = data.jobs?.length || 0;
-        const total = data.total || initialCount;
-        loadedCountRef.current = initialCount;
-        totalAvailableRef.current = total;
-        searchParamsRef.current = {
-          query: data.querySwedish || data.query || '',
-          location: data.locationSwedish || ''
-        };
-
-        console.log(`New search #${currentSearchId}: "${searchParamsRef.current.query}" in "${searchParamsRef.current.location}" - ${initialCount}/${total} jobs`);
-
-        setJobs(data.jobs || []);
-        setQuery(data.querySwedish || data.query || '');
-        setLocation(data.locationSwedish || data.location || '');
-        setTotalAvailable(total);
-        setLoadedCount(initialCount);
-        setCurrentPage(1);
-        setLoading(false);
-
-        if (shouldLoadMore && initialCount < total) {
-          setTimeout(() => loadMoreJobs(currentSearchId), 500);
-        }
-      }, [loadMoreJobs]);
-
-      // Initialize: listen for ChatGPT data
       useEffect(() => {
-        const saved = window.openai?.widgetState;
-        if (saved?.savedJobs) setSavedJobs(saved.savedJobs);
-
-        const handleGlobals = () => {
-          if (window.openai?.toolOutput) {
-            handleData(window.openai.toolOutput, true);
-          }
-        };
-
-        window.addEventListener('openai:set_globals', handleGlobals);
-
-        if (window.openai?.toolOutput) {
-          handleData(window.openai.toolOutput, true);
-        }
-        // No preview mode - just wait for ChatGPT data with loading spinner
-
-        return () => window.removeEventListener('openai:set_globals', handleGlobals);
+        if (window.openai?.widgetState?.savedJobs) setSavedJobs(window.openai.widgetState.savedJobs);
+        const h = () => window.openai?.toolOutput && handleData(window.openai.toolOutput, true);
+        window.addEventListener('openai:set_globals', h);
+        if (window.openai?.toolOutput) handleData(window.openai.toolOutput, true);
+        if (window.openai?.theme) document.documentElement.setAttribute('data-theme', window.openai.theme);
+        return () => window.removeEventListener('openai:set_globals', h);
       }, [handleData]);
 
-      // Notify height to ChatGPT
-      useEffect(() => {
-        window.openai?.notifyIntrinsicHeight?.(document.body.scrollHeight);
-      }, [pageJobs, showMap]);
+      useEffect(() => { window.openai?.notifyIntrinsicHeight?.(document.body.scrollHeight); }, [pageJobs, showMap]);
 
       return (
         <div className="container">
-          {/* Header */}
-          <div className="header">
-            <div className="header-top">
-              <div className="header-title">{query || 'Lediga jobb'}</div>
-              <div className="header-count">
-                {loadedCount < totalAvailable ? (
-                  <>{loadedCount}/{totalAvailable} jobb <span className="header-loading"></span></>
-                ) : (
-                  <>{totalAvailable} jobb</>
-                )}
-              </div>
-            </div>
-            {location && <div className="header-subtitle">{location}</div>}
-          </div>
+          <div className="header"><div className="header-content">
+            <div className="header-top"><div className="header-title">{query || 'Lediga jobb'}</div><div className="header-count">{loadedCount < totalAvailable ? <><span>{loadedCount}/{totalAvailable}</span><span className="header-loading" /></> : <span>{totalAvailable} {labels.jobs}</span>}</div></div>
+            {location && <div className="header-subtitle"><MapIcon />{location}</div>}
+          </div></div>
 
-          {/* Controls */}
           <div className="controls">
-            <button
-              className={`control-btn ${showMap ? 'primary' : ''}`}
-              onClick={() => setShowMap(!showMap)}
-            >
-              <MapIcon />
-              Karta
-            </button>
-            <button
-              className={`control-btn ${filter === 'all' ? 'active' : ''}`}
-              onClick={() => { setFilter('all'); setCurrentPage(1); }}
-            >Alla</button>
-            <button
-              className={`control-btn ${filter === 'fulltime' ? 'active' : ''}`}
-              onClick={() => { setFilter('fulltime'); setCurrentPage(1); }}
-            >Heltid</button>
-            <button
-              className={`control-btn ${filter === 'parttime' ? 'active' : ''}`}
-              onClick={() => { setFilter('parttime'); setCurrentPage(1); }}
-            >Deltid</button>
+            <button className={`control-btn ${showMap ? 'primary' : ''}`} onClick={() => setShowMap(!showMap)}><MapIcon />{labels.map}</button>
+            <button className={`control-btn ${filter === 'all' ? 'active' : ''}`} onClick={() => { setFilter('all'); setCurrentPage(1); }}>{labels.all}</button>
+            <button className={`control-btn ${filter === 'fulltime' ? 'active' : ''}`} onClick={() => { setFilter('fulltime'); setCurrentPage(1); }}>{labels.fulltime}</button>
+            <button className={`control-btn ${filter === 'parttime' ? 'active' : ''}`} onClick={() => { setFilter('parttime'); setCurrentPage(1); }}>{labels.parttime}</button>
           </div>
 
-          {/* Map */}
-          <div className={`map-section ${showMap ? '' : 'collapsed'}`}>
-            <div className="map-wrapper">
-              <div id="map" ref={mapRef}></div>
-              <div className="map-info">
-                <span className="dot"></span>
-                <span>{filteredJobs.length} jobb</span>
-              </div>
-            </div>
-          </div>
+          <div className={`map-section ${showMap ? '' : 'collapsed'}`}><div className="map-wrapper"><div id="map" ref={mapRef} /><div className="map-info"><span className="dot" /><span>{filtered.length} {labels.jobs}</span></div></div></div>
 
-          {/* Content */}
-          {loading ? (
-            <div className="loading-state">
-              <div className="spinner-wrap">
-                <div className="spinner-large"></div>
-              </div>
-              <div className="loading-text">Laddar jobb...</div>
-            </div>
-          ) : filteredJobs.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">
-                <SearchIcon />
-              </div>
-              <div className="empty-title">Inga jobb hittades</div>
-              <div className="empty-text">Försök med andra sökord</div>
-            </div>
-          ) : (
-            <>
-              <div className="job-grid">
-                {pageJobs.map(job => (
-                  <JobCard
-                    key={job.id}
-                    job={job}
-                    isSaved={savedJobs.includes(job.id)}
-                    onSave={toggleSave}
-                    onClick={setSelectedJob}
-                  />
-                ))}
-              </div>
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={(page) => {
-                  setCurrentPage(page);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-              />
-            </>
-          )}
+          {loading ? <div className="loading-state"><div className="spinner-wrap"><div className="spinner-large" /></div><div className="empty-text">{loadingText}</div></div>
+           : !filtered.length ? <div className="empty-state"><div className="empty-icon"><SearchIcon /></div><div className="empty-title">{labels.noJobs}</div><div className="empty-text">{labels.tryOther}</div></div>
+           : <><div className="job-grid">{pageJobs.map(j => <JobCard key={j.id} job={j} isSaved={savedJobs.includes(j.id)} onSave={toggleSave} onClick={setSelectedJob} labels={labels} />)}</div><Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={p => { setCurrentPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }} /></>}
 
-          {/* Modal */}
-          {selectedJob && (
-            <Modal
-              job={selectedJob}
-              onClose={() => setSelectedJob(null)}
-              showToast={showToast}
-            />
-          )}
-
-          {/* Toast */}
+          {selectedJob && <Modal job={selectedJob} onClose={() => setSelectedJob(null)} showToast={showToastMsg} labels={labels} targetLanguage={targetLanguage} />}
           <Toast message={toast.message} visible={toast.visible} />
         </div>
       );
     };
 
-    // Render
     ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   </script>
 </body>

@@ -252,6 +252,7 @@ function formatJob(job) {
 const jobListHTML = readFileSync(join(__dirname, "job-list-widget.html"), "utf-8");
 const jobDetailHTML = readFileSync(join(__dirname, "job-detail-widget.html"), "utf-8");
 const salaryWidgetHTML = readFileSync(join(__dirname, "salary-widget.html"), "utf-8");
+const cvWidgetHTML = readFileSync(join(__dirname, "cv-widget.html"), "utf-8");
 
 // Create MCP server
 const server = new McpServer({
@@ -383,31 +384,28 @@ server.registerResource("salary-widget", "ui://widget/salary.html", {}, async ()
   contents: [{ uri: "ui://widget/salary.html", mimeType: "text/html+skybridge", text: salaryWidgetHTML }]
 }));
 
+server.registerResource("cv-widget", "ui://widget/cv.html", {}, async () => ({
+  contents: [{ uri: "ui://widget/cv.html", mimeType: "text/html+skybridge", text: cvWidgetHTML }]
+}));
+
 // ============================================================
-// STEP 1: search_jobs - Returns data, REQUIRES display_jobs
+// search_jobs - Shows widget immediately, auto-translates
 // ============================================================
 server.registerTool(
   "search_jobs",
   {
-    title: "Search Jobs (Step 1 of 2)",
-    description: `Search for jobs. Returns Swedish data that YOU MUST translate and pass to display_jobs.
+    title: "Search Jobs",
+    description: `Search for jobs in Sweden. Shows interactive job widget immediately.
 
-⚠️ THIS TOOL DOES NOT SHOW ANYTHING TO THE USER!
-⚠️ YOU MUST CALL display_jobs AFTER THIS TO SHOW RESULTS!
-⚠️ THIS APPLIES TO EVERY SEARCH - not just the first one!
+The widget automatically translates job titles and locations to the user's language using Google Translate. No need to call any other tool after this - results are shown directly!
 
-WORKFLOW (repeat for EVERY job search):
-1. Call this tool → receive Swedish job data
-2. Translate job titles, descriptions, locations to user's language
-3. Call display_jobs with translated content → user sees widget
+PARAMETERS:
+- query: Search term IN SWEDISH (e.g., 'kock', 'utvecklare', 'sjuksköterska')
+- language: User's language code for auto-translation (e.g., 'en', 'ar', 'so', 'sv')
+- loadingText: "Searching..." in user's language
+- translatingText: "Translating..." in user's language
 
-IMPORTANT: Even if user has searched before in this conversation,
-you MUST ALWAYS call display_jobs after EVERY search_jobs call.
-Never skip display_jobs - user cannot see jobs without it!
-
-DO NOT respond to user until you have called display_jobs!
-
-Swedish keywords: utvecklare, sjuksköterska, kock, lärare, städare, lokalvårdare, chaufför`,
+Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), lärare (teacher), städare/lokalvårdare (cleaner), chaufför (driver), säljare (salesperson), ingenjör (engineer)`,
     inputSchema: {
       query: z.string().describe("Search query IN SWEDISH"),
       location: z.string().optional().describe("City/region in Sweden"),
@@ -426,7 +424,7 @@ Swedish keywords: utvecklare, sjuksköterska, kock, lärare, städare, lokalvår
       jobLanguage: z.string().optional().describe("Job language requirement (e.g., 'sv', 'en', 'ar')")
     },
     _meta: {
-      // No widget here - ChatGPT must call display_jobs to show results
+      "openai/outputTemplate": "ui://widget/job-list.html"  // Show widget immediately
     }
   },
   async ({ query, location, limit, language, direction, loadingText, translatingText, remote, fulltime, parttime, drivingLicense, trainee, abroad, jobLanguage }) => {
@@ -443,14 +441,13 @@ Swedish keywords: utvecklare, sjuksköterska, kock, lärare, städare, lokalvår
     const activeFilters = Object.keys(filters).length > 0 ? ` [filters: ${Object.keys(filters).join(', ')}]` : '';
     console.log(`🔧 search_jobs called: "${query}" in ${location || 'Sweden'} (${language})${activeFilters}`);
 
-    // Search for jobs with filters - limit to 10 for MCP to avoid overwhelming ChatGPT
-    const effectiveLimit = Math.min(limit || 10, 20); // Max 20 jobs for MCP response
+    // Search for jobs with filters
+    const effectiveLimit = Math.min(limit || 10, 50); // Allow more jobs since widget handles translation
     const data = await searchJobs(query, location, effectiveLimit, filters);
 
-    // Strip descriptions to reduce response size - widget fetches details on demand
+    // Format jobs for widget
     const jobs = data.hits.map(job => {
       const formatted = formatJob(job);
-      // Only keep minimal fields for list view
       return {
         id: formatted.id,
         title: formatted.title,
@@ -462,61 +459,50 @@ Swedish keywords: utvecklare, sjuksköterska, kock, lärare, städare, lokalvår
         logoUrl: formatted.logoUrl,
         lat: formatted.lat,
         lng: formatted.lng
-        // description and fullDescription loaded on demand via /api/job/:id
       };
     });
     const total = data.total?.value || 0;
 
-    console.log(`📤 Found ${jobs.length} jobs (minimal data) - must call display_jobs next`);
+    console.log(`📤 Found ${jobs.length} jobs - widget will translate to ${language}`);
 
-    // Return structured JSON with clear next_action
-    const response = {
-      status: "INCOMPLETE",
-      message: "Data retrieved. You MUST call display_jobs to show results to user.",
-      next_action: {
-        required: true,
-        tool: "display_jobs",
-        reason: "User cannot see any results until you call display_jobs"
-      },
-      data: {
+    // Return widget data - widget handles translation via Google Translate
+    return {
+      structuredContent: {
+        // Widget will show loading, then translate, then show jobs
+        translateMode: true,
+        language: language || 'sv',
+        direction: direction || 'ltr',
+        loadingText: loadingText || 'Söker jobb...',
+        translatingText: translatingText || 'Översätter...',
+        query: query,
+        querySwedish: query,
+        location: location || 'Sverige',
+        locationSwedish: location || '',
         total,
-        language,
-        direction,
-        query_swedish: query,
-        location_swedish: location || "Sweden",
         jobs
       },
-      instructions: {
-        translate: ["title", "location", "deadline"],
-        keep_original: ["id", "url", "employer", "logoUrl", "lat", "lng", "region"],
-        ui_labels_needed: ["results", "found", "details", "hide", "apply", "noJobs", "tryAgain", "location", "deadline", "type", "salary", "daysLeft", "today", "loading"]
-      }
-    };
-
-    return {
       content: [{
         type: "text",
-        text: `${JSON.stringify(response, null, 2)}
-
-⚠️ ACTION REQUIRED: Call display_jobs NOW with translated content!`
+        text: `Found ${jobs.length} jobs for "${query}" in ${location || 'Sweden'}. Widget is translating to ${language}.`
       }]
     };
   }
 );
 
 // ============================================================
-// STEP 2: display_jobs - ONLY way to show results to user
+// display_jobs - Optional: custom translations (backup)
 // ============================================================
 server.registerTool(
   "display_jobs",
   {
-    title: "Display Jobs (Step 2 of 2)",
-    description: `Show job results to user. This is the ONLY way to display jobs!
+    title: "Display Jobs (Optional)",
+    description: `Optional: Show job results with pre-translated content.
 
-Call this IMMEDIATELY after EVERY search_jobs call with translated content.
-User will NOT see any jobs until you call this tool.
+NOTE: search_jobs already shows results with auto-translation. Only use this tool if:
+- You want to provide custom translations instead of auto-translation
+- The auto-translation failed and you want to retry with your own translations
 
-ALWAYS call this after search_jobs - for EVERY search in the conversation!`,
+In most cases, just use search_jobs - it handles everything automatically!`,
     inputSchema: {
       language: z.string(),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
@@ -854,7 +840,88 @@ The widget will display:
   }
 );
 
-console.log("✅ Tools: search_jobs → display_jobs, get_job_details, display_salary");
+// ============================================================
+// display_cv - Shows customized CV in beautiful widget
+// ============================================================
+server.registerTool(
+  "display_cv",
+  {
+    title: "Display CV",
+    description: `Show a customized CV in a beautiful downloadable widget.
+
+Call this AFTER the user has asked to create a CV for a specific job.
+Use the job details and the user's background (from their uploaded CV) to create a tailored CV.
+
+The widget will display:
+- Professional header with name and contact
+- Summary/profile section
+- Work experience
+- Skills (technical & soft)
+- Education
+- Download as PDF option`,
+    inputSchema: {
+      language: z.string().default("sv"),
+      direction: z.enum(["ltr", "rtl"]).default("ltr"),
+      cv: z.object({
+        name: z.string().describe("Full name"),
+        title: z.string().describe("Professional title/headline"),
+        email: z.string().optional().describe("Email address"),
+        phone: z.string().optional().describe("Phone number"),
+        location: z.string().optional().describe("City/Location"),
+        linkedin: z.string().optional().describe("LinkedIn URL"),
+        website: z.string().optional().describe("Personal website URL"),
+        summary: z.string().describe("Professional summary (2-4 sentences tailored to the job)"),
+        experience: z.array(z.object({
+          title: z.string().describe("Job title"),
+          company: z.string().describe("Company name"),
+          period: z.string().describe("Period (e.g., '2020 - Present')"),
+          description: z.string().describe("Job description and achievements"),
+          highlights: z.array(z.string()).optional().describe("Key achievements/bullet points")
+        })).describe("Work experience (most relevant first)"),
+        skills: z.object({
+          technical: z.array(z.string()).describe("Technical skills"),
+          soft: z.array(z.string()).optional().describe("Soft skills"),
+          languages: z.array(z.string()).optional().describe("Languages spoken")
+        }),
+        education: z.array(z.object({
+          degree: z.string().describe("Degree/Certificate"),
+          school: z.string().describe("School/Institution"),
+          year: z.string().describe("Year or period")
+        })).optional()
+      }),
+      targetJob: z.object({
+        title: z.string().describe("The job being applied for"),
+        company: z.string().describe("Target company")
+      }),
+      labels: z.object({
+        experience: z.string().optional(),
+        skills: z.string().optional(),
+        education: z.string().optional(),
+        technical: z.string().optional(),
+        softSkills: z.string().optional(),
+        languages: z.string().optional(),
+        download: z.string().optional(),
+        tailoredFor: z.string().optional()
+      }).optional()
+    },
+    _meta: {
+      "openai/outputTemplate": "ui://widget/cv.html"
+    }
+  },
+  async (params) => {
+    console.log(`📄 display_cv: ${params.cv.name} for ${params.targetJob.title} at ${params.targetJob.company}`);
+
+    return {
+      structuredContent: params,
+      content: [{
+        type: "text",
+        text: `CV for ${params.cv.name} - tailored for ${params.targetJob.title} at ${params.targetJob.company}`
+      }]
+    };
+  }
+);
+
+console.log("✅ Tools: search_jobs → display_jobs, get_job_details, display_salary, display_cv");
 
 // HTTP Server
 const transports = new Map();
@@ -993,6 +1060,6 @@ MCP:     http://localhost:${PORT}/mcp
 Widget:  http://localhost:${PORT}/widget
 Health:  http://localhost:${PORT}/health
 
-Flow: search_jobs (loading) → ChatGPT translates → display_jobs
+Flow: search_jobs → widget auto-translates via Google Translate → done!
 `);
 });
