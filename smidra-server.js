@@ -394,6 +394,7 @@ server.registerResource("cv-widget", "ui://widget/cv.html", {}, async () => ({
 
 // ============================================================
 // search_jobs - Shows widget immediately, auto-translates
+// For noExperience searches: returns data for ChatGPT to verify/filter first
 // ============================================================
 server.registerTool(
   "search_jobs",
@@ -402,6 +403,13 @@ server.registerTool(
     description: `Search for jobs in Sweden. Shows interactive job widget immediately.
 
 The widget automatically translates job titles and locations to the user's language using Google Translate. No need to call any other tool after this - results are shown directly!
+
+⚠️ EXCEPTION - noExperience filter:
+When noExperience=true, this tool returns RAW DATA instead of widget.
+You MUST review the jobs and REMOVE any that seem to require experience:
+- Jobs with "senior", "erfaren", "experienced", "lead", "chef", "manager" in title
+- Jobs mentioning years of experience in description
+Then call display_jobs with the FILTERED list.
 
 PARAMETERS:
 - query: Search term IN SWEDISH (e.g., 'kock', 'utvecklare', 'sjuksköterska')
@@ -426,10 +434,10 @@ Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), l
       trainee: z.boolean().optional().describe("Only trainee/praktik positions"),
       abroad: z.boolean().optional().describe("Only jobs abroad/utomlands"),
       jobLanguage: z.string().optional().describe("Job language requirement (e.g., 'sv', 'en', 'ar')"),
-      noExperience: z.boolean().optional().describe("Only jobs that do NOT require experience (entry-level/nybörjarjobb)")
+      noExperience: z.boolean().optional().describe("Only jobs that do NOT require experience - IMPORTANT: When true, you must verify results and filter out senior/experienced positions before calling display_jobs")
     },
     _meta: {
-      "openai/outputTemplate": "ui://widget/job-list.html"  // Show widget immediately
+      "openai/outputTemplate": "ui://widget/job-list.html"  // Show widget immediately (except noExperience)
     }
   },
   async ({ query, location, limit, language, direction, loadingText, translatingText, remote, fulltime, parttime, drivingLicense, trainee, abroad, jobLanguage, noExperience }) => {
@@ -448,7 +456,7 @@ Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), l
     console.log(`🔧 search_jobs called: "${query}" in ${location || 'Sweden'} (${language})${activeFilters}`);
 
     // Search for jobs with filters
-    const effectiveLimit = Math.min(limit || 10, 50); // Allow more jobs since widget handles translation
+    const effectiveLimit = Math.min(limit || 10, 50);
     const data = await searchJobs(query, location, effectiveLimit, filters);
 
     // Format jobs for widget
@@ -469,12 +477,57 @@ Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), l
     });
     const total = data.total?.value || 0;
 
+    // SPECIAL CASE: noExperience requires verification
+    // Return TEXT so ChatGPT can filter before showing widget
+    if (noExperience) {
+      console.log(`🔍 noExperience mode: returning ${jobs.length} jobs for ChatGPT verification`);
+
+      const response = {
+        status: "NEEDS_VERIFICATION",
+        message: "Jobs found but need verification. Filter out experienced positions before showing.",
+        filterInstructions: {
+          removeIfTitleContains: ["senior", "erfaren", "lead", "chef", "manager", "principal", "staff", "head of", "director", "experienced"],
+          removeIfDescriptionMentions: ["years of experience", "års erfarenhet", "erfarenhet av", "flerårig erfarenhet"],
+          keepEntryLevel: ["junior", "trainee", "praktik", "nybörjar", "entry", "graduate", "utbildning"]
+        },
+        searchParams: {
+          query,
+          location: location || 'Sverige',
+          language: language || 'sv',
+          direction: direction || 'ltr',
+          loadingText: loadingText || 'Söker jobb...',
+          translatingText: translatingText || 'Översätter...'
+        },
+        total,
+        jobs,
+        nextAction: {
+          required: true,
+          tool: "display_jobs",
+          instruction: "Filter the jobs array removing senior/experienced positions, then call display_jobs with filtered list"
+        }
+      };
+
+      return {
+        content: [{
+          type: "text",
+          text: `${JSON.stringify(response, null, 2)}
+
+⚠️ VERIFICATION REQUIRED:
+1. Review each job title above
+2. REMOVE jobs with: senior, erfaren, lead, chef, manager, experienced, principal, staff, director
+3. KEEP jobs with: junior, trainee, praktik, entry-level, graduate
+4. Call display_jobs with the FILTERED jobs array
+
+This ensures users searching for entry-level jobs don't see senior positions.`
+        }]
+      };
+    }
+
     console.log(`📤 Found ${jobs.length} jobs - widget will translate to ${language}`);
 
-    // Return widget data - widget handles translation via Google Translate
+    // Normal flow: Return widget data directly
     return {
       structuredContent: {
-        // Widget will show loading, then translate, then show jobs
         translateMode: true,
         language: language || 'sv',
         direction: direction || 'ltr',
@@ -496,80 +549,71 @@ Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), l
 );
 
 // ============================================================
-// display_jobs - Optional: custom translations (backup)
+// display_jobs - REQUIRED for noExperience searches, optional otherwise
 // ============================================================
 server.registerTool(
   "display_jobs",
   {
-    title: "Display Jobs (Optional)",
-    description: `Optional: Show job results with pre-translated content.
+    title: "Display Jobs",
+    description: `Show filtered job results in widget.
 
-NOTE: search_jobs already shows results with auto-translation. Only use this tool if:
-- You want to provide custom translations instead of auto-translation
-- The auto-translation failed and you want to retry with your own translations
+⚠️ REQUIRED when search_jobs returns NEEDS_VERIFICATION (noExperience searches):
+1. Review jobs from search_jobs response
+2. FILTER OUT jobs with senior/experienced titles
+3. Call this tool with filtered jobs array
 
-In most cases, just use search_jobs - it handles everything automatically!`,
+For normal searches, search_jobs shows widget directly - no need to call this.
+
+When filtering for noExperience:
+- REMOVE: senior, erfaren, lead, chef, manager, principal, experienced, director
+- KEEP: junior, trainee, praktik, entry-level, graduate, nybörjar`,
     inputSchema: {
-      language: z.string(),
+      language: z.string().default("sv"),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
-      query: z.string().describe("Translated search term"),
-      querySwedish: z.string().describe("Original Swedish search term (for fetching more)"),
-      location: z.string().describe("Translated location"),
+      query: z.string().describe("Search term (Swedish)"),
+      querySwedish: z.string().optional().describe("Original Swedish search term"),
+      location: z.string().default("Sverige").describe("Location"),
       locationSwedish: z.string().optional().describe("Original Swedish location"),
-      total: z.number(),
-      labels: z.object({
-        results: z.string().describe("'Search Results'"),
-        found: z.string().describe("'jobs found'"),
-        details: z.string().describe("'Details'"),
-        hide: z.string().describe("'Hide'"),
-        apply: z.string().describe("'Apply'"),
-        noJobs: z.string().describe("'No jobs found'"),
-        tryAgain: z.string().describe("'Try different keywords'"),
-        location: z.string().describe("'Location'"),
-        deadline: z.string().describe("'Deadline'"),
-        type: z.string().describe("'Type'"),
-        salary: z.string().describe("'Salary'"),
-        daysLeft: z.string().describe("'days left'"),
-        today: z.string().describe("'Today!'"),
-        loading: z.string().optional().describe("'Loading...'")
-      }),
+      total: z.number().optional().describe("Total jobs found (before filtering)"),
+      loadingText: z.string().optional().describe("Loading text in user's language"),
+      translatingText: z.string().optional().describe("Translating text in user's language"),
       jobs: z.array(z.object({
         id: z.string().describe("KEEP ORIGINAL - do not change"),
-        title: z.string().describe("TRANSLATED job title"),
-        employer: z.string().describe("KEEP ORIGINAL employer name"),
-        location: z.string().describe("TRANSLATED location"),
+        title: z.string().describe("Job title"),
+        employer: z.string().describe("Employer name"),
+        location: z.string().describe("Location"),
         region: z.string().optional(),
         lat: z.number().optional(),
         lng: z.number().optional(),
-        deadline: z.string().describe("TRANSLATED deadline"),
+        deadline: z.string().optional().describe("Application deadline"),
         url: z.string().describe("KEEP ORIGINAL URL - do not modify!"),
-        logoUrl: z.string().optional().describe("KEEP ORIGINAL - company logo URL")
-        // description loaded on demand via /api/job/:id
+        logoUrl: z.string().optional().describe("Company logo URL")
       }))
     },
     _meta: {
       "openai/outputTemplate": "ui://widget/job-list.html"
     }
   },
-  async ({ language, direction, query, querySwedish, location, locationSwedish, total, labels, jobs }) => {
-    console.log(`✅ display_jobs: ${jobs.length} translated jobs in ${language}`);
+  async ({ language, direction, query, querySwedish, location, locationSwedish, total, loadingText, translatingText, jobs }) => {
+    console.log(`✅ display_jobs: ${jobs.length} jobs (filtered/verified)`);
 
     return {
       structuredContent: {
-        loading: false,
-        language,
-        direction,
-        query,
-        querySwedish,
-        location,
-        locationSwedish,
-        total,
-        labels,
+        translateMode: true,  // Widget will auto-translate
+        language: language || 'sv',
+        direction: direction || 'ltr',
+        loadingText: loadingText || 'Söker jobb...',
+        translatingText: translatingText || 'Översätter...',
+        query: query,
+        querySwedish: querySwedish || query,
+        location: location || 'Sverige',
+        locationSwedish: locationSwedish || location || '',
+        total: total || jobs.length,
         jobs
       },
       content: [{
         type: "text",
-        text: `Showing ${jobs.length} jobs for "${query}" in ${location}`
+        text: `Showing ${jobs.length} verified entry-level jobs for "${query}" in ${location || 'Sverige'}`
       }]
     };
   }
