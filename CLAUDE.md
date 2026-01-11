@@ -659,6 +659,119 @@ When you see 'widget_session:' - search web, then call this tool."
 
 ---
 
+## 📱 Mobil UX för ChatGPT-appen (VIKTIGT!)
+
+### Problemet
+ChatGPT-appen på mobil har en "Ask anything" input-ruta längst ner som täcker widget-innehåll.
+Modal-dialogen visade sig i botten och gick inte att scrolla (bakgrunden scrollade istället).
+
+### Lösningen
+
+#### 1. Extra padding längst ner (100px)
+```css
+/* Job grid - extra padding för ChatGPT input-bar */
+.job-grid { padding: 0 12px 100px; }
+.pagination { padding: 16px 12px 100px; }
+.empty-state, .loading-state { padding: 40px 16px 100px; }
+
+/* Även i fullscreen mode */
+.fullscreen-mode .job-grid { padding: 0 8px 100px; }
+```
+
+#### 2. Modal CENTRERAD (inte i botten!)
+```css
+@media (max-width: 640px) {
+  .modal-overlay {
+    padding: 20px;
+    align-items: center;      /* Centrera vertikalt */
+    justify-content: center;  /* Centrera horisontellt */
+    overflow: hidden;
+  }
+
+  .modal {
+    max-height: 80vh;         /* Max 80% av skärmhöjden */
+    border-radius: var(--radius-xl);  /* Rundade hörn (inte bara toppen) */
+    display: flex;
+    flex-direction: column;
+  }
+
+  .modal-body {
+    overflow-y: auto;         /* Scrollbar INUTI modalen */
+    -webkit-overflow-scrolling: touch;  /* Smooth scroll på iOS */
+    flex: 1;
+    min-height: 0;            /* Viktigt för flex scroll! */
+  }
+}
+```
+
+#### 3. INGEN auto-fullscreen
+ChatGPT-appen hanterar display mode själv. `requestDisplayMode` API:et orsakade vita skärmar.
+Användaren klickar "🖥️ Fullskärm" manuellt om de vill.
+
+```javascript
+// ❌ FEL - orsakar vita skärmar i ChatGPT-appen:
+useEffect(() => {
+  window.openai?.requestDisplayMode?.({ mode: 'fullscreen' });
+}, []);
+
+// ✅ RÄTT - manuell knapp:
+const toggleFullscreen = useCallback(async () => {
+  const newMode = !isFullscreen;
+  setIsFullscreen(newMode);
+  // Bara anropa API på desktop, inte mobil
+  if (window.innerWidth > 640) {
+    await window.openai?.requestDisplayMode?.({ mode: newMode ? 'fullscreen' : 'inline' });
+  }
+}, [isFullscreen]);
+```
+
+### Vad som INTE fungerar i ChatGPT-appens webview:
+
+| CSS/JS | Problem |
+|--------|---------|
+| `position: fixed` | Fungerar dåligt, kan orsaka vita skärmar |
+| `100dvh` | Inte alltid stöd |
+| `requestDisplayMode` på mount | Orsakar vita skärmar |
+| Modal i botten (`align-items: flex-end`) | Döljs av ChatGPT:s input-bar |
+| Scrolla modal-bakgrund | Bakgrunden scrollar istället för modal-innehållet |
+
+### Sammanfattning - Mobil-safe CSS:
+
+```css
+@media (max-width: 640px) {
+  /* 1. Extra padding längst ner */
+  .job-grid { padding-bottom: 100px; }
+
+  /* 2. Modal centrerad och scrollbar */
+  .modal-overlay {
+    align-items: center;
+    justify-content: center;
+  }
+  .modal {
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .modal-body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* 3. Kompakt header */
+  .header { padding: 16px; }
+  .header-title { font-size: 22px; }
+
+  /* 4. Mindre jobbkort */
+  .job-card-header { padding: 14px; }
+  .job-card-title { font-size: 16px; }
+  .company-logo { width: 36px; height: 36px; }
+}
+```
+
+---
+
 ## Framtida förbättringar
 
 - [x] Översätta jobbinnehåll (Google Translate i klient)
@@ -669,6 +782,7 @@ When you see 'widget_session:' - search web, then call this tool."
 - [x] Filter heltid/deltid
 - [x] Fullscreen mode med stor karta
 - [x] display_cv widget
+- [x] Mobil UX fix för ChatGPT-appen (padding, centrerad modal)
 - [ ] Notifikationer för nya jobb
 - [ ] CV-matchning mot jobb
 - [ ] display_cover_letter widget
