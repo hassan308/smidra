@@ -6,242 +6,205 @@
   <title>Smidra - Salary Statistics</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      /* Brand Colors */
-      --brand-primary: #6366f1;
-      --brand-secondary: #ec4899;
-      --brand-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
-      --brand-gradient-subtle: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 50%, rgba(236, 72, 153, 0.1) 100%);
+      /* Nordic Editorial Palette */
+      --font-display: 'Fraunces', Georgia, serif;
+      --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+
+      --cream: #FDFBF7;
+      --cream-dark: #F5F1EA;
+      --charcoal: #2C2C2C;
+      --charcoal-light: #4A4A4A;
+      --accent: #C85A38;
+      --accent-light: #E8D5CE;
+      --sage: #7B9E87;
+      --sage-light: #E8F0EA;
+      --warm-gray: #8B8680;
+      --border: #E8E4DE;
 
       /* Light Theme */
-      --bg-primary: #ffffff;
-      --bg-secondary: #f8fafc;
-      --bg-tertiary: #f1f5f9;
-      --bg-elevated: #ffffff;
-
-      --text-primary: #0f172a;
-      --text-secondary: #475569;
-      --text-tertiary: #94a3b8;
-      --text-inverse: #ffffff;
-
-      --border-light: #e2e8f0;
-      --border-medium: #cbd5e1;
-
-      --success: #10b981;
-      --success-bg: #ecfdf5;
-      --warning: #f59e0b;
-      --warning-bg: #fffbeb;
-      --error: #ef4444;
-      --error-bg: #fef2f2;
-      --info: #3b82f6;
-      --info-bg: #eff6ff;
+      --bg-primary: var(--cream);
+      --bg-secondary: var(--cream-dark);
+      --bg-elevated: #FFFFFF;
+      --text-primary: var(--charcoal);
+      --text-secondary: var(--charcoal-light);
+      --text-tertiary: var(--warm-gray);
 
       /* Shadows */
-      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
-      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
-      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-      --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
-      --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
-      --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.06);
+      --shadow-sm: 0 1px 2px rgba(44, 44, 44, 0.04);
+      --shadow-md: 0 4px 12px rgba(44, 44, 44, 0.06);
+      --shadow-lg: 0 8px 24px rgba(44, 44, 44, 0.08);
 
       /* Border Radius */
-      --radius-sm: 8px;
-      --radius-md: 12px;
-      --radius-lg: 16px;
-      --radius-xl: 24px;
-      --radius-full: 9999px;
-
-      /* Spacing */
-      --space-xs: 4px;
-      --space-sm: 8px;
-      --space-md: 12px;
-      --space-lg: 16px;
-      --space-xl: 24px;
-      --space-2xl: 32px;
-
-      /* Transitions */
-      --transition-fast: 150ms ease;
-      --transition-normal: 200ms ease;
-      --transition-slow: 300ms ease;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 20px;
     }
 
     [data-theme="dark"] {
-      --bg-primary: #0f172a;
-      --bg-secondary: #1e293b;
-      --bg-tertiary: #334155;
-      --bg-elevated: #1e293b;
+      --cream: #1A1918;
+      --cream-dark: #242220;
+      --charcoal: #F5F1EA;
+      --charcoal-light: #D4CFC5;
+      --accent: #E07B5A;
+      --accent-light: #3D2E28;
+      --sage: #8FB89A;
+      --sage-light: #2A3A2E;
+      --warm-gray: #9B9590;
+      --border: #3A3632;
 
-      --text-primary: #f8fafc;
-      --text-secondary: #cbd5e1;
-      --text-tertiary: #64748b;
-
-      --border-light: #334155;
-      --border-medium: #475569;
-
-      --success-bg: rgba(16, 185, 129, 0.15);
-      --warning-bg: rgba(245, 158, 11, 0.15);
-      --error-bg: rgba(239, 68, 68, 0.15);
-      --info-bg: rgba(59, 130, 246, 0.15);
+      --bg-primary: var(--cream);
+      --bg-secondary: var(--cream-dark);
+      --bg-elevated: #1E1D1B;
+      --text-primary: var(--charcoal);
+      --text-secondary: var(--charcoal-light);
+      --text-tertiary: var(--warm-gray);
 
       --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
-      --shadow-card: 0 1px 3px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.15);
-      --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.2);
-      --shadow-glow: 0 0 30px rgba(99, 102, 241, 0.25);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
+      --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.3);
     }
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: var(--font-body);
       background: var(--bg-primary);
       color: var(--text-primary);
       line-height: 1.6;
-      padding: var(--space-lg);
+      padding: 20px;
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
     }
 
-    /* Main Card */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      opacity: 0.025;
+      pointer-events: none;
+      z-index: 0;
+    }
+
     .salary-card {
+      position: relative;
+      z-index: 1;
       background: var(--bg-elevated);
-      border: 1px solid var(--border-light);
+      border: 1px solid var(--border);
       border-radius: var(--radius-xl);
       overflow: hidden;
-      max-width: 520px;
-      box-shadow: var(--shadow-card);
-      transition: box-shadow var(--transition-normal), transform var(--transition-normal);
-    }
-
-    .salary-card:hover {
-      box-shadow: var(--shadow-card-hover);
+      max-width: 480px;
+      box-shadow: var(--shadow-md);
     }
 
     /* Header */
     .salary-header {
-      background: var(--brand-gradient);
-      color: var(--text-inverse);
-      padding: var(--space-xl);
+      background: var(--charcoal);
+      color: var(--cream);
+      padding: 28px;
       position: relative;
-      overflow: hidden;
     }
 
-    .salary-header::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      right: -50%;
-      width: 100%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
-      pointer-events: none;
+    [data-theme="dark"] .salary-header {
+      background: var(--accent);
+      color: var(--cream);
+    }
+
+    .salary-eyebrow {
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      opacity: 0.7;
+      margin-bottom: 8px;
     }
 
     .salary-header-content {
-      position: relative;
-      z-index: 1;
-    }
-
-    .salary-header-top {
       display: flex;
       align-items: flex-start;
-      gap: var(--space-md);
-      margin-bottom: var(--space-lg);
+      gap: 16px;
     }
 
     .salary-icon {
-      width: 56px;
-      height: 56px;
-      background: rgba(255,255,255,0.2);
-      backdrop-filter: blur(10px);
-      border-radius: var(--radius-lg);
+      width: 52px;
+      height: 52px;
+      background: rgba(255,255,255,0.1);
+      border-radius: var(--radius-md);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 28px;
+      font-size: 26px;
       flex-shrink: 0;
     }
 
-    .salary-job-info {
-      flex: 1;
-      min-width: 0;
-    }
+    .salary-job-info { flex: 1; }
 
     .salary-job-title {
-      font-size: 20px;
-      font-weight: 700;
-      margin-bottom: 4px;
-      line-height: 1.3;
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      line-height: 1.2;
     }
 
     .salary-job-meta {
-      font-size: 14px;
-      opacity: 0.9;
+      font-size: 13px;
+      opacity: 0.8;
       display: flex;
       align-items: center;
-      gap: var(--space-sm);
+      gap: 12px;
       flex-wrap: wrap;
     }
 
-    .salary-job-meta span {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-
     .salary-main {
-      display: flex;
-      align-items: baseline;
-      gap: var(--space-sm);
-      margin-top: var(--space-lg);
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.15);
     }
 
     .salary-amount {
-      font-size: 42px;
-      font-weight: 800;
+      font-family: var(--font-display);
+      font-size: 44px;
+      font-weight: 700;
       letter-spacing: -1px;
     }
 
     .salary-period {
-      font-size: 18px;
-      opacity: 0.85;
-      font-weight: 500;
+      font-size: 16px;
+      opacity: 0.7;
+      margin-left: 6px;
     }
 
     /* Body */
-    .salary-body {
-      padding: var(--space-xl);
-    }
+    .salary-body { padding: 28px; }
 
     /* Range Section */
     .salary-range {
       background: var(--bg-secondary);
       border-radius: var(--radius-lg);
-      padding: var(--space-lg);
-      margin-bottom: var(--space-lg);
+      padding: 20px;
+      margin-bottom: 20px;
     }
 
     .salary-range-header {
       display: flex;
       justify-content: space-between;
-      margin-bottom: var(--space-md);
-      font-size: 13px;
-      color: var(--text-secondary);
+      margin-bottom: 14px;
+      font-size: 12px;
+      color: var(--text-tertiary);
       font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .salary-range-bar {
-      height: 10px;
-      background: var(--border-light);
-      border-radius: var(--radius-full);
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
       position: relative;
       overflow: visible;
     }
@@ -249,8 +212,8 @@
     .salary-range-fill {
       position: absolute;
       height: 100%;
-      background: var(--brand-gradient);
-      border-radius: var(--radius-full);
+      background: linear-gradient(90deg, var(--sage) 0%, var(--accent) 100%);
+      border-radius: 4px;
       left: 0;
       right: 0;
     }
@@ -258,21 +221,22 @@
     .salary-range-marker {
       position: absolute;
       top: 50%;
-      width: 20px;
-      height: 20px;
-      background: var(--brand-primary);
+      width: 18px;
+      height: 18px;
+      background: var(--accent);
       border: 3px solid var(--bg-elevated);
       border-radius: 50%;
       transform: translate(-50%, -50%);
-      box-shadow: var(--shadow-md), 0 0 0 3px rgba(99, 102, 241, 0.2);
+      box-shadow: var(--shadow-md);
       z-index: 2;
     }
 
     .salary-range-labels {
       display: flex;
       justify-content: space-between;
-      margin-top: var(--space-md);
-      font-size: 14px;
+      margin-top: 14px;
+      font-family: var(--font-display);
+      font-size: 15px;
       font-weight: 600;
       color: var(--text-primary);
     }
@@ -281,35 +245,43 @@
     .salary-comparison {
       display: flex;
       align-items: center;
-      gap: var(--space-md);
-      padding: var(--space-lg);
-      background: var(--brand-gradient-subtle);
+      gap: 14px;
+      padding: 18px;
+      background: var(--sage-light);
       border-radius: var(--radius-lg);
-      margin-bottom: var(--space-lg);
-      border: 1px solid rgba(99, 102, 241, 0.1);
+      margin-bottom: 20px;
+      border: 1px solid rgba(123, 158, 135, 0.2);
+    }
+
+    .salary-comparison.negative {
+      background: var(--accent-light);
+      border-color: rgba(200, 90, 56, 0.2);
     }
 
     .comparison-icon {
-      width: 48px;
-      height: 48px;
-      background: var(--brand-gradient);
-      color: var(--text-inverse);
+      width: 44px;
+      height: 44px;
+      background: var(--sage);
+      color: white;
       border-radius: var(--radius-md);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 22px;
+      font-size: 20px;
       flex-shrink: 0;
     }
 
-    .comparison-text {
-      flex: 1;
+    .salary-comparison.negative .comparison-icon {
+      background: var(--accent);
     }
 
+    .comparison-text { flex: 1; }
+
     .comparison-title {
-      font-weight: 700;
+      font-family: var(--font-display);
+      font-weight: 600;
       font-size: 16px;
-      color: var(--brand-primary);
+      color: var(--text-primary);
       margin-bottom: 2px;
     }
 
@@ -322,99 +294,95 @@
     .salary-details {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: var(--space-md);
-      margin-bottom: var(--space-lg);
+      gap: 12px;
+      margin-bottom: 20px;
     }
 
     .salary-detail-item {
       background: var(--bg-secondary);
-      padding: var(--space-lg);
+      padding: 16px;
       border-radius: var(--radius-md);
-      transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+      transition: transform 0.2s ease;
     }
 
     .salary-detail-item:hover {
       transform: translateY(-2px);
-      box-shadow: var(--shadow-md);
     }
 
     .salary-detail-icon {
-      font-size: 20px;
-      margin-bottom: var(--space-sm);
+      font-size: 18px;
+      margin-bottom: 8px;
     }
 
     .salary-detail-label {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-tertiary);
-      margin-bottom: 4px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       font-weight: 600;
+      margin-bottom: 4px;
     }
 
     .salary-detail-value {
-      font-size: 18px;
-      font-weight: 700;
+      font-family: var(--font-display);
+      font-size: 17px;
+      font-weight: 600;
       color: var(--text-primary);
     }
 
     /* Tips Section */
     .salary-tips {
-      padding: var(--space-lg);
-      background: var(--warning-bg);
+      padding: 18px;
+      background: var(--accent-light);
       border-radius: var(--radius-lg);
-      border-left: 4px solid var(--warning);
-      margin-bottom: var(--space-lg);
+      border-left: 3px solid var(--accent);
+      margin-bottom: 20px;
     }
 
     .salary-tips-title {
-      font-weight: 700;
-      font-size: 15px;
-      margin-bottom: var(--space-sm);
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 10px;
       display: flex;
       align-items: center;
-      gap: var(--space-sm);
+      gap: 8px;
       color: var(--text-primary);
     }
 
     .salary-tips-list {
-      font-size: 14px;
+      font-size: 13px;
       color: var(--text-secondary);
-      padding-left: var(--space-xl);
+      padding-left: 20px;
       margin: 0;
     }
 
     .salary-tips-list li {
-      margin-bottom: var(--space-sm);
+      margin-bottom: 6px;
       line-height: 1.5;
     }
 
-    .salary-tips-list li:last-child {
-      margin-bottom: 0;
-    }
+    .salary-tips-list li:last-child { margin-bottom: 0; }
 
     /* Sources */
     .salary-sources {
       font-size: 12px;
       color: var(--text-tertiary);
-      padding-top: var(--space-lg);
-      border-top: 1px solid var(--border-light);
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
       display: flex;
       align-items: center;
-      gap: var(--space-sm);
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
-    .salary-sources-title {
-      font-weight: 600;
-      color: var(--text-secondary);
-    }
+    .salary-sources-title { font-weight: 600; }
 
     .source-tag {
       display: inline-flex;
-      align-items: center;
       padding: 4px 10px;
-      background: var(--bg-tertiary);
-      border-radius: var(--radius-full);
+      background: var(--bg-secondary);
+      border-radius: 20px;
       font-size: 11px;
       font-weight: 500;
       color: var(--text-secondary);
@@ -423,117 +391,87 @@
     /* Actions */
     .salary-actions {
       display: flex;
-      gap: var(--space-md);
-      padding: var(--space-lg);
-      border-top: 1px solid var(--border-light);
+      gap: 10px;
+      padding: 20px;
+      border-top: 1px solid var(--border);
       background: var(--bg-secondary);
     }
 
     .salary-action {
       flex: 1;
-      padding: var(--space-md) var(--space-lg);
+      padding: 12px 18px;
       border: none;
       border-radius: var(--radius-md);
+      font-family: var(--font-body);
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: var(--space-sm);
-      transition: all var(--transition-fast);
-      font-family: inherit;
+      gap: 8px;
+      transition: all 0.2s ease;
     }
 
     .salary-action.secondary {
       background: var(--bg-elevated);
       color: var(--text-primary);
-      border: 1px solid var(--border-medium);
+      border: 1px solid var(--border);
     }
 
     .salary-action.secondary:hover {
-      background: var(--bg-tertiary);
-      border-color: var(--border-medium);
+      background: var(--cream-dark);
     }
 
     .salary-action.primary {
-      background: var(--brand-gradient);
-      color: var(--text-inverse);
-      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+      background: var(--charcoal);
+      color: var(--cream);
     }
 
     .salary-action.primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+      background: var(--charcoal-light);
     }
 
-    .salary-action.primary:active {
-      transform: translateY(0);
-    }
-
-    /* Loading State */
+    /* Loading */
     .loading-container {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: var(--space-2xl);
-      gap: var(--space-lg);
+      padding: 48px;
+      gap: 16px;
     }
 
     .loading-spinner {
-      width: 48px;
-      height: 48px;
-      border: 4px solid var(--border-light);
-      border-top-color: var(--brand-primary);
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
       border-radius: 50%;
-      animation: spin 1s linear infinite;
+      animation: spin 0.8s linear infinite;
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     .loading-text {
       font-size: 14px;
       color: var(--text-secondary);
-      font-weight: 500;
     }
 
     /* RTL Support */
-    [dir="rtl"] .salary-header-top { flex-direction: row-reverse; }
+    [dir="rtl"] .salary-header-content { flex-direction: row-reverse; }
     [dir="rtl"] .salary-range-labels { flex-direction: row-reverse; }
-    [dir="rtl"] .salary-tips { border-left: none; border-right: 4px solid var(--warning); }
-    [dir="rtl"] .salary-tips-list { padding-left: 0; padding-right: var(--space-xl); }
-    [dir="rtl"] .comparison-icon { order: 2; }
+    [dir="rtl"] .salary-tips { border-left: none; border-right: 3px solid var(--accent); }
+    [dir="rtl"] .salary-tips-list { padding-left: 0; padding-right: 20px; }
     [dir="rtl"] .salary-job-meta { flex-direction: row-reverse; }
-    [dir="rtl"] .salary-sources { flex-direction: row-reverse; }
 
     /* Responsive */
     @media (max-width: 480px) {
-      body {
-        padding: var(--space-md);
-      }
-
-      .salary-header {
-        padding: var(--space-lg);
-      }
-
-      .salary-amount {
-        font-size: 36px;
-      }
-
-      .salary-details {
-        grid-template-columns: 1fr;
-      }
-
-      .salary-actions {
-        flex-direction: column;
-      }
-
-      .salary-action {
-        width: 100%;
-      }
+      body { padding: 12px; }
+      .salary-header { padding: 20px; }
+      .salary-amount { font-size: 36px; }
+      .salary-details { grid-template-columns: 1fr; }
+      .salary-actions { flex-direction: column; }
     }
   </style>
 </head>
@@ -541,30 +479,27 @@
   <div id="app"></div>
 
   <script>
-    const state = {
-      data: null,
-      language: 'sv'
-    };
+    const state = { data: null, language: 'sv' };
 
     const defaultLabels = {
-      avgSalary: 'Genomsnittlig lön',
-      perMonth: '/månad',
-      salaryRange: 'Lönespann',
+      avgSalary: 'Genomsnittlig lon',
+      perMonth: '/manad',
+      salaryRange: 'Lonespann',
       min: 'Min',
       max: 'Max',
       entryLevel: 'Junior',
       senior: 'Senior',
-      comparison: 'Jämförelse',
-      aboveAvg: 'över genomsnittet',
+      comparison: 'Jamforelse',
+      aboveAvg: 'over genomsnittet',
       belowAvg: 'under genomsnittet',
       inRegion: 'i regionen',
       experience: 'Erfarenhet',
       industry: 'Bransch',
-      demand: 'Efterfrågan',
-      sources: 'Källor',
-      tips: 'Tips för löneförhandling',
+      demand: 'Efterfragan',
+      sources: 'Kallor',
+      tips: 'Tips for loneforhandling',
       backToJob: 'Tillbaka',
-      negotiate: 'Förhandlingstips'
+      negotiate: 'Forhandlingstips'
     };
 
     function t(key) {
@@ -594,7 +529,7 @@
           <div class="salary-card">
             <div class="loading-container">
               <div class="loading-spinner"></div>
-              <div class="loading-text">Laddar lönestatistik...</div>
+              <div class="loading-text">Laddar lonestatistik...</div>
             </div>
           </div>
         `;
@@ -607,33 +542,31 @@
       const comparison = d.comparison || {};
       const tips = d.tips || [];
 
-      // Calculate marker position (where avg falls in range)
       const range = (salary.max || 60000) - (salary.min || 30000);
       const avgPosition = range > 0 ? ((salary.avg || 45000) - (salary.min || 30000)) / range * 100 : 50;
 
-      // Comparison icon and text
       const isAbove = comparison.percentDiff > 0;
       const compIcon = isAbove ? '📈' : (comparison.percentDiff < 0 ? '📉' : '➡️');
       const compText = isAbove ? t('aboveAvg') : t('belowAvg');
+      const compClass = isAbove ? '' : 'negative';
 
       app.innerHTML = `
         <div class="salary-card">
           <div class="salary-header">
+            <div class="salary-eyebrow">Lonestatistik</div>
             <div class="salary-header-content">
-              <div class="salary-header-top">
-                <div class="salary-icon">💰</div>
-                <div class="salary-job-info">
-                  <div class="salary-job-title">${job.title || 'Tjänst'}</div>
-                  <div class="salary-job-meta">
-                    ${job.employer ? `<span>🏢 ${job.employer}</span>` : ''}
-                    ${job.location ? `<span>📍 ${job.location}</span>` : ''}
-                  </div>
+              <div class="salary-icon">💰</div>
+              <div class="salary-job-info">
+                <div class="salary-job-title">${job.title || 'Tjanst'}</div>
+                <div class="salary-job-meta">
+                  ${job.employer ? `<span>🏢 ${job.employer}</span>` : ''}
+                  ${job.location ? `<span>📍 ${job.location}</span>` : ''}
                 </div>
               </div>
-              <div class="salary-main">
-                <span class="salary-amount">${formatSalary(salary.avg)}</span>
-                <span class="salary-period">${t('perMonth')}</span>
-              </div>
+            </div>
+            <div class="salary-main">
+              <span class="salary-amount">${formatSalary(salary.avg)}</span>
+              <span class="salary-period">${t('perMonth')}</span>
             </div>
           </div>
 
@@ -654,7 +587,7 @@
             </div>
 
             ${comparison.percentDiff !== undefined ? `
-              <div class="salary-comparison">
+              <div class="salary-comparison ${compClass}">
                 <div class="comparison-icon">${compIcon}</div>
                 <div class="comparison-text">
                   <div class="comparison-title">${Math.abs(comparison.percentDiff)}% ${compText}</div>
@@ -667,14 +600,14 @@
               ${salary.entryLevel ? `
                 <div class="salary-detail-item">
                   <div class="salary-detail-icon">🌱</div>
-                  <div class="salary-detail-label">${t('entryLevel')} (0-2 år)</div>
+                  <div class="salary-detail-label">${t('entryLevel')} (0-2 ar)</div>
                   <div class="salary-detail-value">${formatSalary(salary.entryLevel)}</div>
                 </div>
               ` : ''}
               ${salary.experienced ? `
                 <div class="salary-detail-item">
                   <div class="salary-detail-icon">⭐</div>
-                  <div class="salary-detail-label">${t('senior')} (5+ år)</div>
+                  <div class="salary-detail-label">${t('senior')} (5+ ar)</div>
                   <div class="salary-detail-value">${formatSalary(salary.experienced)}</div>
                 </div>
               ` : ''}
@@ -735,9 +668,9 @@
       const job = state.data?.job || {};
       const salary = state.data?.salary || {};
 
-      const message = `Ge mig tips för löneförhandling för tjänsten "${job.title}" hos ${job.employer}.
-Genomsnittslönen är ${salary.avg} kr/mån.
-Hur kan jag argumentera för en högre lön? Vilka frågor bör jag ställa?`;
+      const message = `Ge mig tips for loneforhandling for tjansten "${job.title}" hos ${job.employer}.
+Genomsnittslonen ar ${salary.avg} kr/man.
+Hur kan jag argumentera for en hogre lon? Vilka fragor bor jag stalla?`;
 
       if (window.openai?.sendFollowUpMessage) {
         window.openai.sendFollowUpMessage({ prompt: message });
@@ -760,12 +693,10 @@ Hur kan jag argumentera för en högre lön? Vilka frågor bör jag ställa?`;
     }
 
     function init() {
-      // Apply theme
       if (window.openai?.theme) {
         document.documentElement.setAttribute('data-theme', window.openai.theme);
       }
 
-      // Listen for updates
       window.addEventListener('openai:set_globals', () => {
         if (window.openai?.theme) {
           document.documentElement.setAttribute('data-theme', window.openai.theme);
@@ -775,11 +706,9 @@ Hur kan jag argumentera för en högre lön? Vilka frågor bör jag ställa?`;
         }
       });
 
-      // Check for data
       if (window.openai?.toolOutput) {
         handleData(window.openai.toolOutput);
       } else {
-        // Preview mode
         handleData({
           job: {
             title: 'Systemutvecklare',
@@ -795,14 +724,14 @@ Hur kan jag argumentera för en högre lön? Vilka frågor bör jag ställa?`;
           },
           comparison: {
             percentDiff: 12,
-            description: 'för Systemutvecklare i Stockholm'
+            description: 'for Systemutvecklare i Stockholm'
           },
           industry: 'IT & Tech',
-          demandLevel: 'Mycket hög',
+          demandLevel: 'Mycket hog',
           tips: [
             'Lyft fram specifika projekt och resultat',
-            'Jämför med marknadslön i din region',
-            'Var beredd att motivera ditt löneanspråk'
+            'Jamfor med marknadslön i din region',
+            'Var beredd att motivera ditt loneansprak'
           ],
           sources: ['SCB', 'Glassdoor', 'LinkedIn']
         });
