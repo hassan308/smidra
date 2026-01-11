@@ -48,24 +48,9 @@
       --radius-xl: 20px;
     }
 
+    /* Dark mode uses same colors as light mode */
     [data-theme="dark"] {
-      --cream: #1A1918;
-      --cream-dark: #242220;
-      --charcoal: #F5F1EA;
-      --charcoal-light: #D4CFC5;
-      --accent: #E07B5A;
-      --accent-light: #3D2E28;
-      --sage: #8FB89A;
-      --sage-light: #2A3A2E;
-      --warm-gray: #9B9590;
-      --border: #3A3632;
-
-      --bg-primary: var(--cream);
-      --bg-secondary: var(--cream-dark);
-      --bg-elevated: #1E1D1B;
-      --text-primary: var(--charcoal);
-      --text-secondary: var(--charcoal-light);
-      --text-tertiary: var(--warm-gray);
+      /* Same as light mode */
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -109,9 +94,7 @@
       box-shadow: var(--shadow-md);
     }
 
-    [data-theme="dark"] .target-badge {
-      background: var(--accent);
-    }
+    /* Dark mode same as light mode */
 
     .target-badge svg { width: 26px; height: 26px; flex-shrink: 0; }
     .target-badge-text { flex: 1; }
@@ -147,9 +130,7 @@
       position: relative;
     }
 
-    [data-theme="dark"] .cv-header {
-      background: var(--accent);
-    }
+    /* Dark mode cv-header same as light mode */
 
     .cv-header-content { position: relative; z-index: 1; }
 
@@ -606,7 +587,7 @@
             <div className="cv-card">
               <div className="loading-state">
                 <div className="spinner"></div>
-                <div className="loading-text">Skapar ditt CV...</div>
+                <div className="loading-text">Förbereder ditt anpassade CV...</div>
               </div>
             </div>
           </div>

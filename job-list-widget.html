@@ -77,29 +77,9 @@
       --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
+    /* Dark mode uses same colors as light mode */
     [data-theme="dark"] {
-      --cream: #1A1A1F;
-      --cream-dark: #141418;
-      --sand: #2A2A30;
-      --stone: #3A3A42;
-      --charcoal: #F5F5F5;
-      --charcoal-soft: #D0D0D0;
-      --charcoal-muted: #888888;
-      --accent: #E07A5F;
-      --accent-hover: #E8917A;
-      --accent-soft: rgba(224, 122, 95, 0.12);
-      --sage: #8FB396;
-      --sage-soft: rgba(143, 179, 150, 0.12);
-      --surface-primary: var(--cream);
-      --surface-elevated: #222228;
-      --surface-sunken: var(--cream-dark);
-      --text-primary: var(--charcoal);
-      --text-secondary: var(--charcoal-soft);
-      --text-muted: var(--charcoal-muted);
-      --border: var(--sand);
-      --border-subtle: rgba(255,255,255,0.08);
-      --shadow-card: 0 2px 12px rgba(0,0,0,0.2);
-      --shadow-card-hover: 0 8px 32px rgba(0,0,0,0.3);
+      /* Same as light mode */
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -765,6 +745,93 @@
       opacity: 1;
     }
 
+    /* Action Notification - shows when user triggers ChatGPT action */
+    .action-notification {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(135deg, var(--charcoal) 0%, #3d3d3d 100%);
+      color: var(--text-inverse);
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      z-index: 4000;
+      transform: translateY(100%);
+      opacity: 0;
+      transition: all 0.4s var(--ease-out);
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+    }
+
+    .action-notification.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .action-notification-spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid rgba(255,255,255,0.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+
+    .action-notification-content {
+      flex: 1;
+    }
+
+    .action-notification-title {
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .action-notification-desc {
+      font-size: 13px;
+      opacity: 0.8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .action-notification-arrow {
+      display: inline-block;
+      animation: bounce 1s ease infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(4px); }
+    }
+
+    .action-notification-close {
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .action-notification-close:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    .action-notification-close svg {
+      width: 16px;
+      height: 16px;
+    }
+
     /* Map popups */
     .leaflet-popup-content-wrapper {
       border-radius: var(--radius-md);
@@ -988,7 +1055,7 @@
       );
     };
 
-    const Modal = ({ job, onClose, showToast, labels, targetLanguage }) => {
+    const Modal = ({ job, onClose, showActionNotif, labels, targetLanguage }) => {
       const [details, setDetails] = useState(null);
       const [loading, setLoading] = useState(false);
       const [desc, setDesc] = useState(null);
@@ -1027,7 +1094,11 @@
               {loading ? <div style={{ textAlign: 'center', padding: 40 }}><div className="spinner-large" style={{ margin: '0 auto 20px' }} /><div style={{ color: 'var(--text-muted)', fontSize: 14 }}>{labels.loadingDesc}</div></div> : <div className="modal-desc">{desc || labels.noDesc}</div>}
             </div>
             <div className="modal-actions">
-              <button className="btn btn-secondary" onClick={() => { showToast(labels.sending); window.openai?.sendFollowUpMessage?.({ prompt: `Visa lönestatistik för: ${d.title} i ${d.location || 'Sverige'}. Sök på nätet och anropa display_salary.` }); }}>{labels.salaryInfo}</button>
+              <button className="btn btn-secondary" onClick={() => {
+                showActionNotif('Hämtar lönestatistik...', 'Skrolla ner i chatten för att se resultatet');
+                onClose();
+                window.openai?.sendFollowUpMessage?.({ prompt: `Visa lönestatistik för: ${d.title} i ${d.location || 'Sverige'}. Sök på nätet och anropa display_salary.` });
+              }}>{labels.salaryInfo}</button>
               <button className="btn btn-primary" onClick={() => window.openai?.openExternal?.({ href: d.url })}><ExternalIcon />{labels.applyNow}</button>
             </div>
           </div>
@@ -1036,6 +1107,22 @@
     };
 
     const Toast = ({ message, visible }) => <div className={`toast ${visible ? 'show' : ''}`}>{message}</div>;
+
+    const ActionNotification = ({ visible, title, description, onClose }) => (
+      <div className={`action-notification ${visible ? 'show' : ''}`}>
+        <div className="action-notification-spinner" />
+        <div className="action-notification-content">
+          <div className="action-notification-title">{title}</div>
+          <div className="action-notification-desc">
+            <span className="action-notification-arrow">↓</span>
+            {description}
+          </div>
+        </div>
+        <button className="action-notification-close" onClick={onClose}>
+          <CloseIcon />
+        </button>
+      </div>
+    );
 
     const App = () => {
       const [jobs, setJobs] = useState([]);
@@ -1047,10 +1134,11 @@
       const [savedJobs, setSavedJobs] = useState([]);
       const [selectedJob, setSelectedJob] = useState(null);
       const [loading, setLoading] = useState(true);
-      const [loadingText, setLoadingText] = useState('Laddar jobb...');
+      const [loadingText, setLoadingText] = useState('Söker efter lediga tjänster...');
       const [totalAvailable, setTotalAvailable] = useState(0);
       const [loadedCount, setLoadedCount] = useState(0);
       const [toast, setToast] = useState({ message: '', visible: false });
+      const [actionNotif, setActionNotif] = useState({ visible: false, title: '', description: '' });
       const [targetLanguage, setTargetLanguage] = useState('sv');
 
       const defaultLabels = { jobs: 'jobb', map: 'Karta', all: 'Alla', fulltime: 'Heltid', parttime: 'Deltid', showMore: 'Läs mer', apply: 'Ansök', saved: 'Sparad!', noJobs: 'Inga jobb hittades', tryOther: 'Prova att söka efter något annat', loadingDesc: 'Laddar...', noDesc: 'Ingen beskrivning tillgänglig.', applyNow: 'Ansök nu', salaryInfo: 'Löneinfo', sending: 'Skickar...' };
@@ -1069,6 +1157,11 @@
       const labelsRef = useRef(defaultLabels);
 
       const showToastMsg = useCallback(msg => { setToast({ message: msg, visible: true }); setTimeout(() => setToast(t => ({ ...t, visible: false })), 2500); }, []);
+      const showActionNotif = useCallback((title, description) => {
+        setActionNotif({ visible: true, title, description });
+        setTimeout(() => setActionNotif(n => ({ ...n, visible: false })), 8000);
+      }, []);
+      const hideActionNotif = useCallback(() => setActionNotif(n => ({ ...n, visible: false })), []);
       useEffect(() => { labelsRef.current = labels; }, [labels]);
 
       const toggleSave = useCallback(id => { setSavedJobs(p => p.includes(id) ? p.filter(x => x !== id) : (showToastMsg(labelsRef.current.saved), [...p, id])); }, [showToastMsg]);
@@ -1188,8 +1281,14 @@
            : !filtered.length ? <div className="empty-state"><div className="empty-icon"><SearchIcon /></div><div className="empty-title">{labels.noJobs}</div><div className="empty-text">{labels.tryOther}</div></div>
            : <><div className="job-grid" key={currentPage}>{pageJobs.map(j => <JobCard key={j.id} job={j} isSaved={savedJobs.includes(j.id)} onSave={toggleSave} onClick={setSelectedJob} labels={labels} />)}</div><Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={p => { setCurrentPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }} /></>}
 
-          {selectedJob && <Modal job={selectedJob} onClose={() => setSelectedJob(null)} showToast={showToastMsg} labels={labels} targetLanguage={targetLanguage} />}
+          {selectedJob && <Modal job={selectedJob} onClose={() => setSelectedJob(null)} showActionNotif={showActionNotif} labels={labels} targetLanguage={targetLanguage} />}
           <Toast message={toast.message} visible={toast.visible} />
+          <ActionNotification
+            visible={actionNotif.visible}
+            title={actionNotif.title}
+            description={actionNotif.description}
+            onClose={hideActionNotif}
+          />
         </div>
       );
     };
