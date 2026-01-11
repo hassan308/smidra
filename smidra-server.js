@@ -794,24 +794,23 @@ Respond in ${language}.`
 // DISPLAY TOOLS - Show data in beautiful widgets
 // ============================================================
 
-// Push salary to existing widget via SSE (NO widget created)
+// Show salary inline in existing widget via SSE (NO new widget created)
 server.registerTool(
-  "push_salary_to_widget",
+  "show_salary_inline",
   {
-    title: "Push Salary to Widget (SSE)",
-    description: `Push salary data to existing job widget via SSE. USE THIS when widgetSessionId is provided!
+    title: "Show Salary Inline",
+    description: `Show salary data inline in the user's already-open job modal.
 
-⚠️ IMPORTANT: This tool does NOT create any widget or text response!
-The data appears directly in the user's already-open job modal.
+USE THIS when the message contains "widgetSessionId:".
+The salary appears directly in their current view - no new widget needed.
 
 When to use:
 - User clicked "Löneinfo" button in job widget
-- Message contains "widgetSessionId:" - USE THIS TOOL
-- DO NOT use display_salary when widgetSessionId is present
+- Message contains "widgetSessionId:"
 
-After calling: Say NOTHING to the user. They already see the data.`,
+This just displays data inline. No confirmation needed.`,
     inputSchema: {
-      widgetSessionId: z.string().describe("Session ID from widget (required)"),
+      widgetSessionId: z.string().describe("Session ID from widget"),
       job: z.object({
         title: z.string(),
         employer: z.string(),
@@ -828,7 +827,7 @@ After calling: Say NOTHING to the user. They already see the data.`,
     // NO _meta.outputTemplate - this tool never shows a widget
   },
   async (params) => {
-    console.log(`📤 push_salary_to_widget: ${params.job.title} → ${params.widgetSessionId}`);
+    console.log(`📤 show_salary_inline: ${params.job.title} → ${params.widgetSessionId}`);
 
     const pushed = pushToWidget(params.widgetSessionId, 'salary', {
       job: params.job,
@@ -859,11 +858,11 @@ server.registerTool(
   "display_salary",
   {
     title: "Display Salary Widget",
-    description: `Show salary in a NEW widget. Only use when NO widgetSessionId is provided!
+    description: `Show salary in a NEW standalone widget.
 
-⚠️ If message contains "widgetSessionId:" → use push_salary_to_widget instead!
+⚠️ If message contains "widgetSessionId:" → use show_salary_inline instead!
 
-This creates a standalone salary widget for users who ask about salary without clicking from job widget.`,
+Only use this when user asks about salary directly in chat (not from widget button).`,
     inputSchema: {
       language: z.string().default("sv"),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
@@ -997,7 +996,7 @@ The widget will display:
   }
 );
 
-console.log("✅ Tools: search_jobs, display_jobs, get_job_details, push_salary_to_widget, display_salary, display_cv");
+console.log("✅ Tools: search_jobs, display_jobs, get_job_details, show_salary_inline, display_salary, display_cv");
 
 // HTTP Server
 const transports = new Map();

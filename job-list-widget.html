@@ -1386,24 +1386,11 @@
         setSalaryLoading(true);
         setSalaryData(null);
         window.openai?.sendFollowUpMessage?.({
-          prompt: `[TYST UPPGIFT - SVARA INTE MED TEXT]
-
-Hämta lönestatistik för: "${job.title}" i ${job.location || 'Sverige'}
+          prompt: `Visa lönestatistik för "${job.title}" i ${job.location || 'Sverige'}
 
 widgetSessionId: ${widgetSessionId}
 
-ANVÄND VERKTYGET: push_salary_to_widget
-- widgetSessionId: "${widgetSessionId}"
-- job: { title: "${job.title}", employer: "${job.employer}", location: "${job.location || 'Sverige'}" }
-- salary: { avg: X, min: Y, max: Z } (sök på nätet)
-- tips: ["tip1", "tip2"] (valfritt)
-- sources: ["källa1"] (valfritt)
-
-REGLER:
-1. Sök lönedata på nätet
-2. Anropa ENDAST push_salary_to_widget (INTE display_salary!)
-3. Skriv INGEN text till användaren
-4. Skapa INGEN widget`
+Sök lönedata och använd show_salary_inline för att visa i min redan öppna modal.`
         });
       }, [widgetSessionId]);
       useEffect(() => { labelsRef.current = labels; }, [labels]);
