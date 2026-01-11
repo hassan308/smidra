@@ -1149,35 +1149,16 @@
       }
     }
 
-    /* Mobile fullscreen mode - fills entire screen */
+    /* Mobile fullscreen mode - simple, works in ChatGPT app */
     @media (max-width: 640px) {
-      html, body {
-        height: 100%;
-        height: 100dvh;
-        overflow: hidden;
-      }
-
       .fullscreen-mode {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        height: 100%;
-        height: 100dvh;
-        max-width: 100%;
-        overflow-y: auto;
-        overflow-x: hidden;
-        -webkit-overflow-scrolling: touch;
+        width: 100%;
+        min-height: 100vh;
         background: var(--surface-primary);
       }
 
       .fullscreen-mode .header {
-        padding: 12px 12px 8px;
-        position: sticky;
-        top: 0;
-        background: var(--surface-primary);
-        z-index: 10;
+        padding: 12px;
       }
 
       .fullscreen-mode .header::after {
@@ -1190,7 +1171,7 @@
 
       .fullscreen-mode .header-title {
         font-size: 18px;
-        margin-bottom: 2px;
+        margin-bottom: 4px;
       }
 
       .fullscreen-mode .header-meta {
@@ -1212,10 +1193,6 @@
       .fullscreen-mode .controls {
         padding: 8px 12px;
         gap: 6px;
-        position: sticky;
-        top: 50px;
-        background: var(--surface-primary);
-        z-index: 10;
       }
 
       .fullscreen-mode .control-btn {
@@ -1242,7 +1219,7 @@
       }
 
       .fullscreen-mode .job-grid {
-        padding: 0 8px 60px;
+        padding: 0 8px 24px;
         gap: 10px;
       }
 
@@ -1586,26 +1563,8 @@
         }
       }, [isFullscreen]);
 
-      // Auto-fullscreen on mobile - smarter detection
-      useEffect(() => {
-        const checkMobile = () => {
-          const width = window.innerWidth;
-          const height = window.innerHeight;
-          const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-          const isSmallScreen = width <= 480 || (width <= 640 && height <= 900);
-          const isMobileUA = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-          return (isSmallScreen && isTouchDevice) || (isMobileUA && width <= 640);
-        };
-
-        if (checkMobile() && !isFullscreen) {
-          console.log('📱 Mobile detected - auto fullscreen');
-          // On mobile: fullscreen but NO map by default (saves space)
-          setIsFullscreen(true);
-          setShowMap(false);
-          window.openai?.requestDisplayMode?.({ mode: 'fullscreen' }).catch(() => {});
-        }
-      }, []);
+      // Note: Auto-fullscreen disabled - ChatGPT app handles display mode
+      // User can manually click fullscreen button if needed
 
       const defaultLabels = { jobs: 'jobb', map: 'Karta', all: 'Alla', fulltime: 'Heltid', parttime: 'Deltid', showMore: 'Läs mer', apply: 'Ansök', saved: 'Sparad!', noJobs: 'Inga jobb hittades', tryOther: 'Prova att söka efter något annat', loadingDesc: 'Laddar...', noDesc: 'Ingen beskrivning tillgänglig.', applyNow: 'Ansök nu', salaryInfo: 'Löneinfo', sending: 'Skickar...' };
       const [labels, setLabels] = useState(defaultLabels);
