@@ -23,6 +23,7 @@ Användare → ChatGPT → MCP Server (api.smidra.se) → Arbetsförmedlingen AP
 | Endpoint | URL |
 |----------|-----|
 | MCP | https://api.smidra.se/mcp |
+| SSE Events | https://api.smidra.se/events?session={id} |
 | Widget preview | https://api.smidra.se/widget |
 | Health | https://api.smidra.se/health |
 | API test | https://api.smidra.se/api/search?q=utvecklare |
@@ -31,10 +32,11 @@ Användare → ChatGPT → MCP Server (api.smidra.se) → Arbetsförmedlingen AP
 
 ```
 smidra/
-├── smidra-server.js       # MCP-server med alla tools
-├── job-list-widget.html   # Huvudwidget för jobblista
+├── smidra-server.js       # MCP-server med alla tools + SSE endpoint
+├── job-list-widget.html   # Huvudwidget för jobblista (med SSE-klient)
 ├── job-detail-widget.html # Widget för jobbdetaljer
 ├── salary-widget.html     # Widget för lönestatistik
+├── cv-widget.html         # Widget för CV-visning
 ├── package.json           # Dependencies
 ├── Dockerfile             # Docker-konfiguration
 ├── docker-compose.yml     # Docker Compose
@@ -171,8 +173,8 @@ User will NOT see any jobs until you call this tool.`
 
 ## MCP Tools
 
-### search_jobs (Step 1 of 2)
-Söker jobb, returnerar data för översättning.
+### search_jobs
+Söker jobb och visar widget direkt (med auto-översättning).
 
 **Parametrar:**
 - `query` (string) - Sökord på SVENSKA
@@ -182,27 +184,33 @@ Söker jobb, returnerar data för översättning.
 - `direction` (enum) - "ltr" eller "rtl"
 - `loadingText` (string) - Översatt loading-text
 - `translatingText` (string) - Översatt "translating"-text
+- `noExperience` (boolean, optional) - Filtrera bort "senior" jobb
 
-**Returnerar:** TEXT med jobbdata (ingen widget!)
+**Returnerar:** Widget med jobb (auto-översätts i klienten)
 
-### display_jobs (Step 2 of 2)
-Visar översatta jobb i widget.
-
-**Parametrar:**
-- `language`, `direction` - Språkinställningar
-- `query`, `location`, `total` - Sökinfo (översatt)
-- `labels` - Alla UI-texter översatta
-- `jobs` - Array med översatta jobb
-
-**Viktigt för jobs-array:**
-- `id` - BEHÅLL ORIGINAL (ändra ej!)
-- `url` - BEHÅLL ORIGINAL (ändra ej!)
-- `employer` - Behåll original
-- `title`, `description`, `location` - ÖVERSÄTT
-- `deadline`, `employmentType`, `salaryType` - ÖVERSÄTT
+### display_jobs
+Visar jobb i widget (används efter filtrering).
 
 ### get_job_details
 Hämtar detaljerad information om ett specifikt jobb.
+
+### push_salary_to_widget (🔥 SSE)
+Pushar lönedata till befintlig widget via SSE. **Skapar INGEN ny widget!**
+
+**Parametrar:**
+- `widgetSessionId` (string) - Session-ID från widgeten
+- `job` - { title, employer, location }
+- `salary` - { avg, min, max }
+- `tips` (array, optional)
+- `sources` (array, optional)
+
+**Returnerar:** `[SUCCESS - SAY NOTHING TO USER]`
+
+### display_salary
+Visar lönestatistik i ny widget (används när ingen widgetSessionId finns).
+
+### display_cv
+Visar CV i snygg widget med PDF-export.
 
 ---
 
@@ -500,6 +508,231 @@ server.registerTool(
 
 ---
 
+## 🔥 NYTT: SSE Real-time Widget Updates
+
+### Problemet
+När användare klickar "Löneinfo" i widgeten:
+1. ChatGPT söker på webben (tar 5-15 sek)
+2. ChatGPT anropar `display_salary`
+3. **Ny widget skapas UNDER chatten** ❌
+4. Användaren måste scrolla för att se den
+
+### Lösningen - SSE Push till befintlig widget
+Istället för att skapa ny widget, pusha data till den REDAN ÖPPNA widgeten via Server-Sent Events!
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 1. WIDGET LADDAS                                            │
+│    - Genererar unik sessionId: "ws_abc123"                  │
+│    - Ansluter till SSE: /events?session=ws_abc123           │
+│    - Håller anslutningen öppen                             │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 2. ANVÄNDARE KLICKAR "LÖNEINFO"                             │
+│                                                             │
+│    sendFollowUpMessage({                                    │
+│      prompt: `[TYST UPPGIFT]                               │
+│        widgetSessionId: ws_abc123                           │
+│        Anropa push_salary_to_widget`                        │
+│    })                                                       │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 3. CHATGPT SÖKER & ANROPAR TOOL                             │
+│                                                             │
+│    push_salary_to_widget({                                  │
+│      widgetSessionId: "ws_abc123",                          │
+│      salary: { avg: 45000, min: 35000, max: 55000 }        │
+│    })                                                       │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 4. SERVER PUSHAR VIA SSE                                    │
+│                                                             │
+│    sseClients.get("ws_abc123").write(                       │
+│      `data: {"type":"salary","avg":45000}\n\n`              │
+│    )                                                        │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 5. WIDGET TAR EMOT & VISAR                                  │
+│                                                             │
+│    eventSource.onmessage = (e) => {                         │
+│      const data = JSON.parse(e.data);                       │
+│      if (data.type === 'salary') setSalaryData(data);       │
+│    }                                                        │
+│                                                             │
+│    → Lönedata visas DIREKT i modalen! 🎉                   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Server-kod: SSE Endpoint
+
+```javascript
+// SSE clients Map
+const sseClients = new Map(); // sessionId -> response
+
+// Push function
+function pushToWidget(sessionId, eventType, data) {
+  const client = sseClients.get(sessionId);
+  if (client) {
+    client.write(`data: ${JSON.stringify({ type: eventType, ...data })}\n\n`);
+    return true;
+  }
+  return false;
+}
+
+// SSE endpoint
+if (url.pathname === "/events") {
+  const sessionId = url.searchParams.get("session");
+
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    "Connection": "keep-alive"
+  });
+
+  // Store client
+  sseClients.set(sessionId, res);
+
+  // Keep-alive ping
+  const pingInterval = setInterval(() => {
+    res.write(`data: {"type":"ping"}\n\n`);
+  }, 30000);
+
+  // Cleanup on disconnect
+  req.on("close", () => {
+    clearInterval(pingInterval);
+    sseClients.delete(sessionId);
+  });
+}
+```
+
+### Widget-kod: SSE Klient
+
+```javascript
+const [widgetSessionId] = useState(() =>
+  'ws_' + Math.random().toString(36).substr(2, 9)
+);
+const [salaryData, setSalaryData] = useState(null);
+
+// Anslut till SSE
+useEffect(() => {
+  const es = new EventSource(
+    `https://api.smidra.se/events?session=${widgetSessionId}`
+  );
+
+  es.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === 'salary') {
+      setSalaryData(data);
+    }
+  };
+
+  return () => es.close();
+}, [widgetSessionId]);
+
+// Skicka request med sessionId
+const requestSalary = (job) => {
+  window.openai?.sendFollowUpMessage?.({
+    prompt: `[TYST UPPGIFT]
+      widgetSessionId: ${widgetSessionId}
+      Anropa push_salary_to_widget med lönedata för ${job.title}`
+  });
+};
+```
+
+### Tool utan outputTemplate (skapar INGEN widget)
+
+```javascript
+server.registerTool(
+  "push_salary_to_widget",
+  {
+    title: "Push Salary to Widget (SSE)",
+    description: `Push data via SSE. DO NOT show text or widget!`,
+    inputSchema: {
+      widgetSessionId: z.string(),
+      salary: z.object({ avg: z.number(), min: z.number(), max: z.number() })
+    }
+    // ⚠️ INGEN _meta.outputTemplate = INGEN widget skapas!
+  },
+  async (params) => {
+    pushToWidget(params.widgetSessionId, 'salary', params);
+    return {
+      content: [{
+        type: "text",
+        text: `[SUCCESS - SAY NOTHING TO USER]`
+      }]
+    };
+  }
+);
+```
+
+---
+
+## 🤫 Silent Mode - Tysta Tool-svar
+
+### Problemet
+ChatGPT vill alltid svara med text efter tool-anrop. Detta stör UX:en när widgeten redan visar allt.
+
+### Lösningen - Instruera ChatGPT att vara tyst
+
+#### 1. I prompten från widgeten:
+```javascript
+sendFollowUpMessage({
+  prompt: `[TYST UPPGIFT - SVARA INTE MED TEXT]
+
+    widgetSessionId: ${sessionId}
+
+    REGLER:
+    1. Anropa ENDAST push_salary_to_widget
+    2. Skriv INGEN text till användaren
+    3. Skapa INGEN widget`
+});
+```
+
+#### 2. I tool-beskrivningen:
+```javascript
+description: `Push data via SSE.
+
+⚠️ SILENT MODE:
+- DO NOT show any text response
+- DO NOT create any widget
+- The user already sees the data`
+```
+
+#### 3. I tool-svaret:
+```javascript
+return {
+  content: [{
+    type: "text",
+    text: `[WIDGET DISPLAYED - DO NOT ADD ANY TEXT]`
+  }]
+};
+```
+
+### Två separata tools för samma funktion
+
+| Tool | När | outputTemplate | Skapar widget |
+|------|-----|----------------|---------------|
+| `push_salary_to_widget` | Med widgetSessionId | ❌ Ingen | Nej |
+| `display_salary` | Utan widgetSessionId | ✅ Ja | Ja |
+
+```javascript
+// Tool 1: SSE push (ingen widget)
+"push_salary_to_widget" → Ingen _meta.outputTemplate
+
+// Tool 2: Standalone widget
+"display_salary" → _meta: { "openai/outputTemplate": "ui://widget/salary.html" }
+```
+
+---
+
 ## Lärdomar för framtida ChatGPT-appar
 
 ### ✅ Vad fungerar för två-stegs tool-flöden:
@@ -531,6 +764,9 @@ server.registerTool(
 - [x] Jämför jobb-funktion
 - [x] Spara favoriter (widgetState)
 - [x] Filter heltid/deltid
+- [x] SSE real-time widget updates (push_salary_to_widget)
+- [x] Silent mode - tysta tool-svar
+- [x] display_cv widget
 - [ ] Notifikationer för nya jobb
 - [ ] CV-matchning
 - [ ] display_cover_letter widget
@@ -759,8 +995,10 @@ git push && ssh vps "cd /path/to/app && git pull && docker-compose up -d --build
 | **Enkel widget** | Visa data direkt | Tool returnerar `structuredContent` + `outputTemplate` |
 | **Två-stegs flöde** | Data behöver bearbetas | Tool 1 returnerar TEXT, Tool 2 visar widget |
 | **Widget → ChatGPT** | Knapp triggar svar | `sendFollowUpMessage({ prompt })` |
-| **Widget → Webbsök → Widget** | Visa sökresultat snyggt | sendFollowUpMessage med instruktioner → ChatGPT söker → display_X tool |
+| **Widget → Webbsök → Widget** | Visa sökresultat snyggt | sendFollowUpMessage → ChatGPT söker → display_X |
 | **Widget → MCP direkt** | Anropa backend från widget | `callTool(name, args)` |
+| **🔥 SSE Real-time** | Uppdatera befintlig widget | Widget SSE-ansluter → ChatGPT anropar push_X → Server pushar via SSE |
+| **🤫 Silent Mode** | Ingen text/widget | Tool utan outputTemplate + `[DO NOT ADD TEXT]` i svar |
 
 ---
 
