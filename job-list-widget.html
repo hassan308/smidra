@@ -1378,10 +1378,18 @@
 
     const translateText = async (text, lang) => {
       if (!text || lang === 'sv') return text;
+      // Try Google Translate first
       try {
         const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=sv&tl=${lang}&dt=t&q=${encodeURIComponent(text)}`);
         const data = await res.json();
-        return data?.[0]?.map(i => i[0]).join('') || text;
+        const result = data?.[0]?.map(i => i[0]).join('');
+        if (result) return result;
+      } catch {}
+      // Fallback to Lingva
+      try {
+        const res = await fetch(`https://lingva.ml/api/v1/sv/${lang}/${encodeURIComponent(text)}`);
+        const data = await res.json();
+        return data?.translation || text;
       } catch { return text; }
     };
 
@@ -1814,15 +1822,25 @@ Anropa med denna data:
         const lang = data.language || 'sv';
         setTargetLanguage(lang); langRef.current = lang;
 
-        // Data comes already translated from ChatGPT - just use it directly
-        setJobs(data.jobs || []);
-        setQuery(data.query || '');
-        setLocation(data.location || '');
+        // Translate if not Swedish (using Google Translate + Lingva fallback)
+        const needsTranslation = data.translateMode || (lang !== 'sv');
 
-        // Use labels from ChatGPT if provided, otherwise use defaults
-        if (data.labels) {
-          setLabels({ ...defaultLabels, ...data.labels });
+        if (needsTranslation && data.jobs?.length) {
+          console.log(`🌐 Translating to ${lang}...`);
+          const [translatedJobs, translatedLabels, translatedQuery, translatedLocation] = await Promise.all([
+            translateJobs(data.jobs, lang),
+            translateLabels(defaultLabels, lang),
+            translateText(data.query || '', lang),
+            translateText(data.location || '', lang)
+          ]);
+          setJobs(translatedJobs);
+          setQuery(translatedQuery);
+          setLocation(translatedLocation);
+          setLabels(translatedLabels);
         } else {
+          setJobs(data.jobs || []);
+          setQuery(data.query || '');
+          setLocation(data.location || '');
           setLabels(defaultLabels);
         }
 
