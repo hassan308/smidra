@@ -1861,6 +1861,11 @@ Anropa med denna data:
         window.openai?.notifyIntrinsicHeight?.(height);
       }, [pageJobs, showMap, isFullscreen]);
 
+      // Show ONLY loading screen until data is ready
+      if (loading) {
+        return <LoadingScreen loadingText={loadingText} translatingText={translationStatus} />;
+      }
+
       return (
         <div className={`container ${isFullscreen ? 'fullscreen-mode' : ''}`}>
           <div className="header">
@@ -1888,8 +1893,7 @@ Anropa med denna data:
 
           <div className={`map-section ${showMap ? '' : 'collapsed'}`}><div className="map-wrapper"><div id="map" ref={mapRef} /><div className="map-info"><span className="dot" /><span>{filtered.length} {labels.jobs}</span></div></div></div>
 
-          {loading ? <LoadingScreen loadingText={loadingText} translatingText={translationStatus} />
-           : !filtered.length ? <div className="empty-state"><div className="empty-icon"><SearchIcon /></div><div className="empty-title">{labels.noJobs}</div><div className="empty-text">{labels.tryOther}</div></div>
+          {!filtered.length ? <div className="empty-state"><div className="empty-icon"><SearchIcon /></div><div className="empty-title">{labels.noJobs}</div><div className="empty-text">{labels.tryOther}</div></div>
            : <><div className="job-grid" key={currentPage}>{pageJobs.map(j => <JobCard key={j.id} job={j} isSaved={savedJobs.includes(j.id)} onSave={toggleSave} onClick={setSelectedJob} labels={labels} />)}</div><Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={p => { setCurrentPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }} /></>}
 
           {selectedJob && <Modal job={selectedJob} onClose={handleCloseModal} labels={labels} targetLanguage={targetLanguage} salaryData={salaryData} salaryLoading={salaryLoading} requestSalary={requestSalary} />}
