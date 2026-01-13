@@ -1560,22 +1560,22 @@
                     <span className="modal-salary-icon">💰</span>
                     <span className="modal-salary-title">{labels.salaryTitle}</span>
                   </div>
-                  <div className="modal-salary-amount">{formatSalary(salaryData.salary.avg)} kr/mån</div>
+                  <div className="modal-salary-amount">{formatSalary(salaryData.salary.avg)} {labels.krPerMonth}</div>
                   <div className="modal-salary-range">
-                    <span>Min: {formatSalary(salaryData.salary.min)} kr</span>
-                    <span>Max: {formatSalary(salaryData.salary.max)} kr</span>
+                    <span>{labels.salaryMin}: {formatSalary(salaryData.salary.min)} kr</span>
+                    <span>{labels.salaryMax}: {formatSalary(salaryData.salary.max)} kr</span>
                   </div>
                   <div className="modal-salary-bar">
                     <div className="modal-salary-bar-fill" style={{ width: '100%' }} />
                     <div className="modal-salary-bar-marker" style={{ left: `${getBarPosition(salaryData.salary)}%` }} />
                   </div>
-                  {salaryData.tips && salaryData.tips.length > 0 && (
+                  {salaryData.translatedTips && salaryData.translatedTips.length > 0 && (
                     <ul className="modal-salary-tips">
-                      {salaryData.tips.map((tip, i) => <li key={i}>{tip}</li>)}
+                      {salaryData.translatedTips.map((tip, i) => <li key={i}>{tip}</li>)}
                     </ul>
                   )}
                   {salaryData.sources && salaryData.sources.length > 0 && (
-                    <div className="modal-salary-sources">Källor: {salaryData.sources.join(', ')}</div>
+                    <div className="modal-salary-sources">{labels.sources}: {salaryData.sources.join(', ')}</div>
                   )}
                 </div>
               )}
@@ -1655,7 +1655,16 @@
 
       // No auto-fullscreen - user clicks button manually
 
-      const defaultLabels = { jobs: 'jobb', map: 'Karta', all: 'Alla', fulltime: 'Heltid', parttime: 'Deltid', showMore: 'Läs mer', apply: 'Ansök', saved: 'Sparad!', noJobs: 'Inga jobb hittades', tryOther: 'Prova att söka efter något annat', loadingDesc: 'Laddar...', noDesc: 'Ingen beskrivning tillgänglig.', applyNow: 'Ansök nu', salaryInfo: 'Löneinfo', sending: 'Skickar...', fetchingSalary: 'Hämtar lönestatistik...', salaryTitle: 'Lönestatistik', salaryShown: 'Lönedata visas', fetching: 'Hämtar...' };
+      const defaultLabels = {
+        jobs: 'jobb', map: 'Karta', all: 'Alla', fulltime: 'Heltid', parttime: 'Deltid',
+        showMore: 'Läs mer', apply: 'Ansök', saved: 'Sparad!', noJobs: 'Inga jobb hittades',
+        tryOther: 'Prova att söka efter något annat', loadingDesc: 'Laddar...',
+        noDesc: 'Ingen beskrivning tillgänglig.', applyNow: 'Ansök nu', salaryInfo: 'Löneinfo',
+        sending: 'Skickar...', fetchingSalary: 'Hämtar lönestatistik...',
+        salaryTitle: 'Lönestatistik', salaryShown: 'Lönedata visas', fetching: 'Hämtar...',
+        // Salary display labels
+        krPerMonth: 'kr/mån', salaryMin: 'Min', salaryMax: 'Max', sources: 'Källor'
+      };
       const [labels, setLabels] = useState(defaultLabels);
 
       const mapRef = useRef(null);
@@ -1700,12 +1709,20 @@
         const es = new EventSource(`https://api.smidra.se/events?session=${widgetSessionId}`);
         eventSourceRef.current = es;
 
-        es.onmessage = (event) => {
+        es.onmessage = async (event) => {
           try {
             const data = JSON.parse(event.data);
             console.log('📨 SSE event:', data.type);
 
             if (data.type === 'salary' || data.type === 'market_info') {
+              // Translate tips if not Swedish
+              const lang = langRef.current;
+              if (lang && lang !== 'sv' && data.tips && data.tips.length > 0) {
+                console.log(`🌐 Translating salary tips to ${lang}...`);
+                data.translatedTips = await translateBatch(data.tips, lang);
+              } else {
+                data.translatedTips = data.tips || [];
+              }
               setSalaryData(data);
               setSalaryLoading(false);
               hideActionNotif();
