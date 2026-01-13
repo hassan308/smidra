@@ -422,7 +422,7 @@ Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), l
       language: z.string().describe("User's language code (e.g., 'so', 'ar', 'sv')"),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
       loadingText: z.string().describe("'Searching for jobs...' in user's language"),
-      translatingText: z.string().describe("'Translating results...' in user's language"),
+      waitingText: z.string().describe("'Please wait, fetching data...' in user's language"),
       // Filter options
       remote: z.boolean().optional().describe("Only remote/distansarbete jobs"),
       fulltime: z.boolean().optional().describe("Only fulltime/heltid jobs"),
@@ -438,7 +438,7 @@ Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), l
       "openai/widgetDescription": "Visar en interaktiv lista med lediga jobb. Användaren kan filtrera, se karta, spara favoriter och klicka för detaljer. Ingen ytterligare text behövs."
     }
   },
-  async ({ query, location, limit, language, direction, loadingText, translatingText, remote, fulltime, parttime, drivingLicense, trainee, abroad, jobLanguage, noExperience }) => {
+  async ({ query, location, limit, language, direction, loadingText, waitingText, remote, fulltime, parttime, drivingLicense, trainee, abroad, jobLanguage, noExperience }) => {
     // Build filters object
     const filters = {};
     if (remote) filters.remote = true;
@@ -531,7 +531,7 @@ Then call display_jobs with the filtered list.`
         jobs,
         translateMode: !isSwedish,  // Widget uses Google Translate for non-Swedish
         loadingText: loadingText || 'Söker jobb...',
-        translatingText: translatingText || 'Översätter...'
+        waitingText: waitingText || 'Vänta, hämtar data...'
       }
     };
   }

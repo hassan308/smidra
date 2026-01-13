@@ -1422,13 +1422,22 @@
     const SearchIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>;
     const ExternalIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>;
 
-    // Simple Full-Screen Loading Component
-    const LoadingScreen = ({ loadingText, translatingText }) => (
-      <div className="loading-screen">
-        <div className="loading-spinner" />
-        <div className="loading-text">{translatingText || loadingText}</div>
-      </div>
-    );
+    // Full-Screen Loading Component with phases
+    const LoadingScreen = ({ loadingText, waitingText }) => {
+      const [phase, setPhase] = useState(1);
+
+      useEffect(() => {
+        const timer = setTimeout(() => setPhase(2), 2000);
+        return () => clearTimeout(timer);
+      }, []);
+
+      return (
+        <div className="loading-screen">
+          <div className="loading-spinner" />
+          <div className="loading-text">{phase === 1 ? loadingText : waitingText}</div>
+        </div>
+      );
+    };
 
     const JobCard = ({ job, isSaved, onSave, onClick, labels }) => (
       <div className="job-card" onClick={() => onClick(job)}>
@@ -1607,6 +1616,7 @@
       const [selectedJob, setSelectedJob] = useState(null);
       const [loading, setLoading] = useState(true);
       const [loadingText, setLoadingText] = useState('Söker efter lediga tjänster...');
+      const [waitingText, setWaitingText] = useState('Vänta, hämtar data...');
       const [totalAvailable, setTotalAvailable] = useState(0);
       const [loadedCount, setLoadedCount] = useState(0);
       const [toast, setToast] = useState({ message: '', visible: false });
@@ -1804,26 +1814,33 @@ Anropa med denna data:
         const lang = data.language || 'sv';
         setTargetLanguage(lang); langRef.current = lang;
 
+        // Update loading texts from ChatGPT (in user's language) and show briefly
+        if (data.loadingText) setLoadingText(data.loadingText);
+        if (data.waitingText) setWaitingText(data.waitingText);
+
+        // Minimum loading time so users see the loading text
+        const minLoadingTime = new Promise(resolve => setTimeout(resolve, 1500));
+
         // If translateMode is true, use Google Translate for non-Swedish languages
         if (data.translateMode && lang !== 'sv') {
           console.log(`🌍 Translating to ${lang} using Google Translate...`);
-          setTranslationStatus(data.translatingText || 'Översätter...');
 
-          // Translate jobs, labels, query, and location in parallel
+          // Translate jobs, labels, query, and location in parallel (along with min loading time)
           const [translatedJobs, translatedLabels, translatedQuery, translatedLocation] = await Promise.all([
             translateJobs(data.jobs || [], lang),
             translateLabels(defaultLabels, lang),
             translateText(data.query || data.querySwedish || '', lang),
-            translateText(data.location || data.locationSwedish || '', lang)
+            translateText(data.location || data.locationSwedish || '', lang),
+            minLoadingTime
           ]);
 
           setJobs(translatedJobs);
           setQuery(translatedQuery);
           setLocation(translatedLocation);
           setLabels(translatedLabels);
-          setTranslationStatus('');
         } else {
-          // Swedish or no translation needed - use data directly
+          // Swedish or no translation needed - wait minimum time then show
+          await minLoadingTime;
           setJobs(data.jobs || []);
           setQuery(data.query || data.querySwedish || '');
           setLocation(data.location || data.locationSwedish || '');
@@ -1863,7 +1880,7 @@ Anropa med denna data:
 
       // Show ONLY loading screen until data is ready
       if (loading) {
-        return <LoadingScreen loadingText={loadingText} translatingText={translationStatus} />;
+        return <LoadingScreen loadingText={loadingText} waitingText={waitingText} />;
       }
 
       return (
