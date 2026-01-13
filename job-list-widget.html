@@ -592,239 +592,183 @@
       margin: 0 auto;
     }
 
-    /* Premium Full-Screen Loading */
+    /* shadcn-inspired Loading Screen */
     .loading-screen {
       position: fixed;
       inset: 0;
-      background: linear-gradient(165deg, #FDFBF7 0%, #F5F2ED 50%, #E8E4DD 100%);
+      background: hsl(0 0% 100%);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       z-index: 9999;
-      overflow: hidden;
     }
 
-    .loading-screen::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(200, 90, 56, 0.08) 0%, transparent 50%),
-        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(123, 158, 135, 0.1) 0%, transparent 50%);
-      pointer-events: none;
-    }
-
-    .loading-content {
-      position: relative;
-      z-index: 1;
+    .loading-container {
       display: flex;
       flex-direction: column;
       align-items: center;
-      animation: contentFadeIn 0.8s ease-out;
+      gap: 32px;
+      animation: fadeInUp 0.5s ease-out;
     }
 
-    @keyframes contentFadeIn {
-      from { opacity: 0; transform: translateY(30px); }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    .loading-logo {
-      width: 100px;
-      height: 100px;
-      margin-bottom: 40px;
+    /* shadcn Spinner */
+    .loader-spinner {
+      width: 48px;
+      height: 48px;
       position: relative;
     }
 
-    .loading-logo-ring {
-      position: absolute;
-      inset: 0;
-      border: 3px solid var(--sand);
-      border-radius: 50%;
+    .loader-spinner svg {
+      width: 100%;
+      height: 100%;
+      animation: spin 1s linear infinite;
     }
 
-    .loading-logo-ring-active {
-      position: absolute;
-      inset: 0;
-      border: 3px solid transparent;
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: logoSpin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+    .loader-spinner circle {
+      stroke: hsl(240 5.9% 90%);
+      stroke-width: 4;
+      fill: none;
     }
 
-    .loading-logo-inner {
-      position: absolute;
-      inset: 12px;
-      background: linear-gradient(135deg, var(--accent) 0%, #D4724A 100%);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow:
-        0 8px 32px rgba(200, 90, 56, 0.3),
-        inset 0 2px 4px rgba(255, 255, 255, 0.2);
+    .loader-spinner .spinner-track {
+      stroke: hsl(240 5.9% 90%);
     }
 
-    .loading-logo-icon {
-      width: 36px;
-      height: 36px;
-      color: white;
-      animation: iconPulse 2s ease-in-out infinite;
+    .loader-spinner .spinner-fill {
+      stroke: hsl(240 5.9% 10%);
+      stroke-dasharray: 80 200;
+      stroke-dashoffset: 0;
+      stroke-linecap: round;
     }
 
-    @keyframes logoSpin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
 
-    @keyframes iconPulse {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.1); opacity: 0.9; }
-    }
-
-    .loading-brand {
-      font-family: var(--font-display);
-      font-size: 32px;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin-bottom: 8px;
-      letter-spacing: -0.02em;
-    }
-
-    .loading-tagline {
-      font-size: 15px;
-      color: var(--text-muted);
-      margin-bottom: 48px;
-    }
-
-    .loading-status {
+    /* Loading text */
+    .loading-label {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 20px;
+      gap: 8px;
     }
 
-    .loading-text {
-      font-family: var(--font-display);
-      font-size: 18px;
+    .loading-title {
+      font-size: 16px;
       font-weight: 500;
-      color: var(--text-secondary);
-      animation: textFade 2s ease-in-out infinite;
+      color: hsl(240 10% 3.9%);
+      letter-spacing: -0.01em;
     }
 
-    @keyframes textFade {
-      0%, 100% { opacity: 0.7; }
-      50% { opacity: 1; }
+    .loading-description {
+      font-size: 14px;
+      color: hsl(240 3.8% 46.1%);
     }
 
-    .loading-progress {
-      width: 200px;
-      height: 4px;
-      background: var(--sand);
-      border-radius: 4px;
-      overflow: hidden;
-      position: relative;
+    /* shadcn Skeleton Cards */
+    .skeleton-wrapper {
+      width: 100%;
+      max-width: 400px;
+      padding: 0 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 16px;
     }
 
-    .loading-progress-bar {
-      position: absolute;
-      top: 0;
-      left: 0;
-      height: 100%;
-      width: 40%;
-      background: linear-gradient(90deg, var(--accent) 0%, #D4724A 100%);
-      border-radius: 4px;
-      animation: progressSlide 1.5s ease-in-out infinite;
+    .skeleton-card {
+      background: hsl(0 0% 100%);
+      border: 1px solid hsl(240 5.9% 90%);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
-    @keyframes progressSlide {
-      0% { left: -40%; }
-      100% { left: 100%; }
+    .skeleton-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
 
-    .loading-dots {
+    .skeleton-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: linear-gradient(90deg, hsl(240 5.9% 90%) 0%, hsl(240 4.8% 95.9%) 50%, hsl(240 5.9% 90%) 100%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease-in-out infinite;
+    }
+
+    .skeleton-text-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .skeleton-text {
+      height: 12px;
+      border-radius: 6px;
+      background: linear-gradient(90deg, hsl(240 5.9% 90%) 0%, hsl(240 4.8% 95.9%) 50%, hsl(240 5.9% 90%) 100%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease-in-out infinite;
+    }
+
+    .skeleton-text.w-3\/4 { width: 75%; }
+    .skeleton-text.w-1\/2 { width: 50%; }
+    .skeleton-text.w-full { width: 100%; }
+    .skeleton-text.h-4 { height: 16px; }
+
+    .skeleton-body {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .skeleton-tags {
       display: flex;
       gap: 8px;
-      margin-top: 8px;
+      margin-top: 4px;
     }
 
-    .loading-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--accent);
-      animation: dotBounce 1.4s ease-in-out infinite;
+    .skeleton-tag {
+      height: 24px;
+      width: 72px;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, hsl(240 5.9% 90%) 0%, hsl(240 4.8% 95.9%) 50%, hsl(240 5.9% 90%) 100%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease-in-out infinite;
     }
 
-    .loading-dot:nth-child(1) { animation-delay: 0s; }
-    .loading-dot:nth-child(2) { animation-delay: 0.15s; }
-    .loading-dot:nth-child(3) { animation-delay: 0.3s; }
-
-    @keyframes dotBounce {
-      0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
-      40% { transform: translateY(-12px); opacity: 1; }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
     }
 
-    /* Floating particles */
-    .loading-particles {
-      position: absolute;
-      inset: 0;
-      overflow: hidden;
-      pointer-events: none;
-    }
+    /* Staggered animations */
+    .skeleton-card:nth-child(1) { animation: fadeInUp 0.4s ease-out 0.1s both; }
+    .skeleton-card:nth-child(2) { animation: fadeInUp 0.4s ease-out 0.2s both; }
+    .skeleton-card:nth-child(3) { animation: fadeInUp 0.4s ease-out 0.3s both; }
 
-    .loading-particle {
-      position: absolute;
-      width: 6px;
-      height: 6px;
-      background: var(--accent);
-      border-radius: 50%;
-      opacity: 0.15;
-    }
+    .skeleton-card:nth-child(1) .skeleton-avatar,
+    .skeleton-card:nth-child(1) .skeleton-text,
+    .skeleton-card:nth-child(1) .skeleton-tag { animation-delay: 0s; }
 
-    .loading-particle:nth-child(1) { left: 10%; top: 20%; animation: float 8s ease-in-out infinite; }
-    .loading-particle:nth-child(2) { left: 20%; top: 80%; animation: float 6s ease-in-out infinite 1s; width: 8px; height: 8px; }
-    .loading-particle:nth-child(3) { left: 80%; top: 30%; animation: float 7s ease-in-out infinite 0.5s; }
-    .loading-particle:nth-child(4) { left: 70%; top: 70%; animation: float 9s ease-in-out infinite 2s; width: 4px; height: 4px; }
-    .loading-particle:nth-child(5) { left: 40%; top: 10%; animation: float 5s ease-in-out infinite 1.5s; width: 10px; height: 10px; }
-    .loading-particle:nth-child(6) { left: 90%; top: 50%; animation: float 7s ease-in-out infinite 0.8s; }
-    .loading-particle:nth-child(7) { left: 5%; top: 60%; animation: float 6s ease-in-out infinite 2.5s; width: 5px; height: 5px; }
-    .loading-particle:nth-child(8) { left: 60%; top: 90%; animation: float 8s ease-in-out infinite 1.2s; }
+    .skeleton-card:nth-child(2) .skeleton-avatar,
+    .skeleton-card:nth-child(2) .skeleton-text,
+    .skeleton-card:nth-child(2) .skeleton-tag { animation-delay: 0.1s; }
 
-    @keyframes float {
-      0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.15; }
-      50% { transform: translateY(-30px) rotate(180deg); opacity: 0.3; }
-    }
-
-    /* Geometric decorations */
-    .loading-geo {
-      position: absolute;
-      border: 2px solid var(--sand);
-      opacity: 0.3;
-      animation: geoRotate 20s linear infinite;
-    }
-
-    .loading-geo-1 {
-      width: 300px;
-      height: 300px;
-      border-radius: 50%;
-      top: -100px;
-      right: -100px;
-    }
-
-    .loading-geo-2 {
-      width: 200px;
-      height: 200px;
-      bottom: -50px;
-      left: -50px;
-      animation-direction: reverse;
-      animation-duration: 15s;
-    }
-
-    @keyframes geoRotate {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
+    .skeleton-card:nth-child(3) .skeleton-avatar,
+    .skeleton-card:nth-child(3) .skeleton-text,
+    .skeleton-card:nth-child(3) .skeleton-tag { animation-delay: 0.2s; }
 
     @keyframes fadeIn {
       from { opacity: 0; }
@@ -1622,60 +1566,47 @@
     const SearchIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>;
     const ExternalIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>;
 
-    // Premium Full-Screen Loading Component
-    const BriefcaseIcon = () => (
-      <svg className="loading-logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-        <line x1="6" y1="11" x2="6" y2="11"/>
-        <line x1="18" y1="11" x2="18" y2="11"/>
-      </svg>
+    // shadcn-inspired Loading Component
+    const Spinner = () => (
+      <div className="loader-spinner">
+        <svg viewBox="0 0 50 50">
+          <circle className="spinner-track" cx="25" cy="25" r="20" />
+          <circle className="spinner-fill" cx="25" cy="25" r="20" />
+        </svg>
+      </div>
+    );
+
+    const SkeletonCard = () => (
+      <div className="skeleton-card">
+        <div className="skeleton-header">
+          <div className="skeleton-avatar" />
+          <div className="skeleton-text-group">
+            <div className="skeleton-text w-3/4" />
+            <div className="skeleton-text w-1/2" />
+          </div>
+        </div>
+        <div className="skeleton-body">
+          <div className="skeleton-text h-4 w-full" />
+          <div className="skeleton-tags">
+            <div className="skeleton-tag" />
+            <div className="skeleton-tag" style={{ width: 56 }} />
+          </div>
+        </div>
+      </div>
     );
 
     const LoadingScreen = ({ loadingText, translatingText }) => (
       <div className="loading-screen">
-        {/* Geometric decorations */}
-        <div className="loading-geo loading-geo-1" />
-        <div className="loading-geo loading-geo-2" />
-
-        {/* Floating particles */}
-        <div className="loading-particles">
-          <div className="loading-particle" />
-          <div className="loading-particle" />
-          <div className="loading-particle" />
-          <div className="loading-particle" />
-          <div className="loading-particle" />
-          <div className="loading-particle" />
-          <div className="loading-particle" />
-          <div className="loading-particle" />
-        </div>
-
-        {/* Main content */}
-        <div className="loading-content">
-          {/* Animated logo */}
-          <div className="loading-logo">
-            <div className="loading-logo-ring" />
-            <div className="loading-logo-ring-active" />
-            <div className="loading-logo-inner">
-              <BriefcaseIcon />
-            </div>
+        <div className="loading-container">
+          <Spinner />
+          <div className="loading-label">
+            <div className="loading-title">{translatingText || loadingText}</div>
+            <div className="loading-description">Detta tar bara några sekunder</div>
           </div>
-
-          {/* Brand */}
-          <div className="loading-brand">Smidra</div>
-          <div className="loading-tagline">Din jobbsökning, förenklad</div>
-
-          {/* Loading status */}
-          <div className="loading-status">
-            <div className="loading-text">{translatingText || loadingText}</div>
-            <div className="loading-progress">
-              <div className="loading-progress-bar" />
-            </div>
-            <div className="loading-dots">
-              <div className="loading-dot" />
-              <div className="loading-dot" />
-              <div className="loading-dot" />
-            </div>
+          <div className="skeleton-wrapper">
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
           </div>
         </div>
       </div>
