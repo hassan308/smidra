@@ -592,183 +592,39 @@
       margin: 0 auto;
     }
 
-    /* shadcn-inspired Loading Screen */
+    /* Simple Full-Screen Loading */
     .loading-screen {
-      min-height: 100vh;
+      min-height: 400px;
       width: 100%;
-      background: hsl(0 0% 100%);
+      background: var(--surface-primary);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 40px 20px;
+      padding: 60px 20px;
     }
 
-    .loading-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 32px;
-      animation: fadeInUp 0.5s ease-out;
-    }
-
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* shadcn Spinner */
-    .loader-spinner {
+    .loading-spinner {
       width: 48px;
       height: 48px;
-      position: relative;
-    }
-
-    .loader-spinner svg {
-      width: 100%;
-      height: 100%;
-      animation: spin 1s linear infinite;
-    }
-
-    .loader-spinner circle {
-      stroke: hsl(240 5.9% 90%);
-      stroke-width: 4;
-      fill: none;
-    }
-
-    .loader-spinner .spinner-track {
-      stroke: hsl(240 5.9% 90%);
-    }
-
-    .loader-spinner .spinner-fill {
-      stroke: hsl(240 5.9% 10%);
-      stroke-dasharray: 80 200;
-      stroke-dashoffset: 0;
-      stroke-linecap: round;
+      border: 3px solid var(--sand);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+      margin-bottom: 24px;
     }
 
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
 
-    /* Loading text */
-    .loading-label {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .loading-title {
-      font-size: 16px;
+    .loading-text {
+      font-family: var(--font-display);
+      font-size: 18px;
       font-weight: 500;
-      color: hsl(240 10% 3.9%);
-      letter-spacing: -0.01em;
+      color: var(--text-secondary);
+      text-align: center;
     }
-
-    .loading-description {
-      font-size: 14px;
-      color: hsl(240 3.8% 46.1%);
-    }
-
-    /* shadcn Skeleton Cards */
-    .skeleton-wrapper {
-      width: 100%;
-      max-width: 400px;
-      padding: 0 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      margin-top: 16px;
-    }
-
-    .skeleton-card {
-      background: hsl(0 0% 100%);
-      border: 1px solid hsl(240 5.9% 90%);
-      border-radius: 12px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .skeleton-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .skeleton-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 8px;
-      background: linear-gradient(90deg, hsl(240 5.9% 90%) 0%, hsl(240 4.8% 95.9%) 50%, hsl(240 5.9% 90%) 100%);
-      background-size: 200% 100%;
-      animation: shimmer 1.5s ease-in-out infinite;
-    }
-
-    .skeleton-text-group {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .skeleton-text {
-      height: 12px;
-      border-radius: 6px;
-      background: linear-gradient(90deg, hsl(240 5.9% 90%) 0%, hsl(240 4.8% 95.9%) 50%, hsl(240 5.9% 90%) 100%);
-      background-size: 200% 100%;
-      animation: shimmer 1.5s ease-in-out infinite;
-    }
-
-    .skeleton-text.w-3\/4 { width: 75%; }
-    .skeleton-text.w-1\/2 { width: 50%; }
-    .skeleton-text.w-full { width: 100%; }
-    .skeleton-text.h-4 { height: 16px; }
-
-    .skeleton-body {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .skeleton-tags {
-      display: flex;
-      gap: 8px;
-      margin-top: 4px;
-    }
-
-    .skeleton-tag {
-      height: 24px;
-      width: 72px;
-      border-radius: 9999px;
-      background: linear-gradient(90deg, hsl(240 5.9% 90%) 0%, hsl(240 4.8% 95.9%) 50%, hsl(240 5.9% 90%) 100%);
-      background-size: 200% 100%;
-      animation: shimmer 1.5s ease-in-out infinite;
-    }
-
-    @keyframes shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
-
-    /* Staggered animations */
-    .skeleton-card:nth-child(1) { animation: fadeInUp 0.4s ease-out 0.1s both; }
-    .skeleton-card:nth-child(2) { animation: fadeInUp 0.4s ease-out 0.2s both; }
-    .skeleton-card:nth-child(3) { animation: fadeInUp 0.4s ease-out 0.3s both; }
-
-    .skeleton-card:nth-child(1) .skeleton-avatar,
-    .skeleton-card:nth-child(1) .skeleton-text,
-    .skeleton-card:nth-child(1) .skeleton-tag { animation-delay: 0s; }
-
-    .skeleton-card:nth-child(2) .skeleton-avatar,
-    .skeleton-card:nth-child(2) .skeleton-text,
-    .skeleton-card:nth-child(2) .skeleton-tag { animation-delay: 0.1s; }
-
-    .skeleton-card:nth-child(3) .skeleton-avatar,
-    .skeleton-card:nth-child(3) .skeleton-text,
-    .skeleton-card:nth-child(3) .skeleton-tag { animation-delay: 0.2s; }
 
     @keyframes fadeIn {
       from { opacity: 0; }
@@ -1566,49 +1422,11 @@
     const SearchIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>;
     const ExternalIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>;
 
-    // shadcn-inspired Loading Component
-    const Spinner = () => (
-      <div className="loader-spinner">
-        <svg viewBox="0 0 50 50">
-          <circle className="spinner-track" cx="25" cy="25" r="20" />
-          <circle className="spinner-fill" cx="25" cy="25" r="20" />
-        </svg>
-      </div>
-    );
-
-    const SkeletonCard = () => (
-      <div className="skeleton-card">
-        <div className="skeleton-header">
-          <div className="skeleton-avatar" />
-          <div className="skeleton-text-group">
-            <div className="skeleton-text w-3/4" />
-            <div className="skeleton-text w-1/2" />
-          </div>
-        </div>
-        <div className="skeleton-body">
-          <div className="skeleton-text h-4 w-full" />
-          <div className="skeleton-tags">
-            <div className="skeleton-tag" />
-            <div className="skeleton-tag" style={{ width: 56 }} />
-          </div>
-        </div>
-      </div>
-    );
-
+    // Simple Full-Screen Loading Component
     const LoadingScreen = ({ loadingText, translatingText }) => (
       <div className="loading-screen">
-        <div className="loading-container">
-          <Spinner />
-          <div className="loading-label">
-            <div className="loading-title">{translatingText || loadingText}</div>
-            <div className="loading-description">Detta tar bara några sekunder</div>
-          </div>
-          <div className="skeleton-wrapper">
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
-          </div>
-        </div>
+        <div className="loading-spinner" />
+        <div className="loading-text">{translatingText || loadingText}</div>
       </div>
     );
 
