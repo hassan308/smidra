@@ -512,55 +512,16 @@ Then call display_jobs with the filtered list.`
       };
     }
 
+    // ALLA SPRÅK → Visa widget direkt, widget översätter med Google Translate
     const lang = (language || 'sv').toLowerCase();
     const isSwedish = lang === 'sv' || lang === 'svenska' || lang === 'swedish';
 
-    // SVENSKA → Visa widget direkt (ingen översättning)
-    if (isSwedish) {
-      console.log(`📤 Found ${jobs.length} jobs - Swedish, showing widget directly`);
-      return {
-        structuredContent: {
-          _rule: "VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS.",
-          language: 'sv',
-          direction: 'ltr',
-          query: query,
-          querySwedish: query,
-          location: location || 'Sverige',
-          locationSwedish: location || '',
-          total,
-          jobs
-        }
-      };
-    }
+    console.log(`📤 Found ${jobs.length} jobs - ${language || 'sv'}, showing widget directly`);
 
-    // ANDRA SPRÅK → ChatGPT översätter först, sedan anropar display_jobs
-    console.log(`📤 Found ${jobs.length} jobs - ${language}, ChatGPT will translate`);
     return {
       structuredContent: {
-        _rule: `ÖVERSÄTT ALL DATA TILL ${language}.
-
-ÖVERSÄTT DESSA FÄLT:
-- query (sökord)
-- location (plats)
-- Varje jobb: title, location, deadline
-
-BEHÅLL ORIGINAL (ändra ej):
-- id, url, employer, logoUrl
-
-ÖVERSÄTT ÄVEN LABELS:
-- jobs: "jobb"
-- map: "Karta"
-- all: "Alla"
-- fulltime: "Heltid"
-- parttime: "Deltid"
-- showMore: "Läs mer"
-- apply: "Ansök"
-- applyNow: "Ansök nu"
-- noJobs: "Inga jobb hittades"
-
-ANROPA display_jobs MED ÖVERSATT DATA OCH LABELS.
-SKRIV INGEN TEXT ALLS.`,
-        language: language,
+        _rule: "VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS.",
+        language: language || 'sv',
         direction: direction || 'ltr',
         query: query,
         querySwedish: query,
@@ -568,18 +529,9 @@ SKRIV INGEN TEXT ALLS.`,
         locationSwedish: location || '',
         total,
         jobs,
-        labels: {
-          jobs: 'jobb',
-          map: 'Karta',
-          all: 'Alla',
-          fulltime: 'Heltid',
-          parttime: 'Deltid',
-          showMore: 'Läs mer',
-          apply: 'Ansök',
-          applyNow: 'Ansök nu',
-          noJobs: 'Inga jobb hittades',
-          tryOther: 'Prova att söka efter något annat'
-        }
+        translateMode: !isSwedish,  // Widget uses Google Translate for non-Swedish
+        loadingText: loadingText || 'Söker jobb...',
+        translatingText: translatingText || 'Översätter...'
       }
     };
   }

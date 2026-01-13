@@ -1565,6 +1565,7 @@
       const [toast, setToast] = useState({ message: '', visible: false });
       const [actionNotif, setActionNotif] = useState({ visible: false, title: '', description: '' });
       const [targetLanguage, setTargetLanguage] = useState('sv');
+      const [translationStatus, setTranslationStatus] = useState('');
       const [widgetSessionId] = useState(() => 'ws_' + Math.random().toString(36).substr(2, 9));
       const [salaryData, setSalaryData] = useState(null);
       const [salaryLoading, setSalaryLoading] = useState(false);
@@ -1756,15 +1757,29 @@ Anropa med denna data:
         const lang = data.language || 'sv';
         setTargetLanguage(lang); langRef.current = lang;
 
-        // Set jobs and query/location from data (already translated by ChatGPT if needed)
-        setJobs(data.jobs || []);
-        setQuery(data.query || data.querySwedish || '');
-        setLocation(data.location || data.locationSwedish || '');
+        // If translateMode is true, use Google Translate for non-Swedish languages
+        if (data.translateMode && lang !== 'sv') {
+          console.log(`🌍 Translating to ${lang} using Google Translate...`);
+          setTranslationStatus(data.translatingText || 'Översätter...');
 
-        // Use labels from ChatGPT if provided, otherwise use defaults
-        if (data.labels) {
-          setLabels({ ...defaultLabels, ...data.labels });
+          // Translate jobs, labels, query, and location in parallel
+          const [translatedJobs, translatedLabels, translatedQuery, translatedLocation] = await Promise.all([
+            translateJobs(data.jobs || [], lang),
+            translateLabels(defaultLabels, lang),
+            translateText(data.query || data.querySwedish || '', lang),
+            translateText(data.location || data.locationSwedish || '', lang)
+          ]);
+
+          setJobs(translatedJobs);
+          setQuery(translatedQuery);
+          setLocation(translatedLocation);
+          setLabels(translatedLabels);
+          setTranslationStatus('');
         } else {
+          // Swedish or no translation needed - use data directly
+          setJobs(data.jobs || []);
+          setQuery(data.query || data.querySwedish || '');
+          setLocation(data.location || data.locationSwedish || '');
           setLabels(defaultLabels);
         }
 
