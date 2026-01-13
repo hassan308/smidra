@@ -1542,7 +1542,7 @@
               {salaryLoading && (
                 <div className="modal-salary-loading">
                   <div className="spinner-small" />
-                  <span style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Hämtar lönestatistik...</span>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: 14 }}>{labels.fetchingSalary}</span>
                 </div>
               )}
 
@@ -1550,7 +1550,7 @@
                 <div className="modal-salary">
                   <div className="modal-salary-header">
                     <span className="modal-salary-icon">💰</span>
-                    <span className="modal-salary-title">Lönestatistik</span>
+                    <span className="modal-salary-title">{labels.salaryTitle}</span>
                   </div>
                   <div className="modal-salary-amount">{formatSalary(salaryData.salary.avg)} kr/mån</div>
                   <div className="modal-salary-range">
@@ -1578,7 +1578,7 @@
                 onClick={() => requestSalary(d)}
                 disabled={salaryLoading || salaryData}
               >
-                {salaryLoading ? 'Hämtar...' : salaryData ? '✓ Lönedata visas' : labels.salaryInfo}
+                {salaryLoading ? labels.fetching : salaryData ? `✓ ${labels.salaryShown}` : labels.salaryInfo}
               </button>
               <button className="btn btn-primary" onClick={() => window.openai?.openExternal?.({ href: d.url })}><ExternalIcon />{labels.applyNow}</button>
             </div>
@@ -1647,7 +1647,7 @@
 
       // No auto-fullscreen - user clicks button manually
 
-      const defaultLabels = { jobs: 'jobb', map: 'Karta', all: 'Alla', fulltime: 'Heltid', parttime: 'Deltid', showMore: 'Läs mer', apply: 'Ansök', saved: 'Sparad!', noJobs: 'Inga jobb hittades', tryOther: 'Prova att söka efter något annat', loadingDesc: 'Laddar...', noDesc: 'Ingen beskrivning tillgänglig.', applyNow: 'Ansök nu', salaryInfo: 'Löneinfo', sending: 'Skickar...' };
+      const defaultLabels = { jobs: 'jobb', map: 'Karta', all: 'Alla', fulltime: 'Heltid', parttime: 'Deltid', showMore: 'Läs mer', apply: 'Ansök', saved: 'Sparad!', noJobs: 'Inga jobb hittades', tryOther: 'Prova att söka efter något annat', loadingDesc: 'Laddar...', noDesc: 'Ingen beskrivning tillgänglig.', applyNow: 'Ansök nu', salaryInfo: 'Löneinfo', sending: 'Skickar...', fetchingSalary: 'Hämtar lönestatistik...', salaryTitle: 'Lönestatistik', salaryShown: 'Lönedata visas', fetching: 'Hämtar...' };
       const [labels, setLabels] = useState(defaultLabels);
 
       const mapRef = useRef(null);
@@ -1814,36 +1814,15 @@ Anropa med denna data:
         const lang = data.language || 'sv';
         setTargetLanguage(lang); langRef.current = lang;
 
-        // Update loading texts from ChatGPT (in user's language) and show briefly
-        if (data.loadingText) setLoadingText(data.loadingText);
-        if (data.waitingText) setWaitingText(data.waitingText);
+        // Data comes already translated from ChatGPT - just use it directly
+        setJobs(data.jobs || []);
+        setQuery(data.query || '');
+        setLocation(data.location || '');
 
-        // Minimum loading time so users see the loading text
-        const minLoadingTime = new Promise(resolve => setTimeout(resolve, 1500));
-
-        // If translateMode is true, use Google Translate for non-Swedish languages
-        if (data.translateMode && lang !== 'sv') {
-          console.log(`🌍 Translating to ${lang} using Google Translate...`);
-
-          // Translate jobs, labels, query, and location in parallel (along with min loading time)
-          const [translatedJobs, translatedLabels, translatedQuery, translatedLocation] = await Promise.all([
-            translateJobs(data.jobs || [], lang),
-            translateLabels(defaultLabels, lang),
-            translateText(data.query || data.querySwedish || '', lang),
-            translateText(data.location || data.locationSwedish || '', lang),
-            minLoadingTime
-          ]);
-
-          setJobs(translatedJobs);
-          setQuery(translatedQuery);
-          setLocation(translatedLocation);
-          setLabels(translatedLabels);
+        // Use labels from ChatGPT if provided, otherwise use defaults
+        if (data.labels) {
+          setLabels({ ...defaultLabels, ...data.labels });
         } else {
-          // Swedish or no translation needed - wait minimum time then show
-          await minLoadingTime;
-          setJobs(data.jobs || []);
-          setQuery(data.query || data.querySwedish || '');
-          setLocation(data.location || data.locationSwedish || '');
           setLabels(defaultLabels);
         }
 

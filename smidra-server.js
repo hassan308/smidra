@@ -512,27 +512,74 @@ Then call display_jobs with the filtered list.`
       };
     }
 
-    // ALLA SPRÅK → Visa widget direkt, widget översätter med Google Translate
     const lang = (language || 'sv').toLowerCase();
     const isSwedish = lang === 'sv' || lang === 'svenska' || lang === 'swedish';
 
-    console.log(`📤 Found ${jobs.length} jobs - ${language || 'sv'}, showing widget directly`);
+    // SVENSKA → Visa widget direkt
+    if (isSwedish) {
+      console.log(`📤 Found ${jobs.length} jobs - Swedish, showing widget directly`);
+      return {
+        structuredContent: {
+          _rule: "VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS.",
+          language: 'sv',
+          direction: 'ltr',
+          query: query,
+          location: location || 'Sverige',
+          total,
+          jobs
+        }
+      };
+    }
+
+    // ANDRA SPRÅK → ChatGPT översätter, sedan anropar display_jobs
+    console.log(`📤 Found ${jobs.length} jobs - ${language}, ChatGPT will translate then call display_jobs`);
 
     return {
-      structuredContent: {
-        _rule: "VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS.",
-        language: language || 'sv',
-        direction: direction || 'ltr',
-        query: query,
-        querySwedish: query,
-        location: location || 'Sverige',
-        locationSwedish: location || '',
-        total,
-        jobs,
-        translateMode: !isSwedish,  // Widget uses Google Translate for non-Swedish
-        loadingText: loadingText || 'Söker jobb...',
-        waitingText: waitingText || 'Vänta, hämtar data...'
-      }
+      content: [{
+        type: "text",
+        text: `TRANSLATE TO ${language.toUpperCase()} AND DISPLAY:
+
+Search: "${query}" in ${location || 'Sverige'}
+Found: ${total} jobs
+
+Jobs:
+${JSON.stringify(jobs, null, 2)}
+
+TRANSLATE these fields to ${language}:
+- query, location
+- Each job: title, location, deadline
+
+KEEP these UNCHANGED:
+- id, url, employer, logoUrl
+
+ALSO translate these UI labels to ${language}:
+- jobs (jobb)
+- map (Karta)
+- all (Alla)
+- fulltime (Heltid)
+- parttime (Deltid)
+- showMore (Läs mer)
+- apply (Ansök)
+- applyNow (Ansök nu)
+- noJobs (Inga jobb hittades)
+- fetchingSalary (Hämtar lönestatistik...)
+- salaryInfo (Löneinfo)
+- salaryTitle (Lönestatistik)
+- salaryShown (Lönedata visas)
+
+CALL display_jobs with:
+{
+  language: "${language}",
+  direction: "${direction || 'ltr'}",
+  query: [translated],
+  location: [translated],
+  total: ${total},
+  jobs: [translated array],
+  labels: { jobs, map, all, fulltime, parttime, showMore, apply, applyNow, noJobs, fetchingSalary, salaryInfo, salaryTitle, salaryShown }
+}
+
+⚠️ CALL display_jobs NOW. NO TEXT OUTPUT.`
+      }]
     };
   }
 );
@@ -580,7 +627,11 @@ Called after translating job data from search_jobs.`,
         apply: z.string().optional(),
         applyNow: z.string().optional(),
         noJobs: z.string().optional(),
-        tryOther: z.string().optional()
+        tryOther: z.string().optional(),
+        fetchingSalary: z.string().optional(),
+        salaryInfo: z.string().optional(),
+        salaryTitle: z.string().optional(),
+        salaryShown: z.string().optional()
       }).optional().describe("Translated UI labels")
     },
     _meta: {
