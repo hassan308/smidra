@@ -399,22 +399,26 @@ server.registerResource("cv-widget", "ui://widget/cv.html", {}, async () => ({
 server.registerTool(
   "search_jobs",
   {
-    title: "Search Jobs (Smidra MCP)",
-    description: `Sök jobb i Sverige. Visar interaktiv jobbwidget.
+    title: "Search Jobs - Step 1 (Smidra MCP)",
+    description: `Sök jobb i Sverige. Returnerar svenska jobbdata.
 
-⚠️ AFTER CALLING: Do NOT write any text to user. The widget shows everything they need.
+⚠️ THIS IS STEP 1 OF 2!
+After this tool returns, you MUST call display_jobs (Step 2).
 
-The widget auto-translates to user's language. Just call this tool and stop.
+FLOW:
+1. User writes in their language
+2. You identify language and translate query to Swedish
+3. Call search_jobs with Swedish query + user's language code
+4. Receive Swedish job data + translation instructions
+5. If not Swedish: translate everything to user's language
+6. Call display_jobs with translated data
+7. DO NOT WRITE ANY TEXT - widget shows everything
 
 PARAMETERS:
-- query: Search term IN SWEDISH (e.g., 'kock', 'utvecklare', 'sjuksköterska')
-- language: User's language code (e.g., 'en', 'ar', 'so', 'sv')
-- loadingText: "Searching..." in user's language
-- translatingText: "Translating..." in user's language
+- query: Search term IN SWEDISH (utvecklare, kock, sjuksköterska)
+- language: User's language code (ar, so, en, sv)
 
-Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), lärare (teacher), städare (cleaner), chaufför (driver), säljare (salesperson), ingenjör (engineer)
-
-⚠️ noExperience: When true, filter out "senior" titles, then call display_jobs.`,
+Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), lärare (teacher), städare (cleaner), chaufför (driver)`,
     inputSchema: {
       query: z.string().describe("Search query IN SWEDISH"),
       location: z.string().optional().describe("City/region in Sweden"),
@@ -514,71 +518,62 @@ Then call display_jobs with the filtered list.`
 
     const lang = (language || 'sv').toLowerCase();
     const isSwedish = lang === 'sv' || lang === 'svenska' || lang === 'swedish';
+    const dir = direction || (lang === 'ar' || lang === 'he' || lang === 'fa' || lang === 'ur' ? 'rtl' : 'ltr');
 
-    // SVENSKA → Visa widget direkt
-    if (isSwedish) {
-      console.log(`📤 Found ${jobs.length} jobs - Swedish, showing widget directly`);
-      return {
-        structuredContent: {
-          _rule: "VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS.",
-          language: 'sv',
-          direction: 'ltr',
-          query: query,
-          location: location || 'Sverige',
-          total,
-          jobs
-        }
-      };
-    }
+    console.log(`📤 Found ${jobs.length} jobs - language: ${lang}, direction: ${dir}`);
 
-    // ANDRA SPRÅK → ChatGPT översätter, sedan anropar display_jobs
-    console.log(`📤 Found ${jobs.length} jobs - ${language}, ChatGPT will translate then call display_jobs`);
+    // ALLTID returnera JSON med _rule - ChatGPT översätter och anropar display_jobs
+    const response = {
+      _rule: isSwedish
+        ? "Språk: svenska. Anropa display_jobs direkt med denna data. SKRIV INGEN TEXT."
+        : `Språk: ${language}. Översätt ALLT till ${language} och anropa display_jobs. SKRIV INGEN TEXT.`,
+
+      targetLanguage: language,
+      direction: dir,
+
+      // Svenska sökdata
+      searchData: {
+        query: query,
+        location: location || 'Sverige',
+        total: total
+      },
+
+      // Svenska jobb (ska översättas om inte svenska)
+      jobs: jobs,
+
+      // Labels att översätta (svenska original)
+      labelsToTranslate: {
+        jobs: 'jobb',
+        map: 'Karta',
+        all: 'Alla',
+        fulltime: 'Heltid',
+        parttime: 'Deltid',
+        showMore: 'Läs mer',
+        apply: 'Ansök',
+        applyNow: 'Ansök nu',
+        noJobs: 'Inga jobb hittades',
+        fetchingSalary: 'Hämtar lönestatistik...',
+        salaryInfo: 'Löneinfo',
+        salaryTitle: 'Lönestatistik',
+        salaryShown: 'Lönedata visas'
+      },
+
+      // Instruktioner
+      instructions: isSwedish ? {
+        action: "Anropa display_jobs direkt",
+        translate: false
+      } : {
+        action: "Översätt sedan anropa display_jobs",
+        translate: true,
+        fieldsToTranslate: ["query", "location", "job.title", "job.location", "job.deadline", "alla labels"],
+        keepUnchanged: ["job.id", "job.url", "job.employer", "job.logoUrl"]
+      }
+    };
 
     return {
       content: [{
         type: "text",
-        text: `TRANSLATE TO ${language.toUpperCase()} AND DISPLAY:
-
-Search: "${query}" in ${location || 'Sverige'}
-Found: ${total} jobs
-
-Jobs:
-${JSON.stringify(jobs, null, 2)}
-
-TRANSLATE these fields to ${language}:
-- query, location
-- Each job: title, location, deadline
-
-KEEP these UNCHANGED:
-- id, url, employer, logoUrl
-
-ALSO translate these UI labels to ${language}:
-- jobs (jobb)
-- map (Karta)
-- all (Alla)
-- fulltime (Heltid)
-- parttime (Deltid)
-- showMore (Läs mer)
-- apply (Ansök)
-- applyNow (Ansök nu)
-- noJobs (Inga jobb hittades)
-- fetchingSalary (Hämtar lönestatistik...)
-- salaryInfo (Löneinfo)
-- salaryTitle (Lönestatistik)
-- salaryShown (Lönedata visas)
-
-CALL display_jobs with:
-{
-  language: "${language}",
-  direction: "${direction || 'ltr'}",
-  query: [translated],
-  location: [translated],
-  total: ${total},
-  jobs: [translated array],
-  labels: { jobs, map, all, fulltime, parttime, showMore, apply, applyNow, noJobs, fetchingSalary, salaryInfo, salaryTitle, salaryShown }
-}
-
-⚠️ CALL display_jobs NOW. NO TEXT OUTPUT.`
+        text: JSON.stringify(response, null, 2)
       }]
     };
   }
@@ -591,12 +586,17 @@ CALL display_jobs with:
 server.registerTool(
   "display_jobs",
   {
-    title: "Display Jobs (Smidra MCP)",
-    description: `Show translated job results in widget.
+    title: "Display Jobs - Step 2 (Smidra MCP)",
+    description: `Visa jobb i widget. MÅSTE anropas efter search_jobs.
 
-⚠️ AFTER CALLING: Do NOT write any text. Widget shows everything.
+⚠️ THIS IS STEP 2 OF 2!
+Call this IMMEDIATELY after search_jobs with translated data.
 
-Called after translating job data from search_jobs.`,
+⚠️ AFTER CALLING: Do NOT write ANY text. Widget shows everything.
+
+Pass the translated data from search_jobs:
+- For Swedish: pass data as-is
+- For other languages: translate jobs and labels first`,
     inputSchema: {
       language: z.string().default("sv"),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
