@@ -512,86 +512,146 @@ Then call display_jobs with the filtered list.`
       };
     }
 
-    console.log(`📤 Found ${jobs.length} jobs - widget will translate to ${language}`);
+    const lang = (language || 'sv').toLowerCase();
+    const isSwedish = lang === 'sv' || lang === 'svenska' || lang === 'swedish';
 
-    // Rule FIRST in structuredContent, no content field at all
+    // SVENSKA → Visa widget direkt (ingen översättning)
+    if (isSwedish) {
+      console.log(`📤 Found ${jobs.length} jobs - Swedish, showing widget directly`);
+      return {
+        structuredContent: {
+          _rule: "VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS.",
+          language: 'sv',
+          direction: 'ltr',
+          query: query,
+          querySwedish: query,
+          location: location || 'Sverige',
+          locationSwedish: location || '',
+          total,
+          jobs
+        }
+      };
+    }
+
+    // ANDRA SPRÅK → ChatGPT översätter först, sedan anropar display_jobs
+    console.log(`📤 Found ${jobs.length} jobs - ${language}, ChatGPT will translate`);
     return {
       structuredContent: {
-        _rule: "VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS.",
-        translateMode: true,
-        language: language || 'sv',
+        _rule: `ÖVERSÄTT ALL DATA TILL ${language}.
+
+ÖVERSÄTT DESSA FÄLT:
+- query (sökord)
+- location (plats)
+- Varje jobb: title, location, deadline
+
+BEHÅLL ORIGINAL (ändra ej):
+- id, url, employer, logoUrl
+
+ÖVERSÄTT ÄVEN LABELS:
+- jobs: "jobb"
+- map: "Karta"
+- all: "Alla"
+- fulltime: "Heltid"
+- parttime: "Deltid"
+- showMore: "Läs mer"
+- apply: "Ansök"
+- applyNow: "Ansök nu"
+- noJobs: "Inga jobb hittades"
+
+ANROPA display_jobs MED ÖVERSATT DATA OCH LABELS.
+SKRIV INGEN TEXT ALLS.`,
+        language: language,
         direction: direction || 'ltr',
-        loadingText: loadingText || 'Söker jobb...',
-        translatingText: translatingText || 'Översätter...',
         query: query,
         querySwedish: query,
         location: location || 'Sverige',
         locationSwedish: location || '',
         total,
-        jobs
+        jobs,
+        labels: {
+          jobs: 'jobb',
+          map: 'Karta',
+          all: 'Alla',
+          fulltime: 'Heltid',
+          parttime: 'Deltid',
+          showMore: 'Läs mer',
+          apply: 'Ansök',
+          applyNow: 'Ansök nu',
+          noJobs: 'Inga jobb hittades',
+          tryOther: 'Prova att söka efter något annat'
+        }
       }
     };
   }
 );
 
 // ============================================================
-// display_jobs - REQUIRED for noExperience searches, optional otherwise
+// display_jobs - Shows translated job results in widget
+// Called by ChatGPT after translating search_jobs data
 // ============================================================
 server.registerTool(
   "display_jobs",
   {
     title: "Display Jobs (Smidra MCP)",
-    description: `Show filtered job results in widget.
+    description: `Show translated job results in widget.
 
 ⚠️ AFTER CALLING: Do NOT write any text. Widget shows everything.
 
-Only needed after filtering noExperience results. For normal searches, search_jobs handles everything.`,
+Called after translating job data from search_jobs.`,
     inputSchema: {
       language: z.string().default("sv"),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
-      query: z.string().describe("Search term (Swedish)"),
+      query: z.string().describe("Translated search term"),
       querySwedish: z.string().optional().describe("Original Swedish search term"),
-      location: z.string().default("Sverige").describe("Location"),
+      location: z.string().default("Sverige").describe("Translated location"),
       locationSwedish: z.string().optional().describe("Original Swedish location"),
-      total: z.number().optional().describe("Total jobs found (before filtering)"),
-      loadingText: z.string().optional().describe("Loading text in user's language"),
-      translatingText: z.string().optional().describe("Translating text in user's language"),
+      total: z.number().optional().describe("Total jobs found"),
       jobs: z.array(z.object({
         id: z.string().describe("KEEP ORIGINAL - do not change"),
-        title: z.string().describe("Job title"),
-        employer: z.string().describe("Employer name"),
-        location: z.string().describe("Location"),
+        title: z.string().describe("Translated job title"),
+        employer: z.string().describe("Employer name (keep original)"),
+        location: z.string().describe("Translated location"),
         region: z.string().optional(),
         lat: z.number().optional(),
         lng: z.number().optional(),
-        deadline: z.string().optional().describe("Application deadline"),
+        deadline: z.string().optional().describe("Translated deadline"),
         url: z.string().describe("KEEP ORIGINAL URL - do not modify!"),
         logoUrl: z.string().optional().describe("Company logo URL")
-      }))
+      })),
+      labels: z.object({
+        jobs: z.string().optional(),
+        map: z.string().optional(),
+        all: z.string().optional(),
+        fulltime: z.string().optional(),
+        parttime: z.string().optional(),
+        showMore: z.string().optional(),
+        apply: z.string().optional(),
+        applyNow: z.string().optional(),
+        noJobs: z.string().optional(),
+        tryOther: z.string().optional()
+      }).optional().describe("Translated UI labels")
     },
     _meta: {
       "openai/outputTemplate": "ui://widget/job-list.html",
-      "openai/widgetDescription": "Visar filtrerade jobbresultat i en interaktiv lista. Ingen ytterligare text behövs."
+      "openai/widgetDescription": "Visar översatta jobbresultat i en interaktiv lista. Ingen ytterligare text behövs."
     }
   },
-  async ({ language, direction, query, querySwedish, location, locationSwedish, total, loadingText, translatingText, jobs }) => {
-    console.log(`✅ display_jobs: ${jobs.length} jobs (filtered/verified)`);
+  async ({ language, direction, query, querySwedish, location, locationSwedish, total, jobs, labels }) => {
+    console.log(`✅ display_jobs: ${jobs.length} jobs (translated to ${language})`);
 
     return {
       structuredContent: {
-        translateMode: true,  // Widget will auto-translate
+        _rule: "VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS.",
         language: language || 'sv',
         direction: direction || 'ltr',
-        loadingText: loadingText || 'Söker jobb...',
-        translatingText: translatingText || 'Översätter...',
         query: query,
         querySwedish: querySwedish || query,
         location: location || 'Sverige',
         locationSwedish: locationSwedish || location || '',
         total: total || jobs.length,
-        jobs
-      },
-      content: []
+        jobs,
+        labels: labels || null
+      }
     };
   }
 );

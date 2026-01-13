@@ -1756,15 +1756,19 @@ Anropa med denna data:
         const lang = data.language || 'sv';
         setTargetLanguage(lang); langRef.current = lang;
 
-        if (data.translateMode && lang !== 'sv' && data.jobs?.length) {
-          setLoading(true); setLoadingText(data.translatingText || 'Translating...');
-          try {
-            const [tj, tq, tl, tlb] = await Promise.all([translateJobs(data.jobs, lang), translateText(data.querySwedish || data.query || '', lang), translateText(data.locationSwedish || data.location || '', lang), translateLabels(defaultLabels, lang)]);
-            if (sid !== searchId.current) return;
-            setJobs(tj); setQuery(tq); setLocation(tl); setLabels(tlb);
-          } catch { setJobs(data.jobs || []); setQuery(data.querySwedish || data.query || ''); setLocation(data.locationSwedish || data.location || ''); }
-          setLoading(false);
-        } else { setJobs(data.jobs || []); setQuery(data.query || data.querySwedish || ''); setLocation(data.location || data.locationSwedish || ''); setLoading(false); }
+        // Set jobs and query/location from data (already translated by ChatGPT if needed)
+        setJobs(data.jobs || []);
+        setQuery(data.query || data.querySwedish || '');
+        setLocation(data.location || data.locationSwedish || '');
+
+        // Use labels from ChatGPT if provided, otherwise use defaults
+        if (data.labels) {
+          setLabels({ ...defaultLabels, ...data.labels });
+        } else {
+          setLabels(defaultLabels);
+        }
+
+        setLoading(false);
         setTotalAvailable(total); setLoadedCount(init); setCurrentPage(1);
         if (more && init < total) setTimeout(() => loadMore(sid), 500);
       }, [loadMore]);
