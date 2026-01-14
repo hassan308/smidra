@@ -256,7 +256,6 @@ function formatJob(job) {
 const jobListHTML = readFileSync(join(__dirname, "job-list-widget.html"), "utf-8");
 const jobDetailHTML = readFileSync(join(__dirname, "job-detail-widget.html"), "utf-8");
 const salaryWidgetHTML = readFileSync(join(__dirname, "salary-widget.html"), "utf-8");
-const cvWidgetHTML = readFileSync(join(__dirname, "cv-widget.html"), "utf-8");
 
 // Create MCP server
 const server = new McpServer({
@@ -386,10 +385,6 @@ server.registerResource("job-detail-widget", "ui://widget/job-detail.html", {}, 
 
 server.registerResource("salary-widget", "ui://widget/salary.html", {}, async () => ({
   contents: [{ uri: "ui://widget/salary.html", mimeType: "text/html+skybridge", text: salaryWidgetHTML }]
-}));
-
-server.registerResource("cv-widget", "ui://widget/cv.html", {}, async () => ({
-  contents: [{ uri: "ui://widget/cv.html", mimeType: "text/html+skybridge", text: cvWidgetHTML }]
 }));
 
 // ============================================================
