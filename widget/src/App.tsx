@@ -8,8 +8,8 @@ import {
   Header,
   Pagination,
   EmptyState,
-  LoadingScreen,
-  Toast
+  Toast,
+  Spinner
 } from './components';
 import { useOpenAiGlobal, useWidgetState, useDisplayMode, useMaxHeight } from './hooks';
 import { translateJobs, translateLabels, translateBatch } from './utils/translate';
@@ -59,15 +59,12 @@ export default function App() {
   // Widget state (persisted)
   const [widgetState, setWidgetState] = useWidgetState<WidgetState>(createDefaultWidgetState);
 
-  // Local state
+  // Local state - NO loading state, render immediately
   const [jobs, setJobs] = useState<Job[]>([]);
   const [query, setQuery] = useState('');
   const [location, setLocation] = useState('');
   const [totalAvailable, setTotalAvailable] = useState(0);
-  const [loadedCount, setLoadedCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [loadingText, setLoadingText] = useState('Söker efter lediga tjänster...');
-  const [waitingText, setWaitingText] = useState('Vänta, hämtar data...');
+  const [translating, setTranslating] = useState(false);
   const [targetLanguage, setTargetLanguage] = useState('sv');
   const [labels, setLabels] = useState<Labels>(DEFAULT_LABELS);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -75,12 +72,14 @@ export default function App() {
   const [salaryLoading, setSalaryLoading] = useState(false);
   const [toast, setToast] = useState({ message: '', visible: false });
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [hasReceivedData, setHasReceivedData] = useState(false);
 
   // Refs
   const widgetSessionId = useRef('ws_' + Math.random().toString(36).substr(2, 9));
   const eventSourceRef = useRef<EventSource | null>(null);
   const langRef = useRef('sv');
-  const hasInitialized = useRef(false);
+  const hasTriggeredFullscreen = useRef(false);
+  const lastToolOutputRef = useRef<string>('');
 
   // Derived state
   const filteredJobs = useMemo(() => {
@@ -106,7 +105,7 @@ export default function App() {
     setTimeout(() => setToast(t => ({ ...t, visible: false })), 2500);
   }, []);
 
-  // Toggle fullscreen - AUTO-TRIGGER on first load
+  // Toggle fullscreen
   const toggleFullscreen = useCallback(async (forcedMode?: boolean) => {
     const newMode = forcedMode !== undefined ? forcedMode : !isFullscreen;
     setIsFullscreen(newMode);
@@ -198,7 +197,15 @@ Anropa med denna data:
 
   // Handle incoming tool data
   const handleData = useCallback(async (data: ToolOutput) => {
-    if (!data) return;
+    if (!data || !data.jobs) return;
+
+    // Skip if same data
+    const serialized = JSON.stringify(data);
+    if (serialized === lastToolOutputRef.current) return;
+    lastToolOutputRef.current = serialized;
+
+    console.log('📥 Processing toolOutput:', data.jobs?.length, 'jobs');
+    setHasReceivedData(true);
 
     const lang = data.language || 'sv';
     setTargetLanguage(lang);
@@ -207,6 +214,7 @@ Anropa med denna data:
     const needsTranslation = data.translateMode || lang !== 'sv';
 
     if (needsTranslation && data.jobs?.length) {
+      setTranslating(true);
       console.log(`🌐 Translating to ${lang}...`);
       const [translatedJobs, translatedLabels] = await Promise.all([
         translateJobs(data.jobs, lang),
@@ -223,6 +231,7 @@ Anropa med denna data:
         setQuery(tQuery);
         setLocation(tLocation);
       }
+      setTranslating(false);
     } else {
       setJobs(data.jobs || []);
       setQuery(data.query || '');
@@ -231,21 +240,17 @@ Anropa med denna data:
     }
 
     setTotalAvailable(data.total || data.jobs?.length || 0);
-    setLoadedCount(data.jobs?.length || 0);
-    setLoading(false);
 
     // AUTO-FULLSCREEN on first data load
-    if (!hasInitialized.current) {
-      hasInitialized.current = true;
-      // Small delay to ensure widget is ready
-      setTimeout(() => toggleFullscreen(true), 100);
+    if (!hasTriggeredFullscreen.current && data.jobs?.length > 0) {
+      hasTriggeredFullscreen.current = true;
+      setTimeout(() => toggleFullscreen(true), 150);
     }
   }, [toggleFullscreen]);
 
-  // Listen for tool output changes
+  // Listen for tool output changes - process immediately if available
   useEffect(() => {
     if (toolOutput) {
-      console.log('📥 toolOutput received:', toolOutput.jobs?.length, 'jobs');
       handleData(toolOutput);
     }
   }, [toolOutput, handleData]);
@@ -261,14 +266,36 @@ Anropa med denna data:
   useEffect(() => {
     const height = isFullscreen ? (maxHeight || window.innerHeight) : document.body.scrollHeight;
     window.openai?.notifyIntrinsicHeight?.(height);
-  }, [pageJobs, isFullscreen, maxHeight, widgetState.showMap]);
-
-  // Loading state
-  if (loading) {
-    return <LoadingScreen loadingText={loadingText} waitingText={waitingText} />;
-  }
+  }, [pageJobs, isFullscreen, maxHeight, widgetState.showMap, hasReceivedData]);
 
   const containerHeight = isFullscreen ? maxHeight || '100vh' : 'auto';
+
+  // Show welcome state if no data yet (instead of blocking loading screen)
+  if (!hasReceivedData) {
+    return (
+      <div className="min-h-[300px] w-full bg-gray-50 dark:bg-gray-950 flex flex-col items-center justify-center p-8">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center"
+        >
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#C85A38] to-[#7B9E87] flex items-center justify-center">
+            <span className="text-3xl">💼</span>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+            Smidra Jobbsökning
+          </h2>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">
+            Sök efter jobb på svenska arbetsmarknaden
+          </p>
+          <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
+            <Spinner className="w-4 h-4" />
+            <span>Väntar på sökning...</span>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -282,7 +309,7 @@ Anropa med denna data:
         query={query}
         location={location}
         totalJobs={totalAvailable}
-        loadedCount={loadedCount}
+        loadedCount={jobs.length}
         labels={labels}
         isFullscreen={isFullscreen}
       />
@@ -297,7 +324,22 @@ Anropa med denna data:
         labels={labels}
       />
 
-      {/* Map placeholder - could integrate Mapbox here */}
+      {/* Translating indicator */}
+      <AnimatePresence>
+        {translating && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mx-4 mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400"
+          >
+            <Spinner className="w-4 h-4" />
+            <span>Översätter resultat...</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Map placeholder */}
       <AnimatePresence>
         {widgetState.showMap && (
           <motion.div
