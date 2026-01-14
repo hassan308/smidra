@@ -772,6 +772,53 @@ const toggleFullscreen = useCallback(async () => {
 
 ---
 
+## 🌍 Översättning (Google Translate + Lingva fallback)
+
+Widget översätter automatiskt till användarens språk med Google Translate. Om Google misslyckas, används Lingva som fallback.
+
+### Vad som översätts:
+- Jobbtitlar och platser
+- UI-labels (knappar, filter, etc.)
+- Lönestatistik (labels och tips)
+- Jobbdetaljer i modal
+
+### Översättningsfunktion med fallback:
+```javascript
+const translateText = async (text, lang) => {
+  if (!text || lang === 'sv') return text;
+  // Försök Google först
+  try {
+    const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=sv&tl=${lang}&dt=t&q=${encodeURIComponent(text)}`);
+    const data = await res.json();
+    const result = data?.[0]?.map(i => i[0]).join('');
+    if (result) return result;
+  } catch {}
+  // Fallback till Lingva
+  try {
+    const res = await fetch(`https://lingva.ml/api/v1/sv/${lang}/${encodeURIComponent(text)}`);
+    const data = await res.json();
+    return data?.translation || text;
+  } catch { return text; }
+};
+```
+
+### Löne-labels som översätts:
+```javascript
+const defaultLabels = {
+  // ... andra labels ...
+  salaryInfo: 'Löneinfo',
+  fetchingSalary: 'Hämtar lönestatistik...',
+  salaryTitle: 'Lönestatistik',
+  salaryShown: 'Lönedata visas',
+  krPerMonth: 'kr/mån',
+  salaryMin: 'Min',
+  salaryMax: 'Max',
+  sources: 'Källor'
+};
+```
+
+---
+
 ## Framtida förbättringar
 
 - [x] Översätta jobbinnehåll (Google Translate i klient)
@@ -783,10 +830,12 @@ const toggleFullscreen = useCallback(async () => {
 - [x] Fullscreen mode med stor karta
 - [x] display_cv widget
 - [x] Mobil UX fix för ChatGPT-appen (padding, centrerad modal)
+- [x] Google Translate + Lingva fallback
+- [x] Översättning av löne-labels och tips
 - [ ] Notifikationer för nya jobb
 - [ ] CV-matchning mot jobb
-- [ ] display_cover_letter widget
-- [ ] display_market_analysis widget
+- [ ] Personligt brev-generator
+- [ ] Arbetsmarknadsanalys widget
 
 ---
 
