@@ -908,78 +908,7 @@ server.registerTool(
   }
 );
 
-// ============================================================
-// display_cv - Shows customized CV in beautiful widget
-// ============================================================
-server.registerTool(
-  "display_cv",
-  {
-    title: "Display CV",
-    description: `Show a customized CV in a downloadable widget.
-
-⚠️ AFTER CALLING: Do NOT write any text. Widget shows the CV with download option.
-
-Use job details and user's background to create a tailored CV.`,
-    inputSchema: {
-      language: z.string().default("sv"),
-      direction: z.enum(["ltr", "rtl"]).default("ltr"),
-      cv: z.object({
-        name: z.string().describe("Full name"),
-        title: z.string().describe("Professional title/headline"),
-        email: z.string().optional().describe("Email address"),
-        phone: z.string().optional().describe("Phone number"),
-        location: z.string().optional().describe("City/Location"),
-        linkedin: z.string().optional().describe("LinkedIn URL"),
-        website: z.string().optional().describe("Personal website URL"),
-        summary: z.string().describe("Professional summary (2-4 sentences tailored to the job)"),
-        experience: z.array(z.object({
-          title: z.string().describe("Job title"),
-          company: z.string().describe("Company name"),
-          period: z.string().describe("Period (e.g., '2020 - Present')"),
-          description: z.string().describe("Job description and achievements"),
-          highlights: z.array(z.string()).optional().describe("Key achievements/bullet points")
-        })).describe("Work experience (most relevant first)"),
-        skills: z.object({
-          technical: z.array(z.string()).describe("Technical skills"),
-          soft: z.array(z.string()).optional().describe("Soft skills"),
-          languages: z.array(z.string()).optional().describe("Languages spoken")
-        }),
-        education: z.array(z.object({
-          degree: z.string().describe("Degree/Certificate"),
-          school: z.string().describe("School/Institution"),
-          year: z.string().describe("Year or period")
-        })).optional()
-      }),
-      targetJob: z.object({
-        title: z.string().describe("The job being applied for"),
-        company: z.string().describe("Target company")
-      }),
-      labels: z.object({
-        experience: z.string().optional(),
-        skills: z.string().optional(),
-        education: z.string().optional(),
-        technical: z.string().optional(),
-        softSkills: z.string().optional(),
-        languages: z.string().optional(),
-        download: z.string().optional(),
-        tailoredFor: z.string().optional()
-      }).optional()
-    },
-    _meta: {
-      "openai/outputTemplate": "ui://widget/cv.html"
-    }
-  },
-  async (params) => {
-    console.log(`📄 display_cv: ${params.cv.name} for ${params.targetJob.title} at ${params.targetJob.company}`);
-
-    return {
-      structuredContent: params,
-      content: []
-    };
-  }
-);
-
-console.log("✅ Tools: search_jobs, display_jobs, get_job_details, update_widget_info, display_salary, display_cv");
+console.log("✅ Tools: search_jobs, display_jobs, get_job_details, update_widget_info, display_salary");
 
 // HTTP Server
 const transports = new Map();
