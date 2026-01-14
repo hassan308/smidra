@@ -13,7 +13,6 @@ COPY smidra-server.js ./
 COPY job-list-widget.html ./
 COPY job-detail-widget.html ./
 COPY salary-widget.html ./
-COPY cv-widget.html ./
 
 # Expose port
 EXPOSE 8002
