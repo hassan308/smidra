@@ -1,0 +1,31 @@
+{
+  "name": "smidra-widget",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@openai/apps-sdk-ui": "^0.2.1",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.23.12",
+    "lucide-react": "^0.536.0",
+    "mapbox-gl": "^3.14.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.11",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^4.5.2",
+    "autoprefixer": "10.4.21",
+    "postcss": "8.5.6",
+    "tailwindcss": "4.1.11",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.1",
+    "vite-plugin-singlefile": "^2.0.3"
+  }
+}

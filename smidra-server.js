@@ -253,9 +253,11 @@ function formatJob(job) {
 }
 
 // Load widget HTML
-const jobListHTML = readFileSync(join(__dirname, "job-list-widget.html"), "utf-8");
+// Use V2 widget (OpenAI design system with auto-fullscreen)
+const jobListHTML = readFileSync(join(__dirname, "job-list-widget-v2.html"), "utf-8");
 const jobDetailHTML = readFileSync(join(__dirname, "job-detail-widget.html"), "utf-8");
 const salaryWidgetHTML = readFileSync(join(__dirname, "salary-widget.html"), "utf-8");
+// Legacy widget backup: job-list-widget.html
 
 // Create MCP server
 const server = new McpServer({
