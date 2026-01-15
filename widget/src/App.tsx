@@ -93,21 +93,21 @@ function CompanyLogo({ name, logoUrl, size = 44 }: { name: string; logoUrl?: str
 // Skeleton loader for cards
 function JobCardSkeleton() {
   return (
-    <div className="rounded-2xl border border-neutral-200/60 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 animate-pulse">
+    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 animate-pulse">
       <div className="flex items-start gap-4">
-        <div className="w-11 h-11 rounded-xl bg-neutral-200 dark:bg-neutral-800" />
+        <div className="w-11 h-11 rounded-xl bg-gray-200 dark:bg-gray-800" />
         <div className="flex-1 space-y-2">
-          <div className="h-4 w-24 bg-neutral-200 dark:bg-neutral-800 rounded" />
-          <div className="h-3 w-16 bg-neutral-200 dark:bg-neutral-800 rounded" />
+          <div className="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded" />
+          <div className="h-3 w-16 bg-gray-200 dark:bg-gray-800 rounded" />
         </div>
       </div>
       <div className="mt-4 space-y-2">
-        <div className="h-5 w-3/4 bg-neutral-200 dark:bg-neutral-800 rounded" />
-        <div className="h-5 w-1/2 bg-neutral-200 dark:bg-neutral-800 rounded" />
+        <div className="h-5 w-3/4 bg-gray-200 dark:bg-gray-800 rounded" />
+        <div className="h-5 w-1/2 bg-gray-200 dark:bg-gray-800 rounded" />
       </div>
       <div className="mt-4 flex gap-2">
-        <div className="h-6 w-16 bg-neutral-200 dark:bg-neutral-800 rounded-full" />
-        <div className="h-6 w-20 bg-neutral-200 dark:bg-neutral-800 rounded-full" />
+        <div className="h-6 w-16 bg-gray-200 dark:bg-gray-800 rounded-full" />
+        <div className="h-6 w-20 bg-gray-200 dark:bg-gray-800 rounded-full" />
       </div>
     </div>
   );
@@ -141,11 +141,11 @@ function JobCard({
       role="button"
       aria-label={`${job.title} hos ${job.employer}`}
       className={clsx(
-        'group relative flex cursor-pointer flex-col rounded-2xl border bg-white dark:bg-neutral-900',
-        'border-neutral-200/60 dark:border-neutral-800',
-        'hover:border-neutral-300 dark:hover:border-neutral-700',
-        'hover:shadow-lg hover:shadow-neutral-200/50 dark:hover:shadow-neutral-950/50',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900',
+        'group relative flex cursor-pointer flex-col rounded-2xl border bg-white dark:bg-gray-900',
+        'border-gray-200/60 dark:border-gray-800',
+        'hover:border-gray-300 dark:hover:border-gray-700',
+        'hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-gray-950/50',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900',
         'transition-all duration-200'
       )}
     >
@@ -161,7 +161,7 @@ function JobCard({
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
           isSaved
             ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/25'
-            : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 hover:text-neutral-600 dark:hover:text-neutral-300'
+            : 'bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300'
         )}
       >
         <Heart className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} aria-hidden="true" />
@@ -173,10 +173,10 @@ function JobCard({
         <div className="flex items-start gap-3.5 mb-4">
           <CompanyLogo name={job.employer} logoUrl={job.logoUrl} size={44} />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate leading-tight">
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate leading-tight">
               {job.employer}
             </p>
-            <div className="flex items-center gap-1.5 mt-1 text-neutral-500 dark:text-neutral-400">
+            <div className="flex items-center gap-1.5 mt-1 text-gray-500 dark:text-gray-400">
               <MapPin className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
               <span className="text-xs truncate">{job.location || 'Sverige'}</span>
             </div>
@@ -184,7 +184,7 @@ function JobCard({
         </div>
 
         {/* Title */}
-        <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100 leading-snug line-clamp-2 mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2 mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
           {job.title}
         </h3>
 
@@ -196,7 +196,7 @@ function JobCard({
             </span>
           )}
           {job.deadline && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
               <Clock className="w-3 h-3" aria-hidden="true" />
               {job.deadline}
             </span>
@@ -205,18 +205,18 @@ function JobCard({
       </div>
 
       {/* Footer */}
-      <div className="mt-auto border-t border-neutral-100 dark:border-neutral-800 p-4 flex gap-2">
+      <div className="mt-auto border-t border-gray-100 dark:border-gray-800 p-4 flex gap-2">
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onClick(job); }}
-          className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
         >
           {labels.showMore}
         </button>
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); window.openai?.openExternal?.({ href: job.url }); }}
-          className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-white bg-neutral-900 dark:bg-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
         >
           {labels.apply}
           <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
@@ -282,7 +282,7 @@ function JobDetailModal({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 10 }}
         transition={springTransition}
-        className="relative w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-neutral-900 shadow-2xl ring-1 ring-black/5 dark:ring-white/10"
+        className="relative w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-gray-900 shadow-2xl ring-1 ring-black/5 dark:ring-white/10"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
@@ -290,7 +290,7 @@ function JobDetailModal({
           ref={closeButtonRef}
           onClick={onClose}
           aria-label="Stäng"
-          className="absolute top-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-500 hover:bg-neutral-200 dark:hover:bg-neutral-700 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          className="absolute top-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
         >
           <X className="w-5 h-5" aria-hidden="true" />
         </button>
@@ -300,21 +300,21 @@ function JobDetailModal({
           <div className="flex items-start gap-4 pr-12">
             <CompanyLogo name={job.employer} logoUrl={job.logoUrl} size={56} />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-1">{job.employer}</p>
-              <h2 id="modal-title" className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 leading-tight">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{job.employer}</p>
+              <h2 id="modal-title" className="text-xl font-semibold text-gray-900 dark:text-gray-100 leading-tight">
                 {job.title}
               </h2>
             </div>
           </div>
 
           {/* Meta tags */}
-          <div className="flex flex-wrap gap-2 mt-4 pb-5 border-b border-neutral-100 dark:border-neutral-800">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-sm text-neutral-600 dark:text-neutral-400">
+          <div className="flex flex-wrap gap-2 mt-4 pb-5 border-b border-gray-100 dark:border-gray-800">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-400">
               <MapPin className="w-4 h-4" aria-hidden="true" />
               {job.location || 'Sverige'}
             </span>
             {job.deadline && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-sm text-neutral-600 dark:text-neutral-400">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-400">
                 <Clock className="w-4 h-4" aria-hidden="true" />
                 <time>{job.deadline}</time>
               </span>
@@ -331,21 +331,21 @@ function JobDetailModal({
         <div className="flex-1 overflow-y-auto p-6 space-y-5 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
           {loading ? (
             <div className="space-y-3 animate-pulse">
-              <div className="h-4 bg-neutral-200 dark:bg-neutral-800 rounded w-full" />
-              <div className="h-4 bg-neutral-200 dark:bg-neutral-800 rounded w-5/6" />
-              <div className="h-4 bg-neutral-200 dark:bg-neutral-800 rounded w-4/6" />
+              <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-full" />
+              <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-5/6" />
+              <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-4/6" />
             </div>
           ) : (
-            <div className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed whitespace-pre-wrap">
+            <div className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-wrap">
               {description}
             </div>
           )}
 
           {/* Salary section */}
           {salaryLoading && (
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/50" role="status">
-              <div className="w-5 h-5 border-2 border-neutral-300 dark:border-neutral-600 border-t-blue-500 rounded-full animate-spin" />
-              <span className="text-sm text-neutral-600 dark:text-neutral-400">{labels.fetchingSalary}</span>
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50" role="status">
+              <div className="w-5 h-5 border-2 border-gray-300 dark:border-gray-600 border-t-blue-500 rounded-full animate-spin" />
+              <span className="text-sm text-gray-600 dark:text-gray-400">{labels.fetchingSalary}</span>
             </div>
           )}
 
@@ -359,19 +359,19 @@ function JobDetailModal({
                 <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
                   <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 </div>
-                <span className="font-semibold text-neutral-900 dark:text-neutral-100">{labels.salaryTitle}</span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100">{labels.salaryTitle}</span>
               </div>
               <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-2 tabular-nums tracking-tight">
                 {salaryData.salary.avg?.toLocaleString('sv-SE')}&nbsp;{labels.krPerMonth}
               </p>
-              <div className="flex justify-between text-sm text-neutral-600 dark:text-neutral-400 tabular-nums">
+              <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 tabular-nums">
                 <span>{labels.salaryMin}: {salaryData.salary.min?.toLocaleString('sv-SE')} kr</span>
                 <span>{labels.salaryMax}: {salaryData.salary.max?.toLocaleString('sv-SE')} kr</span>
               </div>
               {salaryData.translatedTips?.length > 0 && (
                 <ul className="mt-4 pt-4 border-t border-emerald-200 dark:border-emerald-800/50 space-y-2">
                   {salaryData.translatedTips.map((tip, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+                    <li key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
                       <Sparkles className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" aria-hidden="true" />
                       {tip}
                     </li>
@@ -383,7 +383,7 @@ function JobDetailModal({
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 flex gap-3 p-5 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-800/30">
+        <div className="flex-shrink-0 flex gap-3 p-5 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
           <button
             onClick={() => onRequestSalary(job)}
             disabled={salaryLoading || !!salaryData}
@@ -393,8 +393,8 @@ function JobDetailModal({
               salaryData
                 ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 cursor-default'
                 : salaryLoading
-                  ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 cursor-wait'
-                  : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-wait'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
             )}
           >
             {salaryLoading ? labels.fetching : salaryData ? `✓ ${labels.salaryShown}` : labels.salaryInfo}
@@ -423,8 +423,8 @@ function FilterPill({ active, onClick, children }: { active: boolean; onClick: (
         'px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
         active
-          ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 shadow-lg shadow-neutral-900/10'
-          : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 hover:text-neutral-900 dark:hover:text-neutral-100'
+          ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-lg shadow-gray-900/10'
+          : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
       )}
     >
       {children}
@@ -566,7 +566,7 @@ export default function App() {
   // Welcome screen
   if (!hasReceivedData) {
     return (
-      <div className="min-h-[420px] w-full bg-gradient-to-b from-neutral-50 to-white dark:from-neutral-900 dark:to-neutral-950 flex flex-col items-center justify-center p-8">
+      <div className="min-h-[420px] w-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950 flex flex-col items-center justify-center p-8">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -576,13 +576,13 @@ export default function App() {
           <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
             <Search className="w-8 h-8 text-white" aria-hidden="true" />
           </div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2 tracking-tight">Smidra</h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mb-6 text-sm leading-relaxed">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2 tracking-tight">Smidra</h1>
+          <p className="text-gray-500 dark:text-gray-400 mb-6 text-sm leading-relaxed">
             Hitta ditt nästa jobb direkt i ChatGPT.
             <br />Skriv vad du letar efter.
           </p>
-          <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-neutral-100 dark:bg-neutral-800 text-sm text-neutral-500 dark:text-neutral-400" role="status">
-            <div className="w-4 h-4 border-2 border-neutral-300 dark:border-neutral-600 border-t-blue-500 rounded-full animate-spin" />
+          <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800 text-sm text-gray-500 dark:text-gray-400" role="status">
+            <div className="w-4 h-4 border-2 border-gray-300 dark:border-gray-600 border-t-blue-500 rounded-full animate-spin" />
             Väntar på sökning…
           </div>
         </motion.div>
@@ -592,28 +592,28 @@ export default function App() {
 
   return (
     <div
-      className={clsx('w-full bg-neutral-50 dark:bg-neutral-950', isFullscreen && 'min-h-screen')}
+      className={clsx('w-full bg-gray-50 dark:bg-gray-950', isFullscreen && 'min-h-screen')}
       style={{ maxHeight: isFullscreen ? maxHeight : undefined, height: isFullscreen ? maxHeight : undefined }}
     >
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl border-b border-neutral-200/60 dark:border-neutral-800">
+      <header className="sticky top-0 z-20 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/60 dark:border-gray-800">
         <div className="px-6 py-5">
           <div className="flex items-center justify-between mb-3">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <Building2 className="w-4 h-4 text-neutral-400" aria-hidden="true" />
-                <span className="text-xs font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+                <Building2 className="w-4 h-4 text-gray-400" aria-hidden="true" />
+                <span className="text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
                   Jobbsökning
                 </span>
               </div>
-              <h1 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 truncate tracking-tight">
+              <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 truncate tracking-tight">
                 {query || 'Lediga tjänster'}
               </h1>
             </div>
             {!isFullscreen && (
               <button
                 onClick={() => toggleFullscreen(true)}
-                className="flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                className="flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
                 Se alla
               </button>
@@ -621,7 +621,7 @@ export default function App() {
           </div>
 
           {/* Stats */}
-          <div className="flex items-center gap-3 text-sm text-neutral-500 dark:text-neutral-400">
+          <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
             {location && (
               <span className="flex items-center gap-1.5">
                 <MapPin className="w-4 h-4" aria-hidden="true" />
@@ -629,7 +629,7 @@ export default function App() {
               </span>
             )}
             <span className="flex items-center gap-1.5">
-              <span className="font-semibold text-neutral-900 dark:text-neutral-100 tabular-nums">{totalAvailable}</span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100 tabular-nums">{totalAvailable}</span>
               {labels.jobs}
             </span>
           </div>
@@ -656,11 +656,11 @@ export default function App() {
         </div>
       ) : filteredJobs.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-          <div className="w-14 h-14 mb-4 rounded-2xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-            <Search className="w-7 h-7 text-neutral-400" aria-hidden="true" />
+          <div className="w-14 h-14 mb-4 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+            <Search className="w-7 h-7 text-gray-400" aria-hidden="true" />
           </div>
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-1">{labels.noJobs}</h2>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-xs">{labels.tryOther}</p>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">{labels.noJobs}</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">{labels.tryOther}</p>
         </div>
       ) : (
         <>
@@ -687,23 +687,23 @@ export default function App() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <nav className="flex items-center justify-center gap-3 py-6 border-t border-neutral-200/60 dark:border-neutral-800" aria-label="Pagination">
+            <nav className="flex items-center justify-center gap-3 py-6 border-t border-gray-200/60 dark:border-gray-800" aria-label="Pagination">
               <button
                 disabled={currentPage === 1}
                 onClick={() => setWidgetState(s => ({ ...s, currentPage: s.currentPage - 1 }))}
                 aria-label="Föregående"
-                className="h-10 w-10 rounded-xl flex items-center justify-center bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                className="h-10 w-10 rounded-xl flex items-center justify-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
                 <ChevronLeft className="w-5 h-5" aria-hidden="true" />
               </button>
-              <span className="min-w-[80px] text-center text-sm font-medium text-neutral-600 dark:text-neutral-400 tabular-nums">
+              <span className="min-w-[80px] text-center text-sm font-medium text-gray-600 dark:text-gray-400 tabular-nums">
                 {currentPage} av {totalPages}
               </span>
               <button
                 disabled={currentPage === totalPages}
                 onClick={() => setWidgetState(s => ({ ...s, currentPage: s.currentPage + 1 }))}
                 aria-label="Nästa"
-                className="h-10 w-10 rounded-xl flex items-center justify-center bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                className="h-10 w-10 rounded-xl flex items-center justify-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
                 <ChevronRight className="w-5 h-5" aria-hidden="true" />
               </button>
@@ -736,7 +736,7 @@ export default function App() {
             transition={springTransition}
             role="status"
             aria-live="polite"
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-medium shadow-xl z-50 flex items-center gap-2"
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium shadow-xl z-50 flex items-center gap-2"
           >
             <Heart className="w-4 h-4 text-rose-400" fill="currentColor" aria-hidden="true" />
             {toast.message}
