@@ -1,19 +1,22 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { AnimatePresence, LayoutGroup, motion, type Variants } from 'framer-motion';
+import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
 import clsx from 'clsx';
-import { MapPin, Clock, Heart, ExternalLink, X, Search, ChevronLeft, ChevronRight, Building2, Sparkles, TrendingUp } from 'lucide-react';
+import {
+  MapPin, Clock, Heart, ExternalLink, X, Search, ChevronLeft, ChevronRight,
+  Building2, Sparkles, TrendingUp, Maximize2, Minimize2, Share2, Bookmark,
+  ArrowUpDown, Calendar, Filter, Copy, Check, RefreshCw
+} from 'lucide-react';
 import { useOpenAiGlobal, useWidgetState, useDisplayMode, useMaxHeight } from './hooks';
 import { translateJobs, translateLabels, translateBatch } from './utils/translate';
 import type { Job, Labels, SalaryData, ToolOutput, WidgetState } from './types';
 
-const JOBS_PER_PAGE = 9;
+const JOBS_PER_PAGE = 12;
 
 // Respect prefers-reduced-motion
 const prefersReducedMotion = typeof window !== 'undefined'
   ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
   : false;
 
-// Smooth spring animation
 const springTransition = prefersReducedMotion
   ? { duration: 0 }
   : { type: 'spring', stiffness: 400, damping: 30 };
@@ -50,18 +53,19 @@ const createDefaultWidgetState = (): WidgetState => ({
   currentPage: 1
 });
 
+// Detect mobile
+const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+
 // Premium company logo with elegant fallback
 function CompanyLogo({ name, logoUrl, size = 44 }: { name: string; logoUrl?: string; size?: number }) {
   const [error, setError] = useState(false);
   const initial = name?.charAt(0)?.toUpperCase() || '?';
-
-  // Generate consistent color from company name
   const hue = name?.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 360 || 0;
 
   if (error || !logoUrl) {
     return (
       <div
-        className="flex items-center justify-center rounded-xl font-semibold text-white"
+        className="flex items-center justify-center rounded-xl font-semibold text-white shadow-sm"
         style={{
           width: size,
           height: size,
@@ -90,7 +94,7 @@ function CompanyLogo({ name, logoUrl, size = 44 }: { name: string; logoUrl?: str
   );
 }
 
-// Skeleton loader for cards
+// Skeleton loader
 function JobCardSkeleton() {
   return (
     <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 animate-pulse">
@@ -105,10 +109,6 @@ function JobCardSkeleton() {
         <div className="h-5 w-3/4 bg-gray-200 dark:bg-gray-800 rounded" />
         <div className="h-5 w-1/2 bg-gray-200 dark:bg-gray-800 rounded" />
       </div>
-      <div className="mt-4 flex gap-2">
-        <div className="h-6 w-16 bg-gray-200 dark:bg-gray-800 rounded-full" />
-        <div className="h-6 w-20 bg-gray-200 dark:bg-gray-800 rounded-full" />
-      </div>
     </div>
   );
 }
@@ -119,13 +119,17 @@ function JobCard({
   isSaved,
   onSave,
   onClick,
-  labels
+  onShare,
+  labels,
+  compact = false
 }: {
   job: Job;
   isSaved: boolean;
   onSave: (id: string) => void;
   onClick: (job: Job) => void;
+  onShare: (job: Job) => void;
   labels: Labels;
+  compact?: boolean;
 }) {
   return (
     <motion.article
@@ -145,34 +149,42 @@ function JobCard({
         'border-gray-200/60 dark:border-gray-800',
         'hover:border-gray-300 dark:hover:border-gray-700',
         'hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-gray-950/50',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
         'transition-all duration-200'
       )}
     >
-      {/* Save button */}
-      <button
-        type="button"
-        onClick={(e) => { e.stopPropagation(); onSave(job.id); }}
-        aria-label={isSaved ? 'Ta bort från sparade' : 'Spara jobb'}
-        aria-pressed={isSaved}
-        className={clsx(
-          'absolute top-4 right-4 z-10 flex h-8 w-8 items-center justify-center rounded-full',
-          'transition-all duration-200',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
-          isSaved
-            ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/25'
-            : 'bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300'
-        )}
-      >
-        <Heart className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} aria-hidden="true" />
-      </button>
+      {/* Action buttons */}
+      <div className="absolute top-3 right-3 z-10 flex gap-1.5">
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onShare(job); }}
+          aria-label="Dela jobb"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100/90 dark:bg-gray-800/90 backdrop-blur text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300 transition-all opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+        >
+          <Share2 className="w-3.5 h-3.5" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onSave(job.id); }}
+          aria-label={isSaved ? 'Ta bort från sparade' : 'Spara jobb'}
+          aria-pressed={isSaved}
+          className={clsx(
+            'flex h-8 w-8 items-center justify-center rounded-full transition-all',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+            isSaved
+              ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/25'
+              : 'bg-gray-100/90 dark:bg-gray-800/90 backdrop-blur text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300'
+          )}
+        >
+          <Heart className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} aria-hidden="true" />
+        </button>
+      </div>
 
       {/* Content */}
-      <div className="p-5">
-        {/* Company info */}
-        <div className="flex items-start gap-3.5 mb-4">
-          <CompanyLogo name={job.employer} logoUrl={job.logoUrl} size={44} />
-          <div className="min-w-0 flex-1">
+      <div className={clsx('p-5', compact && 'p-4')}>
+        <div className="flex items-start gap-3.5 mb-3">
+          <CompanyLogo name={job.employer} logoUrl={job.logoUrl} size={compact ? 40 : 44} />
+          <div className="min-w-0 flex-1 pr-16">
             <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate leading-tight">
               {job.employer}
             </p>
@@ -183,12 +195,14 @@ function JobCard({
           </div>
         </div>
 
-        {/* Title */}
-        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2 mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+        <h3 className={clsx(
+          'font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2 mb-3',
+          'group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors',
+          compact ? 'text-sm' : 'text-base'
+        )}>
           {job.title}
         </h3>
 
-        {/* Tags */}
         <div className="flex items-center gap-2 flex-wrap">
           {job.employmentType && (
             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
@@ -205,35 +219,40 @@ function JobCard({
       </div>
 
       {/* Footer */}
-      <div className="mt-auto border-t border-gray-100 dark:border-gray-800 p-4 flex gap-2">
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onClick(job); }}
-          className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-        >
-          {labels.showMore}
-        </button>
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); window.openai?.openExternal?.({ href: job.url }); }}
-          className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-        >
-          {labels.apply}
-          <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
-        </button>
-      </div>
+      {!compact && (
+        <div className="mt-auto border-t border-gray-100 dark:border-gray-800 p-4 flex gap-2">
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onClick(job); }}
+            className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          >
+            {labels.showMore}
+          </button>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); window.openai?.openExternal?.({ href: job.url }); }}
+            className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          >
+            {labels.apply}
+            <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+          </button>
+        </div>
+      )}
     </motion.article>
   );
 }
 
-// Premium modal
+// Job detail modal
 function JobDetailModal({
   job,
   onClose,
   labels,
   salaryData,
   salaryLoading,
-  onRequestSalary
+  onRequestSalary,
+  onShare,
+  isSaved,
+  onSave
 }: {
   job: Job;
   onClose: () => void;
@@ -241,13 +260,15 @@ function JobDetailModal({
   salaryData: SalaryData | null;
   salaryLoading: boolean;
   onRequestSalary: (job: Job) => void;
+  onShare: (job: Job) => void;
+  isSaved: boolean;
+  onSave: (id: string) => void;
 }) {
   const [description, setDescription] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => { closeButtonRef.current?.focus(); }, []);
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', handleKeyDown);
@@ -282,22 +303,43 @@ function JobDetailModal({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 10 }}
         transition={springTransition}
-        className="relative w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-gray-900 shadow-2xl ring-1 ring-black/5 dark:ring-white/10"
+        className="relative w-full max-w-xl max-h-[85vh] flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-gray-900 shadow-2xl ring-1 ring-black/5 dark:ring-white/10"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close button */}
-        <button
-          ref={closeButtonRef}
-          onClick={onClose}
-          aria-label="Stäng"
-          className="absolute top-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-        >
-          <X className="w-5 h-5" aria-hidden="true" />
-        </button>
+        {/* Header with actions */}
+        <div className="absolute top-4 right-4 z-10 flex gap-2">
+          <button
+            onClick={() => onShare(job)}
+            aria-label="Dela"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          >
+            <Share2 className="w-4 h-4" aria-hidden="true" />
+          </button>
+          <button
+            onClick={() => onSave(job.id)}
+            aria-label={isSaved ? 'Ta bort' : 'Spara'}
+            className={clsx(
+              'flex h-9 w-9 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+              isSaved
+                ? 'bg-rose-500 text-white'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700'
+            )}
+          >
+            <Heart className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} aria-hidden="true" />
+          </button>
+          <button
+            ref={closeButtonRef}
+            onClick={onClose}
+            aria-label="Stäng"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          >
+            <X className="w-5 h-5" aria-hidden="true" />
+          </button>
+        </div>
 
-        {/* Header */}
+        {/* Header content */}
         <div className="flex-shrink-0 p-6 pb-0">
-          <div className="flex items-start gap-4 pr-12">
+          <div className="flex items-start gap-4 pr-32">
             <CompanyLogo name={job.employer} logoUrl={job.logoUrl} size={56} />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{job.employer}</p>
@@ -307,7 +349,6 @@ function JobDetailModal({
             </div>
           </div>
 
-          {/* Meta tags */}
           <div className="flex flex-wrap gap-2 mt-4 pb-5 border-b border-gray-100 dark:border-gray-800">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-400">
               <MapPin className="w-4 h-4" aria-hidden="true" />
@@ -401,7 +442,7 @@ function JobDetailModal({
           </button>
           <button
             onClick={() => window.openai?.openExternal?.({ href: job.url })}
-            className="flex-1 px-5 py-3 rounded-xl text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            className="flex-1 px-5 py-3 rounded-xl text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
             {labels.applyNow}
             <ExternalLink className="w-4 h-4" aria-hidden="true" />
@@ -412,23 +453,70 @@ function JobDetailModal({
   );
 }
 
-// Filter pill button
-function FilterPill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+// Tab button
+function TabButton({ active, onClick, icon: Icon, children, count }: {
+  active: boolean; onClick: () => void; icon: any; children: React.ReactNode; count?: number
+}) {
   return (
     <button
       onClick={onClick}
       role="tab"
       aria-selected={active}
       className={clsx(
-        'px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
+        'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
         active
-          ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-lg shadow-gray-900/10'
-          : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
+          ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-lg'
+          : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+      )}
+    >
+      <Icon className="w-4 h-4" aria-hidden="true" />
+      {children}
+      {count !== undefined && count > 0 && (
+        <span className={clsx(
+          'ml-1 px-1.5 py-0.5 rounded-full text-xs font-semibold tabular-nums',
+          active ? 'bg-white/20 dark:bg-gray-900/20' : 'bg-gray-200 dark:bg-gray-700'
+        )}>
+          {count}
+        </span>
+      )}
+    </button>
+  );
+}
+
+// Filter pill
+function FilterPill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className={clsx(
+        'px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+        active
+          ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 ring-1 ring-blue-200 dark:ring-blue-800'
+          : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
       )}
     >
       {children}
     </button>
+  );
+}
+
+// Sort dropdown
+function SortDropdown({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="relative">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="appearance-none pl-3 pr-8 py-1.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-0 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+      >
+        <option value="newest">Nyast först</option>
+        <option value="deadline">Deadline</option>
+        <option value="employer">Företag A-Ö</option>
+      </select>
+      <ArrowUpDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+    </div>
   );
 }
 
@@ -447,32 +535,56 @@ export default function App() {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [salaryData, setSalaryData] = useState<SalaryData | null>(null);
   const [salaryLoading, setSalaryLoading] = useState(false);
-  const [toast, setToast] = useState({ message: '', visible: false });
+  const [toast, setToast] = useState({ message: '', visible: false, icon: 'heart' as 'heart' | 'check' | 'share' });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hasReceivedData, setHasReceivedData] = useState(false);
+  const [activeTab, setActiveTab] = useState<'all' | 'saved'>('all');
   const [activeFilter, setActiveFilter] = useState<'all' | 'fulltime' | 'parttime'>('all');
+  const [sortBy, setSortBy] = useState('newest');
   const [isLoading, setIsLoading] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
 
   const widgetSessionId = useRef('ws_' + Math.random().toString(36).substr(2, 9));
   const langRef = useRef('sv');
   const hasTriggeredFullscreen = useRef(false);
   const lastToolOutputRef = useRef<string>('');
 
-  // Filter jobs
-  const filteredJobs = useMemo(() => {
-    return jobs.filter(j => {
-      if (activeFilter === 'all') return true;
-      const type = (j.employmentType || '').toLowerCase();
-      return activeFilter === 'fulltime' ? type.includes('heltid') : type.includes('deltid');
+  // Filter and sort jobs
+  const displayJobs = useMemo(() => {
+    let filtered = activeTab === 'saved'
+      ? jobs.filter(j => widgetState.savedJobs.includes(j.id))
+      : jobs;
+
+    // Apply type filter
+    if (activeFilter !== 'all') {
+      filtered = filtered.filter(j => {
+        const type = (j.employmentType || '').toLowerCase();
+        return activeFilter === 'fulltime' ? type.includes('heltid') : type.includes('deltid');
+      });
+    }
+
+    // Apply sorting
+    const sorted = [...filtered].sort((a, b) => {
+      if (sortBy === 'newest') return 0; // Keep original order
+      if (sortBy === 'deadline') {
+        if (!a.deadline) return 1;
+        if (!b.deadline) return -1;
+        return a.deadline.localeCompare(b.deadline);
+      }
+      if (sortBy === 'employer') return a.employer.localeCompare(b.employer);
+      return 0;
     });
-  }, [jobs, activeFilter]);
 
-  const totalPages = Math.ceil(filteredJobs.length / JOBS_PER_PAGE);
+    return sorted;
+  }, [jobs, activeTab, activeFilter, sortBy, widgetState.savedJobs]);
+
+  const totalPages = Math.ceil(displayJobs.length / JOBS_PER_PAGE);
   const currentPage = Math.min(widgetState.currentPage, totalPages || 1);
-  const pageJobs = filteredJobs.slice((currentPage - 1) * JOBS_PER_PAGE, currentPage * JOBS_PER_PAGE);
+  const pageJobs = displayJobs.slice((currentPage - 1) * JOBS_PER_PAGE, currentPage * JOBS_PER_PAGE);
+  const savedCount = widgetState.savedJobs.filter(id => jobs.some(j => j.id === id)).length;
 
-  const showToast = useCallback((msg: string) => {
-    setToast({ message: msg, visible: true });
+  const showToast = useCallback((msg: string, icon: 'heart' | 'check' | 'share' = 'heart') => {
+    setToast({ message: msg, visible: true, icon });
     setTimeout(() => setToast(t => ({ ...t, visible: false })), 2500);
   }, []);
 
@@ -485,10 +597,43 @@ export default function App() {
   const toggleSave = useCallback((id: string) => {
     setWidgetState(prev => {
       const isSaved = prev.savedJobs.includes(id);
-      if (!isSaved) showToast(labels.saved || 'Sparad');
+      if (!isSaved) showToast('Sparat!', 'heart');
       return { ...prev, savedJobs: isSaved ? prev.savedJobs.filter(x => x !== id) : [...prev.savedJobs, id] };
     });
-  }, [setWidgetState, showToast, labels.saved]);
+  }, [setWidgetState, showToast]);
+
+  const shareJob = useCallback(async (job: Job) => {
+    const shareData = {
+      title: job.title,
+      text: `${job.title} hos ${job.employer}`,
+      url: job.url
+    };
+
+    // Try native share first (mobile)
+    if (navigator.share && isMobile) {
+      try {
+        await navigator.share(shareData);
+        showToast('Delat!', 'share');
+        return;
+      } catch {}
+    }
+
+    // Fallback to clipboard
+    try {
+      await navigator.clipboard.writeText(job.url);
+      showToast('Länk kopierad!', 'check');
+    } catch {
+      // Last resort: open external
+      window.openai?.openExternal?.({ href: job.url });
+    }
+  }, [showToast]);
+
+  const handleSearch = useCallback(() => {
+    if (!searchInput.trim()) return;
+    const msg = `Sök jobb: ${searchInput}`;
+    window.openai?.sendFollowUpMessage?.({ prompt: msg });
+    setSearchInput('');
+  }, [searchInput]);
 
   const requestSalary = useCallback((job: Job) => {
     setSalaryLoading(true);
@@ -548,13 +693,15 @@ export default function App() {
     }
 
     setTotalAvailable(data.total || data.jobs?.length || 0);
+    setActiveTab('all');
+    setWidgetState(s => ({ ...s, currentPage: 1 }));
     setIsLoading(false);
 
     if (!hasTriggeredFullscreen.current && data.jobs?.length > 0) {
       hasTriggeredFullscreen.current = true;
       setTimeout(() => toggleFullscreen(true), 100);
     }
-  }, [toggleFullscreen]);
+  }, [toggleFullscreen, setWidgetState]);
 
   useEffect(() => { if (toolOutput) handleData(toolOutput); }, [toolOutput, handleData]);
   useEffect(() => { if (theme) document.documentElement.classList.toggle('dark', theme === 'dark'); }, [theme]);
@@ -592,36 +739,44 @@ export default function App() {
 
   return (
     <div
-      className={clsx('w-full bg-gray-50 dark:bg-gray-950', isFullscreen && 'min-h-screen')}
-      style={{ maxHeight: isFullscreen ? maxHeight : undefined, height: isFullscreen ? maxHeight : undefined }}
+      className={clsx(
+        'w-full bg-gray-50 dark:bg-gray-950 flex flex-col',
+        isFullscreen && 'fixed inset-0 z-40'
+      )}
+      style={{
+        height: isFullscreen ? '100%' : 'auto',
+        maxHeight: isFullscreen ? '100%' : undefined
+      }}
     >
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/60 dark:border-gray-800">
-        <div className="px-6 py-5">
-          <div className="flex items-center justify-between mb-3">
+      <header className="sticky top-0 z-20 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-b border-gray-200/60 dark:border-gray-800 flex-shrink-0">
+        <div className="px-4 sm:px-6 py-4">
+          {/* Top row */}
+          <div className="flex items-center justify-between gap-3 mb-3">
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2 mb-0.5">
                 <Building2 className="w-4 h-4 text-gray-400" aria-hidden="true" />
                 <span className="text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
                   Jobbsökning
                 </span>
               </div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 truncate tracking-tight">
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 truncate tracking-tight">
                 {query || 'Lediga tjänster'}
               </h1>
             </div>
-            {!isFullscreen && (
-              <button
-                onClick={() => toggleFullscreen(true)}
-                className="flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-              >
-                Se alla
-              </button>
-            )}
+
+            {/* Fullscreen toggle */}
+            <button
+              onClick={() => toggleFullscreen()}
+              aria-label={isFullscreen ? 'Minimera' : 'Fullskärm'}
+              className="flex-shrink-0 h-10 w-10 rounded-xl flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+            </button>
           </div>
 
-          {/* Stats */}
-          <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+          {/* Stats row */}
+          <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 mb-4">
             {location && (
               <span className="flex items-center gap-1.5">
                 <MapPin className="w-4 h-4" aria-hidden="true" />
@@ -633,84 +788,151 @@ export default function App() {
               {labels.jobs}
             </span>
           </div>
+
+          {/* Search bar (fullscreen only) */}
+          {isFullscreen && (
+            <div className="flex gap-2 mb-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  placeholder="Sök nytt jobb..."
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 border-0 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <button
+                onClick={handleSearch}
+                disabled={!searchInput.trim()}
+                className="px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                Sök
+              </button>
+            </div>
+          )}
+
+          {/* Tabs */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 -mb-1" role="tablist">
+            <TabButton
+              active={activeTab === 'all'}
+              onClick={() => { setActiveTab('all'); setWidgetState(s => ({ ...s, currentPage: 1 })); }}
+              icon={Search}
+            >
+              {labels.all}
+            </TabButton>
+            <TabButton
+              active={activeTab === 'saved'}
+              onClick={() => { setActiveTab('saved'); setWidgetState(s => ({ ...s, currentPage: 1 })); }}
+              icon={Bookmark}
+              count={savedCount}
+            >
+              Sparade
+            </TabButton>
+          </div>
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center gap-2 px-6 pb-4 overflow-x-auto" role="tablist" aria-label="Filter">
-          <FilterPill active={activeFilter === 'all'} onClick={() => { setActiveFilter('all'); setWidgetState(s => ({ ...s, currentPage: 1 })); }}>
-            {labels.all}
-          </FilterPill>
-          <FilterPill active={activeFilter === 'fulltime'} onClick={() => { setActiveFilter('fulltime'); setWidgetState(s => ({ ...s, currentPage: 1 })); }}>
-            {labels.fulltime}
-          </FilterPill>
-          <FilterPill active={activeFilter === 'parttime'} onClick={() => { setActiveFilter('parttime'); setWidgetState(s => ({ ...s, currentPage: 1 })); }}>
-            {labels.parttime}
-          </FilterPill>
+        {/* Filters row */}
+        <div className="flex items-center justify-between gap-2 px-4 sm:px-6 pb-3 overflow-x-auto">
+          <div className="flex items-center gap-2">
+            <FilterPill active={activeFilter === 'all'} onClick={() => setActiveFilter('all')}>
+              Alla typer
+            </FilterPill>
+            <FilterPill active={activeFilter === 'fulltime'} onClick={() => setActiveFilter('fulltime')}>
+              {labels.fulltime}
+            </FilterPill>
+            <FilterPill active={activeFilter === 'parttime'} onClick={() => setActiveFilter('parttime')}>
+              {labels.parttime}
+            </FilterPill>
+          </div>
+          <SortDropdown value={sortBy} onChange={setSortBy} />
         </div>
       </header>
 
       {/* Content */}
-      {isLoading ? (
-        <div className={clsx('grid gap-4 p-6', isFullscreen ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2')}>
-          {[...Array(6)].map((_, i) => <JobCardSkeleton key={i} />)}
-        </div>
-      ) : filteredJobs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-          <div className="w-14 h-14 mb-4 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-            <Search className="w-7 h-7 text-gray-400" aria-hidden="true" />
+      <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+        {isLoading ? (
+          <div className={clsx(
+            'grid gap-3 sm:gap-4 p-4 sm:p-6',
+            isFullscreen ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2'
+          )}>
+            {[...Array(8)].map((_, i) => <JobCardSkeleton key={i} />)}
           </div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">{labels.noJobs}</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">{labels.tryOther}</p>
-        </div>
-      ) : (
-        <>
-          <LayoutGroup id="jobs-grid">
-            <div
-              id="job-list"
-              role="tabpanel"
-              className={clsx('grid gap-4 p-6', isFullscreen ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2')}
-            >
-              <AnimatePresence mode="popLayout">
-                {pageJobs.map((job) => (
-                  <JobCard
-                    key={job.id}
-                    job={job}
-                    isSaved={widgetState.savedJobs.includes(job.id)}
-                    onSave={toggleSave}
-                    onClick={setSelectedJob}
-                    labels={labels}
-                  />
-                ))}
-              </AnimatePresence>
+        ) : displayJobs.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 sm:py-20 px-6 text-center">
+            <div className="w-14 h-14 mb-4 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+              {activeTab === 'saved' ? (
+                <Bookmark className="w-7 h-7 text-gray-400" aria-hidden="true" />
+              ) : (
+                <Search className="w-7 h-7 text-gray-400" aria-hidden="true" />
+              )}
             </div>
-          </LayoutGroup>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
+              {activeTab === 'saved' ? 'Inga sparade jobb' : labels.noJobs}
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
+              {activeTab === 'saved' ? 'Klicka på hjärtat för att spara jobb' : labels.tryOther}
+            </p>
+          </div>
+        ) : (
+          <>
+            <LayoutGroup id="jobs-grid">
+              <div
+                id="job-list"
+                role="tabpanel"
+                className={clsx(
+                  'grid gap-3 sm:gap-4 p-4 sm:p-6',
+                  isFullscreen ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2'
+                )}
+              >
+                <AnimatePresence mode="popLayout">
+                  {pageJobs.map((job) => (
+                    <JobCard
+                      key={job.id}
+                      job={job}
+                      isSaved={widgetState.savedJobs.includes(job.id)}
+                      onSave={toggleSave}
+                      onClick={setSelectedJob}
+                      onShare={shareJob}
+                      labels={labels}
+                      compact={isFullscreen && isMobile}
+                    />
+                  ))}
+                </AnimatePresence>
+              </div>
+            </LayoutGroup>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <nav className="flex items-center justify-center gap-3 py-6 border-t border-gray-200/60 dark:border-gray-800" aria-label="Pagination">
-              <button
-                disabled={currentPage === 1}
-                onClick={() => setWidgetState(s => ({ ...s, currentPage: s.currentPage - 1 }))}
-                aria-label="Föregående"
-                className="h-10 w-10 rounded-xl flex items-center justify-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-              >
-                <ChevronLeft className="w-5 h-5" aria-hidden="true" />
-              </button>
-              <span className="min-w-[80px] text-center text-sm font-medium text-gray-600 dark:text-gray-400 tabular-nums">
-                {currentPage} av {totalPages}
-              </span>
-              <button
-                disabled={currentPage === totalPages}
-                onClick={() => setWidgetState(s => ({ ...s, currentPage: s.currentPage + 1 }))}
-                aria-label="Nästa"
-                className="h-10 w-10 rounded-xl flex items-center justify-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-              >
-                <ChevronRight className="w-5 h-5" aria-hidden="true" />
-              </button>
-            </nav>
-          )}
-        </>
-      )}
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <nav className="flex items-center justify-center gap-3 py-6 border-t border-gray-200/60 dark:border-gray-800" aria-label="Pagination">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setWidgetState(s => ({ ...s, currentPage: s.currentPage - 1 }))}
+                  aria-label="Föregående"
+                  className="h-10 w-10 rounded-xl flex items-center justify-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                >
+                  <ChevronLeft className="w-5 h-5" aria-hidden="true" />
+                </button>
+                <span className="min-w-[80px] text-center text-sm font-medium text-gray-600 dark:text-gray-400 tabular-nums">
+                  {currentPage} / {totalPages}
+                </span>
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setWidgetState(s => ({ ...s, currentPage: s.currentPage + 1 }))}
+                  aria-label="Nästa"
+                  className="h-10 w-10 rounded-xl flex items-center justify-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                >
+                  <ChevronRight className="w-5 h-5" aria-hidden="true" />
+                </button>
+              </nav>
+            )}
+
+            {/* Bottom padding for mobile */}
+            <div className="h-20 sm:h-6" />
+          </>
+        )}
+      </div>
 
       {/* Modal */}
       <AnimatePresence>
@@ -722,6 +944,9 @@ export default function App() {
             salaryData={salaryData}
             salaryLoading={salaryLoading}
             onRequestSalary={requestSalary}
+            onShare={shareJob}
+            isSaved={widgetState.savedJobs.includes(selectedJob.id)}
+            onSave={toggleSave}
           />
         )}
       </AnimatePresence>
@@ -736,9 +961,11 @@ export default function App() {
             transition={springTransition}
             role="status"
             aria-live="polite"
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium shadow-xl z-50 flex items-center gap-2"
+            className="fixed bottom-24 sm:bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium shadow-xl z-50 flex items-center gap-2"
           >
-            <Heart className="w-4 h-4 text-rose-400" fill="currentColor" aria-hidden="true" />
+            {toast.icon === 'heart' && <Heart className="w-4 h-4 text-rose-400" fill="currentColor" aria-hidden="true" />}
+            {toast.icon === 'check' && <Check className="w-4 h-4 text-emerald-400" aria-hidden="true" />}
+            {toast.icon === 'share' && <Share2 className="w-4 h-4 text-blue-400" aria-hidden="true" />}
             {toast.message}
           </motion.div>
         )}
