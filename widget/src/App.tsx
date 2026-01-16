@@ -4,7 +4,8 @@ import clsx from 'clsx';
 import {
   MapPin, Clock, Heart, ExternalLink, X, Search, ChevronLeft, ChevronRight,
   Building2, Sparkles, TrendingUp, Maximize2, Minimize2, Share2, Bookmark,
-  ArrowUpDown, Calendar, Filter, Copy, Check, RefreshCw
+  ArrowUpDown, Calendar, Filter, Copy, Check, RefreshCw, Home, Car, Briefcase,
+  GraduationCap, Users, Wifi, Award, Zap
 } from 'lucide-react';
 import { useOpenAiGlobal, useWidgetState, useDisplayMode, useMaxHeight } from './hooks';
 import { translateJobs, translateLabels, translateBatch } from './utils/translate';
@@ -203,10 +204,52 @@ function JobCard({
           {job.title}
         </h3>
 
+        {/* Primary badges row */}
+        <div className="flex items-center gap-1.5 flex-wrap mb-2">
+          {/* Remote work - prominent green badge */}
+          {job.isRemote && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-800">
+              <Wifi className="w-3 h-3" aria-hidden="true" />
+              Distans
+            </span>
+          )}
+
+          {/* Entry level - no experience required */}
+          {job.experienceRequired === false && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 ring-1 ring-violet-200 dark:ring-violet-800">
+              <GraduationCap className="w-3 h-3" aria-hidden="true" />
+              Nybörjare OK
+            </span>
+          )}
+
+          {/* Multiple vacancies */}
+          {job.vacancies && job.vacancies > 1 && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800">
+              <Users className="w-3 h-3" aria-hidden="true" />
+              {job.vacancies} platser
+            </span>
+          )}
+
+          {/* Driving license required */}
+          {job.drivingLicenseRequired && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+              <Car className="w-3 h-3" aria-hidden="true" />
+              Körkort
+            </span>
+          )}
+        </div>
+
+        {/* Secondary info row */}
         <div className="flex items-center gap-2 flex-wrap">
-          {job.employmentType && (
+          {job.workingHours && (
             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-              {job.employmentType}
+              {job.workingHours}
+            </span>
+          )}
+          {job.duration && job.duration !== 'Tills vidare' && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400">
+              <Briefcase className="w-3 h-3" aria-hidden="true" />
+              {job.duration}
             </span>
           )}
           {job.deadline && (
@@ -216,6 +259,23 @@ function JobCard({
             </span>
           )}
         </div>
+
+        {/* Skills preview (only if available and not compact) */}
+        {!compact && job.mustHaveSkills && job.mustHaveSkills.length > 0 && (
+          <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+            <div className="flex items-center gap-1 flex-wrap">
+              <Zap className="w-3 h-3 text-gray-400 flex-shrink-0" aria-hidden="true" />
+              {job.mustHaveSkills.slice(0, 3).map((skill, i) => (
+                <span key={i} className="text-xs text-gray-500 dark:text-gray-400">
+                  {skill}{i < Math.min(job.mustHaveSkills!.length, 3) - 1 ? ',' : ''}
+                </span>
+              ))}
+              {job.mustHaveSkills.length > 3 && (
+                <span className="text-xs text-gray-400">+{job.mustHaveSkills.length - 3}</span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Footer */}
@@ -349,7 +409,8 @@ function JobDetailModal({
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 mt-4 pb-5 border-b border-gray-100 dark:border-gray-800">
+          {/* Primary badges */}
+          <div className="flex flex-wrap gap-2 mt-4">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-400">
               <MapPin className="w-4 h-4" aria-hidden="true" />
               {job.location || 'Sverige'}
@@ -360,9 +421,49 @@ function JobDetailModal({
                 <time>{job.deadline}</time>
               </span>
             )}
-            {job.employmentType && (
+            {job.workingHours && (
               <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-sm font-medium text-blue-700 dark:text-blue-300">
-                {job.employmentType}
+                {job.workingHours}
+              </span>
+            )}
+          </div>
+
+          {/* Feature badges */}
+          <div className="flex flex-wrap gap-2 mt-2 pb-5 border-b border-gray-100 dark:border-gray-800">
+            {job.isRemote && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-sm font-medium text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-800">
+                <Wifi className="w-4 h-4" aria-hidden="true" />
+                Distansarbete
+              </span>
+            )}
+            {job.experienceRequired === false && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-50 dark:bg-violet-900/30 text-sm font-medium text-violet-700 dark:text-violet-400 ring-1 ring-violet-200 dark:ring-violet-800">
+                <GraduationCap className="w-4 h-4" aria-hidden="true" />
+                Ingen erfarenhet krävs
+              </span>
+            )}
+            {job.vacancies && job.vacancies > 1 && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-sm font-medium text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800">
+                <Users className="w-4 h-4" aria-hidden="true" />
+                {job.vacancies} lediga platser
+              </span>
+            )}
+            {job.drivingLicenseRequired && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-400">
+                <Car className="w-4 h-4" aria-hidden="true" />
+                Körkort krävs
+              </span>
+            )}
+            {job.duration && job.duration !== 'Tills vidare' && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-50 dark:bg-orange-900/30 text-sm font-medium text-orange-700 dark:text-orange-400">
+                <Briefcase className="w-4 h-4" aria-hidden="true" />
+                {job.duration}
+              </span>
+            )}
+            {job.occupationField && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-400">
+                <Award className="w-4 h-4" aria-hidden="true" />
+                {job.occupationField}
               </span>
             )}
           </div>

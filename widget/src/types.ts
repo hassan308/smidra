@@ -5,17 +5,48 @@ export interface Job {
   title: string;
   employer: string;
   location: string;
+  city?: string;
   region?: string;
   lat?: number | null;
   lng?: number | null;
   deadline?: string;
+  deadlineRaw?: string;
   description?: string;
   fullDescription?: string;
   url: string;
   logoUrl?: string;
+
+  // Employment info
   employmentType?: string;
   salaryType?: string;
   workingHours?: string;
+  duration?: string;
+  scope?: string;
+
+  // Requirements badges
+  experienceRequired?: boolean | null;
+  drivingLicenseRequired?: boolean;
+  accessToOwnCar?: boolean;
+  isRemote?: boolean;
+
+  // Category
+  occupationField?: string;
+  occupation?: string;
+
+  // Vacancies
+  vacancies?: number;
+
+  // Publication
+  published?: string;
+
+  // Skills (from detailed fetch)
+  mustHaveSkills?: string[];
+  niceToHaveSkills?: string[];
+  mustHaveLanguages?: string[];
+
+  // URLs
+  employerUrl?: string;
+  applicationUrl?: string;
 }
 
 export interface SalaryData {

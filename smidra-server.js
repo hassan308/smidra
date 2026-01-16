@@ -224,7 +224,7 @@ async function getJobById(jobId) {
   }
 }
 
-function formatJob(job) {
+function formatJob(job, includeFullDetails = false) {
   // API returns coordinates as [longitude, latitude]
   const coords = job.workplace_address?.coordinates;
   let lat = null, lng = null;
@@ -233,23 +233,105 @@ function formatJob(job) {
     lat = coords[1];
   }
 
-  return {
+  // Detect remote work from description keywords
+  const descText = (job.description?.text || "").toLowerCase();
+  const isRemote = descText.includes("distans") ||
+                   descText.includes("remote") ||
+                   descText.includes("hemarbete") ||
+                   descText.includes("arbeta hemifrån") ||
+                   descText.includes("jobba hemifrån");
+
+  // Extract skills from must_have and nice_to_have
+  const mustHaveSkills = job.must_have?.skills?.map(s => s.label) || [];
+  const niceToHaveSkills = job.nice_to_have?.skills?.map(s => s.label) || [];
+  const mustHaveLanguages = job.must_have?.languages?.map(l => l.label) || [];
+
+  // Scope of work (e.g., 100%, 50%)
+  const scopeMin = job.scope_of_work?.min;
+  const scopeMax = job.scope_of_work?.max;
+  const scopeText = scopeMin && scopeMax
+    ? (scopeMin === scopeMax ? `${scopeMin}%` : `${scopeMin}-${scopeMax}%`)
+    : null;
+
+  const baseJob = {
     id: job.id,
     title: job.headline,
     employer: job.employer?.name || "Okänd arbetsgivare",
     location: job.workplace_address?.municipality || job.workplace_address?.region || "Sverige",
+    city: job.workplace_address?.city || "",
     region: job.workplace_address?.region || "",
     lat,
     lng,
     deadline: job.application_deadline ? new Date(job.application_deadline).toLocaleDateString("sv-SE") : "Löpande",
-    description: job.description?.text?.substring(0, 300) + "..." || "",
-    fullDescription: job.description?.text || "",
+    deadlineRaw: job.application_deadline,
     url: job.webpage_url,
     logoUrl: job.logo_url,
+
+    // Employment info
     employmentType: job.employment_type?.label || "",
     salaryType: job.salary_type?.label || "",
-    workingHours: job.working_hours_type?.label || ""
+    workingHours: job.working_hours_type?.label || "",
+    duration: job.duration?.label || "",
+    scope: scopeText,
+
+    // Requirements badges
+    experienceRequired: job.experience_required ?? null,
+    drivingLicenseRequired: job.driving_license_required ?? false,
+    accessToOwnCar: job.access_to_own_car ?? false,
+    isRemote: isRemote,
+
+    // Category
+    occupationField: job.occupation_field?.label || "",
+    occupation: job.occupation?.label || "",
+
+    // Vacancies
+    vacancies: job.number_of_vacancies || 1,
+
+    // Publication date
+    published: job.publication_date ? new Date(job.publication_date).toLocaleDateString("sv-SE") : ""
   };
+
+  // Add full details if requested (for first 8 jobs or detail view)
+  if (includeFullDetails) {
+    return {
+      ...baseJob,
+      description: job.description?.text?.substring(0, 300) + "..." || "",
+      fullDescription: job.description?.text || "",
+      mustHaveSkills,
+      niceToHaveSkills,
+      mustHaveLanguages,
+      employerUrl: job.employer?.url || "",
+      applicationUrl: job.application_details?.url || job.webpage_url
+    };
+  }
+
+  return baseJob;
+}
+
+// Fetch detailed info for multiple jobs in parallel
+async function enrichJobsParallel(jobs, count = 8) {
+  const jobsToEnrich = jobs.slice(0, count);
+  const remainingJobs = jobs.slice(count);
+
+  console.log(`⚡ Fetching details for first ${jobsToEnrich.length} jobs in parallel...`);
+  const startTime = Date.now();
+
+  const detailPromises = jobsToEnrich.map(job =>
+    getJobById(job.id).then(detail => {
+      if (detail) {
+        return formatJob(detail, true);
+      }
+      return formatJob(job, false);
+    }).catch(() => formatJob(job, false))
+  );
+
+  const enrichedJobs = await Promise.all(detailPromises);
+  const formattedRemaining = remainingJobs.map(job => formatJob(job, false));
+
+  const elapsed = Date.now() - startTime;
+  console.log(`⚡ Parallel enrichment complete in ${elapsed}ms`);
+
+  return [...enrichedJobs, ...formattedRemaining];
 }
 
 // Load widget HTML
@@ -449,24 +531,12 @@ Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), l
     // Search for jobs with filters
     const effectiveLimit = Math.min(limit || 10, 50);
     const data = await searchJobs(query, location, effectiveLimit, filters);
-
-    // Format jobs for widget
-    const jobs = data.hits.map(job => {
-      const formatted = formatJob(job);
-      return {
-        id: formatted.id,
-        title: formatted.title,
-        employer: formatted.employer,
-        location: formatted.location,
-        region: formatted.region,
-        deadline: formatted.deadline,
-        url: formatted.url,
-        logoUrl: formatted.logoUrl,
-        lat: formatted.lat,
-        lng: formatted.lng
-      };
-    });
     const total = data.total?.value || 0;
+
+    // Enrich first 8 jobs with detailed info in parallel
+    // This fetches full descriptions, skills, etc. for the visible jobs
+    const jobs = await enrichJobsParallel(data.hits, 8);
+    console.log(`📦 Enriched ${Math.min(jobs.length, 8)} jobs with full details`);
 
     // SPECIAL CASE: noExperience - only remove jobs with "senior" in title
     if (noExperience) {
