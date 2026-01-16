@@ -314,6 +314,30 @@ function formatJob(job, includeFullDetails = false) {
     // Flag jobs that need AI verification (experienceRequired: false)
     const needsAIVerification = job.experience_required === false;
 
+    // Extract only relevant snippets around "erfarenhet" keywords
+    let verificationSnippets = undefined;
+    if (needsAIVerification && job.description?.text) {
+      const text = job.description.text;
+      const keywords = ['erfarenhet', 'erfarenheter', 'erfaren', 'experience', 'års arbete'];
+      const snippets = [];
+
+      for (const keyword of keywords) {
+        const regex = new RegExp(keyword, 'gi');
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+          const start = Math.max(0, match.index - 200);
+          const end = Math.min(text.length, match.index + keyword.length + 200);
+          const snippet = text.substring(start, end);
+          snippets.push(`...${snippet}...`);
+        }
+      }
+
+      if (snippets.length > 0) {
+        // Remove duplicates and join
+        verificationSnippets = [...new Set(snippets)].slice(0, 3).join('\n---\n');
+      }
+    }
+
     return {
       ...baseJob,
       description: job.description?.text?.substring(0, 300) + "..." || "",
@@ -323,9 +347,9 @@ function formatJob(job, includeFullDetails = false) {
       mustHaveLanguages,
       employerUrl: job.employer?.url || "",
       applicationUrl: job.application_details?.url || job.webpage_url,
-      // AI verification - ChatGPT should verify this badge
-      needsVerification: needsAIVerification,
-      verificationContext: needsAIVerification ? job.description?.text?.substring(0, 1000) : undefined
+      // AI verification - only if "erfarenhet" found in text
+      needsVerification: needsAIVerification && !!verificationSnippets,
+      verificationSnippets: verificationSnippets
     };
   }
 
@@ -503,25 +527,23 @@ server.registerTool(
   "search_jobs",
   {
     title: "Search Jobs (Smidra MCP)",
-    description: `Sök jobb i Sverige. Visar interaktiv jobbwidget.
+    description: `Sök jobb i Sverige. Visar interaktiv jobbwidget DIREKT.
 
-VIKTIGT - TVÅ MÖJLIGA FLÖDEN:
+FLÖDE:
+1. Widget visas OMEDELBART med alla jobb
+2. Om _verifyBadges finns i svaret → anropa verify_job_badges för varje jobb
+3. SKRIV ALDRIG TEXT - widget visar allt
 
-1. Om INGA jobb behöver verifieras → Widget visas direkt. Skriv ingen text.
-
-2. Om NÅGRA jobb har "needsVerification: true" → Du får instruktioner att:
-   - Läsa jobbeskrivningar
-   - Verifiera om erfarenhet verkligen krävs
-   - Anropa display_jobs med korrigerade badges
-   - SKRIV INGEN TEXT - anropa bara display_jobs
+BADGE VERIFIERING:
+Om svaret innehåller _verifyBadges:
+- Läs snippets för varje jobb
+- Om "X års erfarenhet" eller liknande → experienceRequired: true (badge döljs)
+- Om inget erfarenhetskrav nämns → experienceRequired: false (badge visas)
+- Anropa verify_job_badges med widgetSessionId och jobId
 
 Widget auto-translates to user's language via Google Translate.
 
-PARAMETERS:
-- query: Search term IN SWEDISH (utvecklare, kock, sjuksköterska)
-- language: User's language code (ar, so, en, sv)
-
-Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), lärare (teacher), städare (cleaner), chaufför (driver)`,
+Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), lärare (teacher)`,
     inputSchema: {
       query: z.string().describe("Search query IN SWEDISH"),
       location: z.string().optional().describe("City/region in Sweden"),
@@ -571,49 +593,16 @@ Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), l
     const lang = (language || 'sv').toLowerCase();
     const dir = direction || (lang === 'ar' || lang === 'he' || lang === 'fa' || lang === 'ur' ? 'rtl' : 'ltr');
 
-    // Check if any jobs need AI verification (experienceRequired: false)
+    // Check if any jobs need AI verification
     const jobsNeedingVerification = jobs.filter(j => j.needsVerification === true);
 
-    if (jobsNeedingVerification.length > 0) {
-      console.log(`🤖 AI verification needed for ${jobsNeedingVerification.length} jobs`);
+    // Generate unique widget session ID for SSE updates
+    const widgetSessionId = `ws_${Date.now().toString(36)}${Math.random().toString(36).substr(2, 5)}`;
 
-      // Return data for ChatGPT to verify, then call display_jobs
-      return {
-        content: [{
-          type: "text",
-          text: `VERIFY_BADGES_THEN_DISPLAY
+    console.log(`📤 Found ${jobs.length} jobs (${jobsNeedingVerification.length} need verification)`);
 
-${jobsNeedingVerification.length} jobb har "Nybörjare OK" badge som behöver verifieras.
-
-INSTRUKTION:
-1. Läs verificationContext för varje jobb med needsVerification: true
-2. Om beskrivningen nämner erfarenhetskrav (t.ex. "3 års erfarenhet", "erfaren", "senior") → sätt experienceRequired: null
-3. Om beskrivningen INTE nämner erfarenhetskrav → behåll experienceRequired: false
-4. Anropa display_jobs med alla jobb (korrigerade badges)
-5. SKRIV INGEN TEXT - anropa bara display_jobs
-
-JOBB ATT VERIFIERA:
-${jobsNeedingVerification.map(j => `- ${j.id}: "${j.title}" - Kontext: "${j.verificationContext?.substring(0, 200)}..."`).join('\n')}
-
-SÖKPARAMETRAR:
-{
-  "language": "${lang}",
-  "direction": "${dir}",
-  "query": "${query}",
-  "location": "${location || 'Sverige'}",
-  "total": ${total}
-}
-
-ALLA JOBB (skicka till display_jobs efter verifiering):
-${JSON.stringify(jobs, null, 2)}`
-        }]
-      };
-    }
-
-    // No verification needed - show widget directly
-    console.log(`📤 Found ${jobs.length} jobs - showing widget directly`);
-
-    return {
+    // Always show widget immediately
+    const response = {
       structuredContent: {
         _rule: "VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS.",
         language: lang,
@@ -624,9 +613,31 @@ ${JSON.stringify(jobs, null, 2)}`
         locationSwedish: location || 'Sverige',
         total,
         jobs,
-        translateMode: lang !== 'sv'
+        translateMode: lang !== 'sv',
+        widgetSessionId: widgetSessionId,
+        // Tell widget which jobs are being verified (show spinner on badge)
+        jobsBeingVerified: jobsNeedingVerification.map(j => j.id)
       }
     };
+
+    // If jobs need verification, add instruction for ChatGPT to verify via SSE
+    if (jobsNeedingVerification.length > 0) {
+      console.log(`🤖 Adding verification instructions for ${jobsNeedingVerification.length} jobs`);
+
+      const verificationData = jobsNeedingVerification.map(j => ({
+        id: j.id,
+        title: j.title,
+        snippets: j.verificationSnippets
+      }));
+
+      response.structuredContent._verifyBadges = {
+        instruction: "EFTER widget visas: Verifiera dessa jobb via SSE. Anropa verify_job_badges för varje jobb.",
+        widgetSessionId: widgetSessionId,
+        jobs: verificationData
+      };
+    }
+
+    return response;
   }
 );
 
@@ -945,19 +956,19 @@ server.registerTool(
   "verify_job_badges",
   {
     title: "Verify Job Badges",
-    description: `Verify and update job badges after reading the job description.
+    description: `Uppdatera badge för ett jobb i widgeten via SSE.
 
-WHEN TO USE:
-When you see jobs with "needsVerification: true" in the job list, you should:
-1. Read the job's verificationContext (description snippet)
-2. Check if the badge "experienceRequired: false" is accurate
-3. If the description mentions experience requirements (e.g., "2 years experience", "erfarenhet krävs"),
-   call this tool to correct the badge
+NÄR DU SER _verifyBadges i search_jobs svar:
+1. Läs "snippets" för varje jobb (text runt "erfarenhet")
+2. Om snippets nämner erfarenhetskrav → experienceRequired: true (dölj badge)
+3. Om INGET erfarenhetskrav nämns → experienceRequired: false (behåll badge)
+4. Anropa detta verktyg för VARJE jobb
 
-Example: If a job has experienceRequired: false but description says "Vi söker dig med minst 2 års erfarenhet",
-call this tool with experienceRequired: true to correct the badge.
+EXEMPEL:
+- "minst 3 års erfarenhet" → experienceRequired: true
+- "Vi välkomnar nyutexaminerade" → experienceRequired: false
 
-This updates the badge in the widget via SSE - user sees the corrected badge.`,
+Widgeten visar spinner tills du anropar detta verktyg.`,
     inputSchema: {
       widgetSessionId: z.string().describe("Session ID from the widget"),
       jobId: z.string().describe("ID of the job to update"),

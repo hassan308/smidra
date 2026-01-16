@@ -122,7 +122,8 @@ function JobCard({
   onClick,
   onShare,
   labels,
-  compact = false
+  compact = false,
+  isBeingVerified = false
 }: {
   job: Job;
   isSaved: boolean;
@@ -131,6 +132,7 @@ function JobCard({
   onShare: (job: Job) => void;
   labels: Labels;
   compact?: boolean;
+  isBeingVerified?: boolean;
 }) {
   return (
     <motion.article
@@ -214,10 +216,14 @@ function JobCard({
             </span>
           )}
 
-          {/* Entry level - no experience required */}
+          {/* Entry level - no experience required (with verification spinner) */}
           {job.experienceRequired === false && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 ring-1 ring-violet-200 dark:ring-violet-800">
-              <GraduationCap className="w-3 h-3" aria-hidden="true" />
+              {isBeingVerified ? (
+                <div className="w-3 h-3 border-2 border-violet-300 border-t-violet-600 rounded-full animate-spin" aria-label="Verifierar..." />
+              ) : (
+                <GraduationCap className="w-3 h-3" aria-hidden="true" />
+              )}
               Nybörjare OK
             </span>
           )}
@@ -644,6 +650,7 @@ export default function App() {
   const [sortBy, setSortBy] = useState('newest');
   const [isLoading, setIsLoading] = useState(false);
   const [searchInput, setSearchInput] = useState('');
+  const [jobsBeingVerified, setJobsBeingVerified] = useState<string[]>([]);
 
   const widgetSessionId = useRef('ws_' + Math.random().toString(36).substr(2, 9));
   const langRef = useRef('sv');
@@ -761,6 +768,7 @@ export default function App() {
         // Handle badge verification updates from ChatGPT
         if (data.type === 'badge_update' && data.jobId && data.badges) {
           console.log('🔍 Badge update received:', data.jobId, data.badges);
+          // Update job badge
           setJobs(prevJobs => prevJobs.map(job => {
             if (job.id === data.jobId) {
               return {
@@ -772,6 +780,8 @@ export default function App() {
             }
             return job;
           }));
+          // Remove from "being verified" list (stop spinner)
+          setJobsBeingVerified(prev => prev.filter(id => id !== data.jobId));
         }
       } catch {}
     };
@@ -812,6 +822,16 @@ export default function App() {
     setActiveTab('all');
     setWidgetState(s => ({ ...s, currentPage: 1 }));
     setIsLoading(false);
+
+    // Track jobs being verified (show spinner on badge)
+    if (data.jobsBeingVerified?.length) {
+      setJobsBeingVerified(data.jobsBeingVerified);
+    }
+
+    // Use server-provided session ID if available
+    if (data.widgetSessionId) {
+      widgetSessionId.current = data.widgetSessionId;
+    }
 
     if (!hasTriggeredFullscreen.current && data.jobs?.length > 0) {
       hasTriggeredFullscreen.current = true;
@@ -1013,6 +1033,7 @@ export default function App() {
                       onShare={shareJob}
                       labels={labels}
                       compact={isFullscreen && isMobile}
+                      isBeingVerified={jobsBeingVerified.includes(job.id)}
                     />
                   ))}
                 </AnimatePresence>

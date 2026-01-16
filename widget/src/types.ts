@@ -50,7 +50,7 @@ export interface Job {
 
   // AI verification (ChatGPT verifies these badges)
   needsVerification?: boolean;
-  verificationContext?: string;
+  verificationSnippets?: string;
 }
 
 export interface SalaryData {
@@ -76,6 +76,10 @@ export interface ToolOutput {
   jobs?: Job[];
   translateMode?: boolean;
   labels?: Labels;
+  // SSE session for real-time updates
+  widgetSessionId?: string;
+  // Jobs currently being verified (show spinner on badge)
+  jobsBeingVerified?: string[];
 }
 
 export interface Labels {
