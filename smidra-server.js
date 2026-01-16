@@ -246,36 +246,6 @@ function detectRemote(job) {
   return hasPositive && !hasNegative;
 }
 
-// Smart verification: Check if job description ACTUALLY requires experience
-// Returns true if badge "Nybörjare OK" should be HIDDEN (because experience IS required)
-function shouldHideNoExperienceBadge(job) {
-  const desc = (job.description?.text || "").toLowerCase();
-  const title = (job.headline || "").toLowerCase();
-  const text = desc + " " + title;
-
-  // Patterns that indicate experience IS required
-  const requiresExp = [
-    /\d+\s*års?\s*erfarenhet/,           // "5 års erfarenhet"
-    /minst\s*\d+\s*års?\s*erfarenhet/,   // "minst 3 års erfarenhet"
-    /erfarenhet\s*(krävs|behövs|önskas)/,// "erfarenhet krävs"
-    /erfaren\s+\w+/,                      // "erfaren utvecklare"
-    /senior/,                             // "senior"
-    /flerårig\s*erfarenhet/,             // "flerårig erfarenhet"
-    /gedigen\s*erfarenhet/,              // "gedigen erfarenhet"
-    /djup\s*(kompetens|erfarenhet)/,     // "djup kompetens"
-    /dokumenterad\s*erfarenhet/,         // "dokumenterad erfarenhet"
-    /years?\s*(of\s*)?experience/,       // "years of experience"
-    /experienced\s+\w+/,                 // "experienced developer"
-  ];
-
-  const needsExperience = requiresExp.some(p => p.test(text));
-
-  if (needsExperience) {
-    console.log(`🔍 Badge hidden: "${job.headline}" - description requires experience`);
-  }
-
-  return needsExperience;
-}
 
 function formatJob(job, includeFullDetails = false) {
   // API returns coordinates as [longitude, latitude]
@@ -301,17 +271,6 @@ function formatJob(job, includeFullDetails = false) {
     ? (scopeMin === scopeMax ? `${scopeMin}%` : `${scopeMin}-${scopeMax}%`)
     : null;
 
-  // SMART BADGE VERIFICATION:
-  // If API says "no experience required" but description mentions experience,
-  // hide the "Nybörjare OK" badge (set to null instead of false)
-  let verifiedExperienceRequired = job.experience_required ?? null;
-  if (job.experience_required === false && includeFullDetails) {
-    // API says no experience needed - verify against description
-    if (shouldHideNoExperienceBadge(job)) {
-      verifiedExperienceRequired = null; // Hide the badge - description requires experience
-    }
-  }
-
   const baseJob = {
     id: job.id,
     title: job.headline,
@@ -333,8 +292,8 @@ function formatJob(job, includeFullDetails = false) {
     duration: job.duration?.label || "",
     scope: scopeText,
 
-    // Requirements badges - VERIFIED against description
-    experienceRequired: verifiedExperienceRequired,
+    // Requirements badges
+    experienceRequired: job.experience_required ?? null,
     drivingLicenseRequired: job.driving_license_required ?? false,
     accessToOwnCar: job.access_to_own_car ?? false,
     isRemote: isRemote,
@@ -352,6 +311,9 @@ function formatJob(job, includeFullDetails = false) {
 
   // Add full details if requested (for first 8 jobs or detail view)
   if (includeFullDetails) {
+    // Flag jobs that need AI verification (experienceRequired: false)
+    const needsAIVerification = job.experience_required === false;
+
     return {
       ...baseJob,
       description: job.description?.text?.substring(0, 300) + "..." || "",
@@ -360,7 +322,10 @@ function formatJob(job, includeFullDetails = false) {
       niceToHaveSkills,
       mustHaveLanguages,
       employerUrl: job.employer?.url || "",
-      applicationUrl: job.application_details?.url || job.webpage_url
+      applicationUrl: job.application_details?.url || job.webpage_url,
+      // AI verification - ChatGPT should verify this badge
+      needsVerification: needsAIVerification,
+      verificationContext: needsAIVerification ? job.description?.text?.substring(0, 1000) : undefined
     };
   }
 
@@ -540,7 +505,15 @@ server.registerTool(
     title: "Search Jobs (Smidra MCP)",
     description: `Sök jobb i Sverige. Visar interaktiv jobbwidget.
 
-⚠️ AFTER CALLING: Do NOT write any text. Widget shows everything.
+VIKTIGT - TVÅ MÖJLIGA FLÖDEN:
+
+1. Om INGA jobb behöver verifieras → Widget visas direkt. Skriv ingen text.
+
+2. Om NÅGRA jobb har "needsVerification: true" → Du får instruktioner att:
+   - Läsa jobbeskrivningar
+   - Verifiera om erfarenhet verkligen krävs
+   - Anropa display_jobs med korrigerade badges
+   - SKRIV INGEN TEXT - anropa bara display_jobs
 
 Widget auto-translates to user's language via Google Translate.
 
@@ -564,15 +537,14 @@ Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), l
       drivingLicense: z.boolean().optional().describe("Only jobs that require driving license"),
       trainee: z.boolean().optional().describe("Only trainee/praktik positions"),
       abroad: z.boolean().optional().describe("Only jobs abroad/utomlands"),
-      jobLanguage: z.string().optional().describe("Job language requirement (e.g., 'sv', 'en', 'ar')"),
-      noExperience: z.boolean().optional().describe("Only use when user asks for jobs without experience. When true, filter out jobs with 'senior' in title, then call display_jobs")
+      jobLanguage: z.string().optional().describe("Job language requirement (e.g., 'sv', 'en', 'ar')")
     },
     _meta: {
       "openai/outputTemplate": "ui://widget/job-list.html",
       "openai/widgetDescription": "Visar en interaktiv lista med lediga jobb. Användaren kan filtrera, se karta, spara favoriter och klicka för detaljer. Ingen ytterligare text behövs."
     }
   },
-  async ({ query, location, limit, language, direction, loadingText, waitingText, remote, fulltime, parttime, drivingLicense, trainee, abroad, jobLanguage, noExperience }) => {
+  async ({ query, location, limit, language, direction, loadingText, waitingText, remote, fulltime, parttime, drivingLicense, trainee, abroad, jobLanguage }) => {
     // Build filters object
     const filters = {};
     if (remote) filters.remote = true;
@@ -582,7 +554,6 @@ Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), l
     if (trainee) filters.trainee = true;
     if (abroad) filters.abroad = true;
     if (jobLanguage) filters.language = jobLanguage;
-    if (noExperience) filters.noExperience = true;
 
     const activeFilters = Object.keys(filters).length > 0 ? ` [filters: ${Object.keys(filters).join(', ')}]` : '';
     console.log(`🔧 search_jobs called: "${query}" in ${location || 'Sweden'} (${language})${activeFilters}`);
@@ -597,46 +568,49 @@ Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), l
     const jobs = await enrichJobsParallel(data.hits, 8);
     console.log(`📦 Enriched ${Math.min(jobs.length, 8)} jobs with full details`);
 
-    // SPECIAL CASE: noExperience - only remove jobs with "senior" in title
-    if (noExperience) {
-      console.log(`🔍 noExperience mode: returning ${jobs.length} jobs for ChatGPT to filter "senior" titles`);
+    const lang = (language || 'sv').toLowerCase();
+    const dir = direction || (lang === 'ar' || lang === 'he' || lang === 'fa' || lang === 'ur' ? 'rtl' : 'ltr');
 
-      const response = {
-        status: "NEEDS_VERIFICATION",
-        message: "Filter out jobs with 'senior' in the title, then show results.",
-        filterRule: "ONLY remove jobs where title contains 'senior' (case-insensitive)",
-        searchParams: {
-          query,
-          location: location || 'Sverige',
-          language: language || 'sv',
-          direction: direction || 'ltr',
-          loadingText: loadingText || 'Söker jobb...',
-          translatingText: translatingText || 'Översätter...'
-        },
-        total,
-        jobs,
-        nextAction: {
-          required: true,
-          tool: "display_jobs"
-        }
-      };
+    // Check if any jobs need AI verification (experienceRequired: false)
+    const jobsNeedingVerification = jobs.filter(j => j.needsVerification === true);
 
+    if (jobsNeedingVerification.length > 0) {
+      console.log(`🤖 AI verification needed for ${jobsNeedingVerification.length} jobs`);
+
+      // Return data for ChatGPT to verify, then call display_jobs
       return {
         content: [{
           type: "text",
-          text: `${JSON.stringify(response, null, 2)}
+          text: `VERIFY_BADGES_THEN_DISPLAY
 
-⚠️ SIMPLE FILTER:
-Remove jobs where title contains "senior" (case-insensitive).
-Keep ALL other jobs.
-Then call display_jobs with the filtered list.`
+${jobsNeedingVerification.length} jobb har "Nybörjare OK" badge som behöver verifieras.
+
+INSTRUKTION:
+1. Läs verificationContext för varje jobb med needsVerification: true
+2. Om beskrivningen nämner erfarenhetskrav (t.ex. "3 års erfarenhet", "erfaren", "senior") → sätt experienceRequired: null
+3. Om beskrivningen INTE nämner erfarenhetskrav → behåll experienceRequired: false
+4. Anropa display_jobs med alla jobb (korrigerade badges)
+5. SKRIV INGEN TEXT - anropa bara display_jobs
+
+JOBB ATT VERIFIERA:
+${jobsNeedingVerification.map(j => `- ${j.id}: "${j.title}" - Kontext: "${j.verificationContext?.substring(0, 200)}..."`).join('\n')}
+
+SÖKPARAMETRAR:
+{
+  "language": "${lang}",
+  "direction": "${dir}",
+  "query": "${query}",
+  "location": "${location || 'Sverige'}",
+  "total": ${total}
+}
+
+ALLA JOBB (skicka till display_jobs efter verifiering):
+${JSON.stringify(jobs, null, 2)}`
         }]
       };
     }
 
-    const lang = (language || 'sv').toLowerCase();
-    const dir = direction || (lang === 'ar' || lang === 'he' || lang === 'fa' || lang === 'ur' ? 'rtl' : 'ltr');
-
+    // No verification needed - show widget directly
     console.log(`📤 Found ${jobs.length} jobs - showing widget directly`);
 
     return {

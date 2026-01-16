@@ -47,6 +47,10 @@ export interface Job {
   // URLs
   employerUrl?: string;
   applicationUrl?: string;
+
+  // AI verification (ChatGPT verifies these badges)
+  needsVerification?: boolean;
+  verificationContext?: string;
 }
 
 export interface SalaryData {
