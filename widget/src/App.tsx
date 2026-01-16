@@ -676,6 +676,8 @@ export default function App() {
   const [hasReceivedData, setHasReceivedData] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'saved'>('all');
   const [activeFilter, setActiveFilter] = useState<'all' | 'fulltime' | 'parttime'>('all');
+  const [showNoExperience, setShowNoExperience] = useState(false);
+  const [showRemote, setShowRemote] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
   const [isLoading, setIsLoading] = useState(false);
   const [searchInput, setSearchInput] = useState('');
@@ -686,11 +688,27 @@ export default function App() {
   const hasTriggeredFullscreen = useRef(false);
   const lastToolOutputRef = useRef<string>('');
 
+  // Count jobs for filter badges
+  const noExperienceCount = useMemo(() =>
+    jobs.filter(j => j.experienceRequired === false).length, [jobs]);
+  const remoteCount = useMemo(() =>
+    jobs.filter(j => j.isRemote === true).length, [jobs]);
+
   // Filter and sort jobs
   const displayJobs = useMemo(() => {
     let filtered = activeTab === 'saved'
       ? jobs.filter(j => widgetState.savedJobs.includes(j.id))
       : jobs;
+
+    // Apply "no experience" filter
+    if (showNoExperience) {
+      filtered = filtered.filter(j => j.experienceRequired === false);
+    }
+
+    // Apply "remote" filter
+    if (showRemote) {
+      filtered = filtered.filter(j => j.isRemote === true);
+    }
 
     // Apply type filter
     if (activeFilter !== 'all') {
@@ -713,7 +731,7 @@ export default function App() {
     });
 
     return sorted;
-  }, [jobs, activeTab, activeFilter, sortBy, widgetState.savedJobs]);
+  }, [jobs, activeTab, activeFilter, sortBy, widgetState.savedJobs, showNoExperience, showRemote]);
 
   const totalPages = Math.ceil(displayJobs.length / jobsPerPage);
   const currentPage = Math.min(widgetState.currentPage, totalPages || 1);
@@ -780,6 +798,40 @@ export default function App() {
   }, []);
 
   const closeModal = useCallback(() => { setSelectedJob(null); setSalaryData(null); setSalaryLoading(false); }, []);
+
+  // Trigger verification for jobs on a new page
+  const triggerPageVerification = useCallback((newPageJobs: Job[]) => {
+    // Find jobs that need verification (experienceRequired is false but needs AI confirmation)
+    const jobsToVerify = newPageJobs.filter(j =>
+      j.experienceRequired === false && j.verificationSnippets
+    );
+
+    if (jobsToVerify.length === 0) return;
+
+    // Set these jobs as "being verified"
+    setJobsBeingVerified(jobsToVerify.map(j => j.id));
+
+    // Build verification request for ChatGPT
+    const verificationPrompt = jobsToVerify.map(j =>
+      `Jobb: "${j.title}" (ID: ${j.id})\nSnippets: ${j.verificationSnippets?.substring(0, 200) || 'N/A'}`
+    ).join('\n\n');
+
+    const msg = `Verifiera erfarenhetskrav för dessa jobb:
+
+${verificationPrompt}
+
+För varje jobb, anropa verify_job_badges med:
+- widgetSessionId: "${widgetSessionId.current}"
+- jobId: [jobb-ID]
+- badges: { experienceRequired: true/false }
+
+Om snippets nämner "X års erfarenhet", "senior", "erfaren" → experienceRequired: true
+Om INGET erfarenhetskrav nämns → experienceRequired: false
+
+[Använd verify_job_badges från Smidra MCP. Skriv ingen text.]`;
+
+    window.openai?.sendFollowUpMessage?.({ prompt: msg });
+  }, []);
 
   // SSE for salary and badge updates - reconnect when session changes
   const [sseSessionId, setSseSessionId] = useState<string>(widgetSessionId.current);
@@ -1015,7 +1067,54 @@ export default function App() {
           </div>
         </div>
 
-        {/* Filters row */}
+        {/* Special filters row - No experience & Remote */}
+        <div className="flex items-center gap-2 px-4 sm:px-6 pb-2 overflow-x-auto">
+          <button
+            onClick={() => { setShowNoExperience(!showNoExperience); setWidgetState(s => ({ ...s, currentPage: 1 })); }}
+            className={clsx(
+              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500',
+              showNoExperience
+                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
+                : 'bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 ring-1 ring-emerald-200 hover:ring-emerald-300 hover:shadow-md'
+            )}
+          >
+            <GraduationCap className="w-3.5 h-3.5" />
+            Inga krav på erfarenhet
+            {noExperienceCount > 0 && (
+              <span className={clsx(
+                'ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold',
+                showNoExperience ? 'bg-white/20' : 'bg-emerald-100 text-emerald-600'
+              )}>
+                {noExperienceCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => { setShowRemote(!showRemote); setWidgetState(s => ({ ...s, currentPage: 1 })); }}
+            className={clsx(
+              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+              showRemote
+                ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+                : 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 ring-1 ring-blue-200 hover:ring-blue-300 hover:shadow-md'
+            )}
+          >
+            <Wifi className="w-3.5 h-3.5" />
+            Distansjobb
+            {remoteCount > 0 && (
+              <span className={clsx(
+                'ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold',
+                showRemote ? 'bg-white/20' : 'bg-blue-100 text-blue-600'
+              )}>
+                {remoteCount}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Work type filters row */}
         <div className="flex items-center justify-between gap-2 px-4 sm:px-6 pb-3 overflow-x-auto">
           <div className="flex items-center gap-2">
             <FilterPill active={activeFilter === 'all'} onClick={() => setActiveFilter('all')}>
@@ -1091,23 +1190,33 @@ export default function App() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <nav className="flex items-center justify-center gap-3 py-6 border-t border-gray-200/60 dark:border-gray-800" aria-label="Pagination">
+              <nav className="flex items-center justify-center gap-3 py-6 border-t border-gray-200/60" aria-label="Pagination">
                 <button
                   disabled={currentPage === 1}
-                  onClick={() => { setJobsBeingVerified([]); setWidgetState(s => ({ ...s, currentPage: s.currentPage - 1 })); }}
+                  onClick={() => {
+                    const newPage = currentPage - 1;
+                    const newPageJobs = displayJobs.slice((newPage - 1) * jobsPerPage, newPage * jobsPerPage);
+                    setWidgetState(s => ({ ...s, currentPage: newPage }));
+                    triggerPageVerification(newPageJobs);
+                  }}
                   aria-label="Föregående"
-                  className="h-10 w-10 rounded-xl flex items-center justify-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  className="h-10 w-10 rounded-xl flex items-center justify-center bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 >
                   <ChevronLeft className="w-5 h-5" aria-hidden="true" />
                 </button>
-                <span className="min-w-[80px] text-center text-sm font-medium text-gray-600 dark:text-gray-400 tabular-nums">
+                <span className="min-w-[80px] text-center text-sm font-medium text-gray-600 tabular-nums">
                   {currentPage} / {totalPages}
                 </span>
                 <button
                   disabled={currentPage === totalPages}
-                  onClick={() => { setJobsBeingVerified([]); setWidgetState(s => ({ ...s, currentPage: s.currentPage + 1 })); }}
+                  onClick={() => {
+                    const newPage = currentPage + 1;
+                    const newPageJobs = displayJobs.slice((newPage - 1) * jobsPerPage, newPage * jobsPerPage);
+                    setWidgetState(s => ({ ...s, currentPage: newPage }));
+                    triggerPageVerification(newPageJobs);
+                  }}
                   aria-label="Nästa"
-                  className="h-10 w-10 rounded-xl flex items-center justify-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  className="h-10 w-10 rounded-xl flex items-center justify-center bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 >
                   <ChevronRight className="w-5 h-5" aria-hidden="true" />
                 </button>
