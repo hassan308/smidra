@@ -752,9 +752,12 @@ export default function App() {
 
   const closeModal = useCallback(() => { setSelectedJob(null); setSalaryData(null); setSalaryLoading(false); }, []);
 
-  // SSE for salary and badge updates
+  // SSE for salary and badge updates - reconnect when session changes
+  const [sseSessionId, setSseSessionId] = useState<string>(widgetSessionId.current);
+
   useEffect(() => {
-    const es = new EventSource(`https://api.smidra.se/events?session=${widgetSessionId.current}`);
+    console.log(`🔌 SSE connecting with session: ${sseSessionId}`);
+    const es = new EventSource(`https://api.smidra.se/events?session=${sseSessionId}`);
     es.onmessage = async (event) => {
       try {
         const data = JSON.parse(event.data);
@@ -785,8 +788,11 @@ export default function App() {
         }
       } catch {}
     };
-    return () => es.close();
-  }, []);
+    return () => {
+      console.log(`🔌 SSE disconnecting: ${sseSessionId}`);
+      es.close();
+    };
+  }, [sseSessionId]);  // Reconnect when session changes
 
   // Handle tool output
   const handleData = useCallback(async (data: ToolOutput) => {
@@ -828,9 +834,11 @@ export default function App() {
       setJobsBeingVerified(data.jobsBeingVerified);
     }
 
-    // Use server-provided session ID if available
+    // Use server-provided session ID - reconnect SSE with new ID
     if (data.widgetSessionId) {
+      console.log(`🔑 Got server session ID: ${data.widgetSessionId}`);
       widgetSessionId.current = data.widgetSessionId;
+      setSseSessionId(data.widgetSessionId);  // This triggers SSE reconnection
     }
 
     if (!hasTriggeredFullscreen.current && data.jobs?.length > 0) {
