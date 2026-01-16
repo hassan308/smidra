@@ -224,7 +224,7 @@ async function getJobById(jobId) {
   }
 }
 
-// Detect remote work from description (simple keyword check - NOT for experience)
+// Detect remote work from description
 function detectRemote(job) {
   const descText = (job.description?.text || "").toLowerCase();
   const headline = (job.headline || "").toLowerCase();
@@ -245,6 +245,7 @@ function detectRemote(job) {
 
   return hasPositive && !hasNegative;
 }
+
 
 function formatJob(job, includeFullDetails = false) {
   // API returns coordinates as [longitude, latitude]
@@ -270,10 +271,9 @@ function formatJob(job, includeFullDetails = false) {
     ? (scopeMin === scopeMax ? `${scopeMin}%` : `${scopeMin}-${scopeMax}%`)
     : null;
 
-  // Check if this job needs ChatGPT verification
-  // Only verify if API says "no experience required" - ChatGPT will check description
+  // Flag for AI verification - if API says "no experience required", AI should verify
   const apiSaysNoExperience = job.experience_required === false;
-  const needsVerification = apiSaysNoExperience && includeFullDetails;
+  const needsAIVerification = apiSaysNoExperience && includeFullDetails;
 
   const baseJob = {
     id: job.id,
@@ -296,7 +296,7 @@ function formatJob(job, includeFullDetails = false) {
     duration: job.duration?.label || "",
     scope: scopeText,
 
-    // Requirements badges - RAW API values (ChatGPT will verify if needed)
+    // Requirements badges - RAW API values (AI will verify experienceRequired: false)
     experienceRequired: job.experience_required ?? null,
     drivingLicenseRequired: job.driving_license_required ?? false,
     accessToOwnCar: job.access_to_own_car ?? false,
@@ -324,10 +324,9 @@ function formatJob(job, includeFullDetails = false) {
       mustHaveLanguages,
       employerUrl: job.employer?.url || "",
       applicationUrl: job.application_details?.url || job.webpage_url,
-      // Flag for ChatGPT verification - only when experienceRequired: false
-      needsVerification: needsVerification,
-      // Include description snippet for ChatGPT to verify
-      verificationContext: needsVerification ? job.description?.text?.substring(0, 500) : undefined
+      // AI verification fields - ChatGPT MUST verify these badges
+      needsVerification: needsAIVerification,
+      verificationContext: needsAIVerification ? job.description?.text?.substring(0, 800) : undefined
     };
   }
 
@@ -606,39 +605,46 @@ Then call display_jobs with the filtered list.`
 
     console.log(`📤 Found ${jobs.length} jobs - showing widget directly (Google Translate for ${lang})`);
 
-    // Find jobs that need badge verification (experienceRequired: false from API)
+    // Find jobs that need AI verification (experienceRequired: false from API)
     const jobsNeedingVerification = jobs.filter(j => j.needsVerification);
     const verificationNeeded = jobsNeedingVerification.length > 0;
 
     if (verificationNeeded) {
-      console.log(`🔍 ${jobsNeedingVerification.length} jobs need ChatGPT badge verification`);
+      console.log(`🔍 ${jobsNeedingVerification.length} jobs need AI badge verification`);
     }
 
-    // Build verification instruction for ChatGPT
-    const verificationInstruction = verificationNeeded ? {
-      _verifyBadges: `BADGE VERIFICATION REQUIRED:
-${jobsNeedingVerification.length} job(s) have "experienceRequired: false" badge that needs verification.
+    // Build verification data for ChatGPT - MANDATORY second step
+    const verificationData = verificationNeeded ? {
+      _step2_MANDATORY: "BADGE VERIFICATION",
+      _verifyInstructions: `⚠️ MANDATORY STEP 2: VERIFY BADGES BEFORE DONE
 
-For each job with needsVerification: true, read the verificationContext and check:
-- If description mentions experience requirements like "X års erfarenhet", "erfarenhet krävs", "experience required"
-- If so, the badge is WRONG and should be corrected
+${jobsNeedingVerification.length} job(s) show "Nybörjare OK" badge that MAY BE WRONG.
 
-After showing the widget, call verify_job_badges for any incorrect badges:
-{
-  "widgetSessionId": "[from widget]",
-  "jobId": "[job.id]",
-  "badges": { "experienceRequired": true }
-}
+YOU MUST:
+1. Read each verificationContext below
+2. Check if description mentions experience requirements ("X års erfarenhet", "erfarenhet krävs", "senior", etc.)
+3. If experience IS required, call verify_job_badges to REMOVE the incorrect badge
 
-Jobs to verify:
-${jobsNeedingVerification.map(j => `- ID: ${j.id}, Title: "${j.title}", Context: "${(j.verificationContext || '').substring(0, 150)}..."`).join('\n')}`
+Jobs to verify NOW:`,
+      _jobsToVerify: jobsNeedingVerification.map(j => ({
+        id: j.id,
+        title: j.title,
+        currentBadge: "experienceRequired: false (Nybörjare OK)",
+        verificationContext: (j.verificationContext || '').substring(0, 400),
+        action: "Read context. If experience required → call verify_job_badges with experienceRequired: null"
+      }))
     } : {};
+
+    // Main rule - include verification reminder if needed
+    const mainRule = verificationNeeded
+      ? `VISA WIDGET. ${jobsNeedingVerification.length} JOBB BEHÖVER BADGE-VERIFIERING - LÄS _jobsToVerify OCH ANROPA verify_job_badges FÖR FELAKTIGA.`
+      : "VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS.";
 
     // ALLTID returnera widget direkt - Google Translate i widget hanterar översättning
     return {
       structuredContent: {
-        _rule: "VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS.",
-        ...verificationInstruction,
+        _rule: mainRule,
+        ...verificationData,
         language: lang,
         direction: dir,
         query: query,
