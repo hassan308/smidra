@@ -11,10 +11,6 @@ import { useOpenAiGlobal, useWidgetState, useDisplayMode, useMaxHeight } from '.
 import { translateJobs, translateLabels, translateBatch } from './utils/translate';
 import type { Job, Labels, SalaryData, ToolOutput, WidgetState } from './types';
 
-// Detect mobile early for page size
-const isMobileDevice = typeof window !== 'undefined' && window.innerWidth < 640;
-const JOBS_PER_PAGE = isMobileDevice ? 6 : 12;
-
 // Respect prefers-reduced-motion
 const prefersReducedMotion = typeof window !== 'undefined'
   ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -56,8 +52,21 @@ const createDefaultWidgetState = (): WidgetState => ({
   currentPage: 1
 });
 
-// Detect mobile (use same value as isMobileDevice)
-const isMobile = isMobileDevice;
+// Hook for mobile detection (runs at render time)
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' && window.innerWidth < 640
+  );
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check(); // Check on mount
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  return isMobile;
+}
 
 // Premium company logo with elegant fallback
 function CompanyLogo({ name, logoUrl, size = 44 }: { name: string; logoUrl?: string; size?: number }) {
@@ -648,6 +657,10 @@ export default function App() {
   const toolOutput = useOpenAiGlobal('toolOutput') as ToolOutput | null;
   const theme = useOpenAiGlobal('theme');
   const maxHeight = useMaxHeight();
+  const isMobile = useIsMobile();
+
+  // Dynamic jobs per page: 6 on mobile, 12 on desktop
+  const jobsPerPage = isMobile ? 6 : 12;
 
   const [widgetState, setWidgetState] = useWidgetState<WidgetState>(createDefaultWidgetState);
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -702,9 +715,9 @@ export default function App() {
     return sorted;
   }, [jobs, activeTab, activeFilter, sortBy, widgetState.savedJobs]);
 
-  const totalPages = Math.ceil(displayJobs.length / JOBS_PER_PAGE);
+  const totalPages = Math.ceil(displayJobs.length / jobsPerPage);
   const currentPage = Math.min(widgetState.currentPage, totalPages || 1);
-  const pageJobs = displayJobs.slice((currentPage - 1) * JOBS_PER_PAGE, currentPage * JOBS_PER_PAGE);
+  const pageJobs = displayJobs.slice((currentPage - 1) * jobsPerPage, currentPage * jobsPerPage);
   const savedCount = widgetState.savedJobs.filter(id => jobs.some(j => j.id === id)).length;
 
   const showToast = useCallback((msg: string, icon: 'heart' | 'check' | 'share' = 'heart') => {
@@ -1027,12 +1040,15 @@ export default function App() {
         </div>
       </header>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+      {/* Content - only enable scroll in fullscreen mode */}
+      <div className={clsx(
+        'flex-1',
+        isFullscreen && 'overflow-y-auto overscroll-contain'
+      )} style={isFullscreen ? { WebkitOverflowScrolling: 'touch' } : undefined}>
         {isLoading ? (
           <div className={clsx(
             'grid gap-3 sm:gap-4 p-4 sm:p-6',
-            isFullscreen ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2'
+            isFullscreen ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'
           )}>
             {[...Array(8)].map((_, i) => <JobCardSkeleton key={i} />)}
           </div>
@@ -1060,7 +1076,7 @@ export default function App() {
                 role="tabpanel"
                 className={clsx(
                   'grid gap-3 sm:gap-4 p-4 sm:p-6',
-                  isFullscreen ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2'
+                  isFullscreen ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'
                 )}
               >
                 <AnimatePresence mode="popLayout">
