@@ -547,7 +547,7 @@ Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), l
     inputSchema: {
       query: z.string().describe("Search query IN SWEDISH"),
       location: z.string().optional().describe("City/region in Sweden"),
-      limit: z.number().optional().default(10).describe("Number of jobs to return (max 20 for MCP)"),
+      limit: z.number().optional().default(50).describe("Number of jobs to return (default 50, max 100)"),
       language: z.string().describe("User's language code (e.g., 'so', 'ar', 'sv')"),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
       loadingText: z.string().describe("'Searching for jobs...' in user's language"),
@@ -581,7 +581,7 @@ Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), l
     console.log(`🔧 search_jobs called: "${query}" in ${location || 'Sweden'} (${language})${activeFilters}`);
 
     // Search for jobs with filters
-    const effectiveLimit = Math.min(limit || 10, 50);
+    const effectiveLimit = Math.min(limit || 50, 100);
     const data = await searchJobs(query, location, effectiveLimit, filters);
     const total = data.total?.value || 0;
 

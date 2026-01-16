@@ -20,6 +20,154 @@ const springTransition = prefersReducedMotion
   ? { duration: 0 }
   : { type: 'spring', stiffness: 400, damping: 30 };
 
+// ============================================
+// PREMIUM REUSABLE COMPONENTS
+// ============================================
+
+type BadgeVariant = 'remote' | 'noExperience' | 'experienceRequired' | 'vacancies' | 'verifying' | 'workType' | 'deadline';
+
+interface BadgeProps {
+  variant: BadgeVariant;
+  children: React.ReactNode;
+  icon?: React.ReactNode;
+  count?: number;
+}
+
+// Premium Badge Component with gradient styling
+function Badge({ variant, children, icon, count }: BadgeProps) {
+  const styles: Record<BadgeVariant, string> = {
+    remote: 'bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/30',
+    noExperience: 'bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 text-white shadow-md shadow-emerald-500/30',
+    experienceRequired: 'bg-white text-gray-600 border border-gray-300 shadow-sm',
+    vacancies: 'bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500 text-white shadow-md shadow-purple-500/30',
+    verifying: 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border border-blue-200',
+    workType: 'bg-gradient-to-r from-sky-50 to-cyan-50 text-sky-800 border border-sky-200 shadow-sm',
+    deadline: 'bg-gradient-to-r from-amber-50 to-orange-50 text-amber-800 border border-amber-200 shadow-sm'
+  };
+
+  return (
+    <span className={clsx(
+      'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider',
+      'transition-all duration-200',
+      styles[variant]
+    )}>
+      {icon}
+      {children}
+      {count !== undefined && count > 0 && (
+        <span className="ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] bg-white/20 font-bold">
+          {count}
+        </span>
+      )}
+    </span>
+  );
+}
+
+type ButtonVariant = 'primary' | 'secondary' | 'ghost';
+type ButtonSize = 'sm' | 'md' | 'lg';
+
+interface PremiumButtonProps {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  children: React.ReactNode;
+  onClick?: (e: React.MouseEvent) => void;
+  disabled?: boolean;
+  icon?: React.ReactNode;
+  iconPosition?: 'left' | 'right';
+  className?: string;
+}
+
+// Premium Button Component
+function PremiumButton({
+  variant = 'primary',
+  size = 'md',
+  children,
+  onClick,
+  disabled,
+  icon,
+  iconPosition = 'right',
+  className
+}: PremiumButtonProps) {
+  const variants: Record<ButtonVariant, string> = {
+    primary: 'bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 hover:from-blue-700 hover:via-blue-600 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40',
+    secondary: 'bg-white text-gray-800 border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 shadow-sm hover:shadow-md',
+    ghost: 'bg-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+  };
+
+  const sizes: Record<ButtonSize, string> = {
+    sm: 'px-3 py-1.5 text-xs rounded-lg',
+    md: 'px-4 py-2.5 text-sm rounded-xl',
+    lg: 'px-6 py-3 text-base rounded-xl'
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={clsx(
+        'inline-flex items-center justify-center gap-2 font-semibold',
+        'transition-all duration-200 ease-out',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
+        'disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none',
+        'active:scale-[0.98]',
+        variants[variant],
+        sizes[size],
+        className
+      )}
+    >
+      {icon && iconPosition === 'left' && icon}
+      {children}
+      {icon && iconPosition === 'right' && icon}
+    </button>
+  );
+}
+
+// Filter Badge Component (for header filters)
+interface FilterBadgeProps {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+  count?: number;
+  color: 'emerald' | 'blue';
+}
+
+function FilterBadge({ active, onClick, icon, children, count, color }: FilterBadgeProps) {
+  const colors = {
+    emerald: {
+      active: 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/40',
+      inactive: 'bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 border border-emerald-200/80 hover:border-emerald-300 hover:shadow-md'
+    },
+    blue: {
+      active: 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/40',
+      inactive: 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border border-blue-200/80 hover:border-blue-300 hover:shadow-md'
+    }
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      className={clsx(
+        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold',
+        'transition-all duration-200 whitespace-nowrap',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+        color === 'emerald' ? 'focus-visible:ring-emerald-500' : 'focus-visible:ring-blue-500',
+        active ? colors[color].active : colors[color].inactive
+      )}
+    >
+      {icon}
+      {children}
+      {count !== undefined && count > 0 && (
+        <span className={clsx(
+          'ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums',
+          active ? 'bg-white/25' : color === 'emerald' ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'
+        )}>
+          {count}
+        </span>
+      )}
+    </button>
+  );
+}
+
 const DEFAULT_LABELS: Labels = {
   jobs: 'jobb',
   map: 'Karta',
@@ -99,7 +247,7 @@ function CompanyLogo({ name, logoUrl, size = 44 }: { name: string; logoUrl?: str
       width={size}
       height={size}
       loading="lazy"
-      className="rounded-xl object-cover ring-1 ring-black/5 dark:ring-white/10"
+      className="rounded-xl object-cover ring-1 ring-black/5"
       style={{ width: size, height: size }}
       onError={() => setError(true)}
     />
@@ -109,23 +257,23 @@ function CompanyLogo({ name, logoUrl, size = 44 }: { name: string; logoUrl?: str
 // Skeleton loader
 function JobCardSkeleton() {
   return (
-    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 animate-pulse">
+    <div className="rounded-2xl border border-gray-200/60 bg-white p-5 animate-pulse">
       <div className="flex items-start gap-4">
-        <div className="w-11 h-11 rounded-xl bg-gray-200 dark:bg-gray-800" />
+        <div className="w-11 h-11 rounded-xl bg-gray-200" />
         <div className="flex-1 space-y-2">
-          <div className="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded" />
-          <div className="h-3 w-16 bg-gray-200 dark:bg-gray-800 rounded" />
+          <div className="h-4 w-24 bg-gray-200 rounded" />
+          <div className="h-3 w-16 bg-gray-200 rounded" />
         </div>
       </div>
       <div className="mt-4 space-y-2">
-        <div className="h-5 w-3/4 bg-gray-200 dark:bg-gray-800 rounded" />
-        <div className="h-5 w-1/2 bg-gray-200 dark:bg-gray-800 rounded" />
+        <div className="h-5 w-3/4 bg-gray-200 rounded" />
+        <div className="h-5 w-1/2 bg-gray-200 rounded" />
       </div>
     </div>
   );
 }
 
-// Premium job card
+// Premium job card with enhanced design
 function JobCard({
   job,
   isSaved,
@@ -159,169 +307,140 @@ function JobCard({
       role="button"
       aria-label={`${job.title} hos ${job.employer}`}
       className={clsx(
-        'group relative flex cursor-pointer flex-col rounded-2xl border bg-white dark:bg-gray-900',
-        'border-gray-200/60 dark:border-gray-800',
-        'hover:border-gray-300 dark:hover:border-gray-700',
-        'hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-gray-950/50',
+        'group relative flex cursor-pointer flex-col overflow-hidden',
+        'rounded-2xl bg-white',
+        'shadow-[0_2px_8px_rgba(0,0,0,0.04),0_4px_24px_rgba(0,0,0,0.06)]',
+        'hover:shadow-[0_8px_32px_rgba(0,0,0,0.12),0_2px_8px_rgba(59,130,246,0.08)]',
+        'border border-gray-200/80',
+        'hover:border-blue-300/60 hover:-translate-y-0.5',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
-        'transition-all duration-200'
+        'transition-all duration-200 ease-out'
       )}
     >
-      {/* Action buttons */}
-      <div className="absolute top-3 right-3 z-10 flex gap-1.5">
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onShare(job); }}
-          aria-label="Dela jobb"
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100/90 dark:bg-gray-800/90 backdrop-blur text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300 transition-all opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-        >
-          <Share2 className="w-3.5 h-3.5" aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onSave(job.id); }}
-          aria-label={isSaved ? 'Ta bort från sparade' : 'Spara jobb'}
-          aria-pressed={isSaved}
-          className={clsx(
-            'flex h-8 w-8 items-center justify-center rounded-full transition-all',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
-            isSaved
-              ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/25'
-              : 'bg-gray-100/90 dark:bg-gray-800/90 backdrop-blur text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300'
-          )}
-        >
-          <Heart className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} aria-hidden="true" />
-        </button>
-      </div>
+      {/* Save button - premium style */}
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onSave(job.id); }}
+        aria-label={isSaved ? 'Ta bort från sparade' : 'Spara jobb'}
+        aria-pressed={isSaved}
+        className={clsx(
+          'absolute top-3 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+          isSaved
+            ? 'bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/40 scale-105'
+            : 'bg-white/90 backdrop-blur-sm text-gray-400 hover:text-rose-500 shadow-sm border border-gray-200/60 hover:border-rose-200 hover:bg-rose-50'
+        )}
+      >
+        <Heart className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} aria-hidden="true" />
+      </button>
 
       {/* Content */}
-      <div className={clsx('p-5', compact && 'p-4')}>
-        <div className="flex items-start gap-3.5 mb-3">
-          <CompanyLogo name={job.employer} logoUrl={job.logoUrl} size={compact ? 40 : 44} />
-          <div className="min-w-0 flex-1 pr-16">
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate leading-tight">
+      <div className={clsx('p-4', compact && 'p-3')}>
+        <div className="flex items-start gap-3 mb-3">
+          <CompanyLogo name={job.employer} logoUrl={job.logoUrl} size={compact ? 38 : 42} />
+          <div className="min-w-0 flex-1 pr-10">
+            <p className="text-sm font-semibold text-gray-900 truncate leading-tight">
               {job.employer}
             </p>
-            <div className="flex items-center gap-1.5 mt-1 text-gray-500 dark:text-gray-400">
-              <MapPin className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+            <div className="flex items-center gap-1.5 mt-0.5 text-gray-500">
+              <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-gray-400" aria-hidden="true" />
               <span className="text-xs truncate">{job.location || 'Sverige'}</span>
             </div>
           </div>
         </div>
 
         <h3 className={clsx(
-          'font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2 mb-3',
-          'group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors',
-          compact ? 'text-sm' : 'text-base'
+          'font-bold text-gray-900 leading-snug line-clamp-2 mb-3',
+          'group-hover:text-blue-600 transition-colors duration-150',
+          compact ? 'text-sm' : 'text-[15px]'
         )}>
           {job.title}
         </h3>
 
-        {/* Primary badges row */}
-        <div className="flex items-center gap-1.5 flex-wrap mb-2">
-          {/* Remote work - prominent green badge */}
+        {/* Badges - Using reusable Badge components */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {/* Remote work */}
           {job.isRemote && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-800">
-              <Wifi className="w-3 h-3" aria-hidden="true" />
+            <Badge variant="remote" icon={<Wifi className="w-3 h-3" aria-hidden="true" />}>
               Distans
-            </span>
+            </Badge>
           )}
 
-          {/* Experience badge - three states:
-              1. Being verified → spinner with "Verifierar..."
-              2. Verified: no experience needed → "Erfarenhet ej krävs" (green)
-              3. All other jobs → "Erfarenhet krävs" (gray) */}
+          {/* Experience badge */}
           {isBeingVerified ? (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800">
-              <div className="w-3.5 h-3.5 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" aria-label="Verifierar..." />
+            <Badge variant="verifying" icon={
+              <div className="w-2.5 h-2.5 border-[1.5px] border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+            }>
               Verifierar...
-            </span>
+            </Badge>
           ) : job.experienceRequired === false ? (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-800">
-              <GraduationCap className="w-3.5 h-3.5" aria-hidden="true" />
+            <Badge variant="noExperience" icon={<GraduationCap className="w-3 h-3" aria-hidden="true" />}>
               Erfarenhet ej krävs
-            </span>
+            </Badge>
           ) : (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
-              <Briefcase className="w-3.5 h-3.5" aria-hidden="true" />
+            <Badge variant="experienceRequired" icon={<Briefcase className="w-3 h-3" aria-hidden="true" />}>
               Erfarenhet krävs
-            </span>
+            </Badge>
           )}
 
           {/* Multiple vacancies */}
           {job.vacancies && job.vacancies > 1 && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800">
-              <Users className="w-3 h-3" aria-hidden="true" />
+            <Badge variant="vacancies" icon={<Users className="w-3 h-3" aria-hidden="true" />}>
               {job.vacancies} platser
-            </span>
-          )}
-
-          {/* Driving license required */}
-          {job.drivingLicenseRequired && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
-              <Car className="w-3 h-3" aria-hidden="true" />
-              Körkort
-            </span>
+            </Badge>
           )}
         </div>
 
-        {/* Secondary info row */}
-        <div className="flex items-center gap-2 flex-wrap">
+        {/* Work type & deadline row */}
+        <div className="flex items-center gap-1.5 flex-wrap mt-2">
           {job.workingHours && (
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-              {job.workingHours}
-            </span>
-          )}
-          {job.duration && job.duration !== 'Tills vidare' && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400">
-              <Briefcase className="w-3 h-3" aria-hidden="true" />
-              {job.duration}
-            </span>
+            <Badge variant="workType">{job.workingHours}</Badge>
           )}
           {job.deadline && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
-              <Clock className="w-3 h-3" aria-hidden="true" />
+            <Badge variant="deadline" icon={<Calendar className="w-3 h-3" aria-hidden="true" />}>
               {job.deadline}
-            </span>
+            </Badge>
           )}
         </div>
 
         {/* Skills preview (only if available and not compact) */}
         {!compact && job.mustHaveSkills && job.mustHaveSkills.length > 0 && (
-          <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-800">
-            <div className="flex items-center gap-1 flex-wrap">
-              <Zap className="w-3 h-3 text-gray-400 flex-shrink-0" aria-hidden="true" />
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <Zap className="w-3 h-3 text-amber-500 flex-shrink-0" aria-hidden="true" />
               {job.mustHaveSkills.slice(0, 3).map((skill, i) => (
-                <span key={i} className="text-xs text-gray-500 dark:text-gray-400">
+                <span key={i} className="text-[11px] text-gray-600 font-medium">
                   {skill}{i < Math.min(job.mustHaveSkills!.length, 3) - 1 ? ',' : ''}
                 </span>
               ))}
               {job.mustHaveSkills.length > 3 && (
-                <span className="text-xs text-gray-400">+{job.mustHaveSkills.length - 3}</span>
+                <span className="text-[11px] text-gray-400 font-medium">+{job.mustHaveSkills.length - 3}</span>
               )}
             </div>
           </div>
         )}
       </div>
 
-      {/* Footer */}
+      {/* Footer - Using PremiumButton components */}
       {!compact && (
-        <div className="mt-auto border-t border-gray-100 dark:border-gray-800 p-4 flex gap-2">
-          <button
-            type="button"
+        <div className="mt-auto border-t border-gray-100 p-3 flex gap-2 bg-gradient-to-b from-gray-50/80 to-white">
+          <PremiumButton
+            variant="secondary"
+            size="md"
             onClick={(e) => { e.stopPropagation(); onClick(job); }}
-            className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="flex-1"
           >
             {labels.showMore}
-          </button>
-          <button
-            type="button"
+          </PremiumButton>
+          <PremiumButton
+            variant="primary"
+            size="md"
             onClick={(e) => { e.stopPropagation(); window.openai?.openExternal?.({ href: job.url }); }}
-            className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            icon={<ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />}
+            className="flex-1"
           >
             {labels.apply}
-            <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
-          </button>
+          </PremiumButton>
         </div>
       )}
     </motion.article>
@@ -389,7 +508,7 @@ function JobDetailModal({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 10 }}
         transition={springTransition}
-        className="relative w-full max-w-xl max-h-[85vh] flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-gray-900 shadow-2xl ring-1 ring-black/5 dark:ring-white/10"
+        className="relative w-full max-w-xl max-h-[85vh] flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header with actions */}
@@ -397,7 +516,7 @@ function JobDetailModal({
           <button
             onClick={() => onShare(job)}
             aria-label="Dela"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
             <Share2 className="w-4 h-4" aria-hidden="true" />
           </button>
@@ -408,7 +527,7 @@ function JobDetailModal({
               'flex h-9 w-9 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
               isSaved
                 ? 'bg-rose-500 text-white'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700'
+                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
             )}
           >
             <Heart className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} aria-hidden="true" />
@@ -417,7 +536,7 @@ function JobDetailModal({
             ref={closeButtonRef}
             onClick={onClose}
             aria-label="Stäng"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
             <X className="w-5 h-5" aria-hidden="true" />
           </button>
@@ -428,8 +547,8 @@ function JobDetailModal({
           <div className="flex items-start gap-4 pr-32">
             <CompanyLogo name={job.employer} logoUrl={job.logoUrl} size={56} />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{job.employer}</p>
-              <h2 id="modal-title" className="text-xl font-semibold text-gray-900 dark:text-gray-100 leading-tight">
+              <p className="text-sm font-medium text-gray-500 mb-1">{job.employer}</p>
+              <h2 id="modal-title" className="text-xl font-semibold text-gray-900 leading-tight">
                 {job.title}
               </h2>
             </div>
@@ -437,62 +556,62 @@ function JobDetailModal({
 
           {/* Primary badges */}
           <div className="flex flex-wrap gap-2 mt-4">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-400">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-sm text-gray-600">
               <MapPin className="w-4 h-4" aria-hidden="true" />
               {job.location || 'Sverige'}
             </span>
             {job.deadline && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-400">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-sm text-gray-600">
                 <Clock className="w-4 h-4" aria-hidden="true" />
                 <time>{job.deadline}</time>
               </span>
             )}
             {job.workingHours && (
-              <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-sm font-medium text-blue-700 dark:text-blue-300">
+              <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-blue-50 text-sm font-medium text-blue-700">
                 {job.workingHours}
               </span>
             )}
           </div>
 
           {/* Feature badges */}
-          <div className="flex flex-wrap gap-2 mt-2 pb-5 border-b border-gray-100 dark:border-gray-800">
+          <div className="flex flex-wrap gap-2 mt-2 pb-5 border-b border-gray-100">
             {job.isRemote && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-sm font-medium text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-800">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-sm font-medium text-emerald-700 ring-1 ring-emerald-200">
                 <Wifi className="w-4 h-4" aria-hidden="true" />
                 Distansarbete
               </span>
             )}
             {job.experienceRequired === false ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-sm font-medium text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-800">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-sm font-medium text-emerald-700 ring-1 ring-emerald-200">
                 <GraduationCap className="w-4 h-4" aria-hidden="true" />
                 Erfarenhet ej krävs
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-400">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-sm text-gray-600">
                 <Briefcase className="w-4 h-4" aria-hidden="true" />
                 Erfarenhet krävs
               </span>
             )}
             {job.vacancies && job.vacancies > 1 && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-sm font-medium text-amber-700 dark:text-amber-400 ring-1 ring-amber-200 dark:ring-amber-800">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 text-sm font-medium text-amber-700 ring-1 ring-amber-200">
                 <Users className="w-4 h-4" aria-hidden="true" />
                 {job.vacancies} lediga platser
               </span>
             )}
             {job.drivingLicenseRequired && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-400">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-sm text-gray-600">
                 <Car className="w-4 h-4" aria-hidden="true" />
                 Körkort krävs
               </span>
             )}
             {job.duration && job.duration !== 'Tills vidare' && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-50 dark:bg-orange-900/30 text-sm font-medium text-orange-700 dark:text-orange-400">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-50 text-sm font-medium text-orange-700">
                 <Briefcase className="w-4 h-4" aria-hidden="true" />
                 {job.duration}
               </span>
             )}
             {job.occupationField && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-400">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-sm text-gray-600">
                 <Award className="w-4 h-4" aria-hidden="true" />
                 {job.occupationField}
               </span>
@@ -504,21 +623,21 @@ function JobDetailModal({
         <div className="flex-1 overflow-y-auto p-6 space-y-5 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
           {loading ? (
             <div className="space-y-3 animate-pulse">
-              <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-full" />
-              <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-5/6" />
-              <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-4/6" />
+              <div className="h-4 bg-gray-200 rounded w-full" />
+              <div className="h-4 bg-gray-200 rounded w-5/6" />
+              <div className="h-4 bg-gray-200 rounded w-4/6" />
             </div>
           ) : (
-            <div className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-wrap">
+            <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
               {description}
             </div>
           )}
 
           {/* Salary section */}
           {salaryLoading && (
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50" role="status">
-              <div className="w-5 h-5 border-2 border-gray-300 dark:border-gray-600 border-t-blue-500 rounded-full animate-spin" />
-              <span className="text-sm text-gray-600 dark:text-gray-400">{labels.fetchingSalary}</span>
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-50" role="status">
+              <div className="w-5 h-5 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+              <span className="text-sm text-gray-600">{labels.fetchingSalary}</span>
             </div>
           )}
 
@@ -526,25 +645,25 @@ function JobDetailModal({
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="p-5 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 ring-1 ring-emerald-200 dark:ring-emerald-800/50"
+              className="p-5 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 ring-1 ring-emerald-200"
             >
               <div className="flex items-center gap-2.5 mb-3">
-                <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-emerald-600" />
                 </div>
-                <span className="font-semibold text-gray-900 dark:text-gray-100">{labels.salaryTitle}</span>
+                <span className="font-semibold text-gray-900">{labels.salaryTitle}</span>
               </div>
-              <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-2 tabular-nums tracking-tight">
+              <p className="text-3xl font-bold text-emerald-600 mb-2 tabular-nums tracking-tight">
                 {salaryData.salary.avg?.toLocaleString('sv-SE')}&nbsp;{labels.krPerMonth}
               </p>
-              <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 tabular-nums">
+              <div className="flex justify-between text-sm text-gray-600 tabular-nums">
                 <span>{labels.salaryMin}: {salaryData.salary.min?.toLocaleString('sv-SE')} kr</span>
                 <span>{labels.salaryMax}: {salaryData.salary.max?.toLocaleString('sv-SE')} kr</span>
               </div>
               {salaryData.translatedTips?.length > 0 && (
-                <ul className="mt-4 pt-4 border-t border-emerald-200 dark:border-emerald-800/50 space-y-2">
+                <ul className="mt-4 pt-4 border-t border-emerald-200 space-y-2">
                   {salaryData.translatedTips.map((tip, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
                       <Sparkles className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" aria-hidden="true" />
                       {tip}
                     </li>
@@ -556,7 +675,7 @@ function JobDetailModal({
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 flex gap-3 p-5 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
+        <div className="flex-shrink-0 flex gap-3 p-5 border-t border-gray-100 bg-gray-50/50">
           <button
             onClick={() => onRequestSalary(job)}
             disabled={salaryLoading || !!salaryData}
@@ -564,10 +683,10 @@ function JobDetailModal({
               'flex-1 px-5 py-3 rounded-xl text-sm font-medium transition-all',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
               salaryData
-                ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 cursor-default'
+                ? 'bg-emerald-50 text-emerald-700 cursor-default'
                 : salaryLoading
-                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-wait'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  ? 'bg-gray-100 text-gray-400 cursor-wait'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             )}
           >
             {salaryLoading ? labels.fetching : salaryData ? `✓ ${labels.salaryShown}` : labels.salaryInfo}
@@ -598,8 +717,8 @@ function TabButton({ active, onClick, icon: Icon, children, count }: {
         'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
         active
-          ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-lg'
-          : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+          ? 'bg-gray-900 text-white shadow-lg'
+          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
       )}
     >
       <Icon className="w-4 h-4" aria-hidden="true" />
@@ -607,7 +726,7 @@ function TabButton({ active, onClick, icon: Icon, children, count }: {
       {count !== undefined && count > 0 && (
         <span className={clsx(
           'ml-1 px-1.5 py-0.5 rounded-full text-xs font-semibold tabular-nums',
-          active ? 'bg-white/20 dark:bg-gray-900/20' : 'bg-gray-200 dark:bg-gray-700'
+          active ? 'bg-white/20' : 'bg-gray-200'
         )}>
           {count}
         </span>
@@ -625,8 +744,8 @@ function FilterPill({ active, onClick, children }: { active: boolean; onClick: (
         'px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
         active
-          ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 ring-1 ring-blue-200 dark:ring-blue-800'
-          : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+          ? 'bg-blue-100 text-blue-700 ring-1 ring-blue-200'
+          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
       )}
     >
       {children}
@@ -641,7 +760,7 @@ function SortDropdown({ value, onChange }: { value: string; onChange: (v: string
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="appearance-none pl-3 pr-8 py-1.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-0 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+        className="appearance-none pl-3 pr-8 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border-0 focus:ring-2 focus:ring-blue-500 cursor-pointer"
       >
         <option value="newest">Nyast först</option>
         <option value="deadline">Deadline</option>
@@ -947,7 +1066,7 @@ Om INGET erfarenhetskrav nämns → experienceRequired: false
   // Welcome screen
   if (!hasReceivedData) {
     return (
-      <div className="min-h-[420px] w-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950 flex flex-col items-center justify-center p-8">
+      <div className="min-h-[420px] w-full bg-gradient-to-b from-gray-50 to-white flex flex-col items-center justify-center p-8">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -957,13 +1076,13 @@ Om INGET erfarenhetskrav nämns → experienceRequired: false
           <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
             <Search className="w-8 h-8 text-white" aria-hidden="true" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2 tracking-tight">Smidra</h1>
-          <p className="text-gray-500 dark:text-gray-400 mb-6 text-sm leading-relaxed">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2 tracking-tight">Smidra</h1>
+          <p className="text-gray-500 mb-6 text-sm leading-relaxed">
             Hitta ditt nästa jobb direkt i ChatGPT.
             <br />Skriv vad du letar efter.
           </p>
-          <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800 text-sm text-gray-500 dark:text-gray-400" role="status">
-            <div className="w-4 h-4 border-2 border-gray-300 dark:border-gray-600 border-t-blue-500 rounded-full animate-spin" />
+          <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-gray-100 text-sm text-gray-500" role="status">
+            <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
             Väntar på sökning…
           </div>
         </motion.div>
@@ -974,7 +1093,7 @@ Om INGET erfarenhetskrav nämns → experienceRequired: false
   return (
     <div
       className={clsx(
-        'w-full bg-gray-50 dark:bg-gray-950 flex flex-col',
+        'w-full bg-gray-50 flex flex-col',
         isFullscreen && 'fixed inset-0 z-40'
       )}
       style={{
@@ -983,18 +1102,18 @@ Om INGET erfarenhetskrav nämns → experienceRequired: false
       }}
     >
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-b border-gray-200/60 dark:border-gray-800 flex-shrink-0">
+      <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-xl border-b border-gray-200/60 flex-shrink-0">
         <div className="px-4 sm:px-6 py-4">
           {/* Top row */}
           <div className="flex items-center justify-between gap-3 mb-3">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 mb-0.5">
                 <Building2 className="w-4 h-4 text-gray-400" aria-hidden="true" />
-                <span className="text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                <span className="text-xs font-medium uppercase tracking-wider text-gray-400">
                   Jobbsökning
                 </span>
               </div>
-              <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 truncate tracking-tight">
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate tracking-tight">
                 {query || 'Lediga tjänster'}
               </h1>
             </div>
@@ -1003,14 +1122,14 @@ Om INGET erfarenhetskrav nämns → experienceRequired: false
             <button
               onClick={() => toggleFullscreen()}
               aria-label={isFullscreen ? 'Minimera' : 'Fullskärm'}
-              className="flex-shrink-0 h-10 w-10 rounded-xl flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              className="flex-shrink-0 h-10 w-10 rounded-xl flex items-center justify-center bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             >
               {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
             </button>
           </div>
 
           {/* Stats row */}
-          <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 mb-4">
+          <div className="flex items-center gap-3 text-sm text-gray-500 mb-4">
             {location && (
               <span className="flex items-center gap-1.5">
                 <MapPin className="w-4 h-4" aria-hidden="true" />
@@ -1018,7 +1137,7 @@ Om INGET erfarenhetskrav nämns → experienceRequired: false
               </span>
             )}
             <span className="flex items-center gap-1.5">
-              <span className="font-semibold text-gray-900 dark:text-gray-100 tabular-nums">{totalAvailable}</span>
+              <span className="font-semibold text-gray-900 tabular-nums">{totalAvailable}</span>
               {labels.jobs}
             </span>
           </div>
@@ -1034,7 +1153,7 @@ Om INGET erfarenhetskrav nämns → experienceRequired: false
                   onChange={(e) => setSearchInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                   placeholder="Sök nytt jobb..."
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 border-0 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-100 border-0 text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <button
@@ -1067,51 +1186,27 @@ Om INGET erfarenhetskrav nämns → experienceRequired: false
           </div>
         </div>
 
-        {/* Special filters row - No experience & Remote */}
+        {/* Special filters row - Using FilterBadge components */}
         <div className="flex items-center gap-2 px-4 sm:px-6 pb-2 overflow-x-auto">
-          <button
+          <FilterBadge
+            active={showNoExperience}
             onClick={() => { setShowNoExperience(!showNoExperience); setWidgetState(s => ({ ...s, currentPage: 1 })); }}
-            className={clsx(
-              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500',
-              showNoExperience
-                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
-                : 'bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 ring-1 ring-emerald-200 hover:ring-emerald-300 hover:shadow-md'
-            )}
+            icon={<GraduationCap className="w-3.5 h-3.5" />}
+            count={noExperienceCount}
+            color="emerald"
           >
-            <GraduationCap className="w-3.5 h-3.5" />
             Inga krav på erfarenhet
-            {noExperienceCount > 0 && (
-              <span className={clsx(
-                'ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold',
-                showNoExperience ? 'bg-white/20' : 'bg-emerald-100 text-emerald-600'
-              )}>
-                {noExperienceCount}
-              </span>
-            )}
-          </button>
+          </FilterBadge>
 
-          <button
+          <FilterBadge
+            active={showRemote}
             onClick={() => { setShowRemote(!showRemote); setWidgetState(s => ({ ...s, currentPage: 1 })); }}
-            className={clsx(
-              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
-              showRemote
-                ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
-                : 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 ring-1 ring-blue-200 hover:ring-blue-300 hover:shadow-md'
-            )}
+            icon={<Wifi className="w-3.5 h-3.5" />}
+            count={remoteCount}
+            color="blue"
           >
-            <Wifi className="w-3.5 h-3.5" />
             Distansjobb
-            {remoteCount > 0 && (
-              <span className={clsx(
-                'ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold',
-                showRemote ? 'bg-white/20' : 'bg-blue-100 text-blue-600'
-              )}>
-                {remoteCount}
-              </span>
-            )}
-          </button>
+          </FilterBadge>
         </div>
 
         {/* Work type filters row */}
@@ -1145,17 +1240,17 @@ Om INGET erfarenhetskrav nämns → experienceRequired: false
           </div>
         ) : displayJobs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 sm:py-20 px-6 text-center">
-            <div className="w-14 h-14 mb-4 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+            <div className="w-14 h-14 mb-4 rounded-2xl bg-gray-100 flex items-center justify-center">
               {activeTab === 'saved' ? (
                 <Bookmark className="w-7 h-7 text-gray-400" aria-hidden="true" />
               ) : (
                 <Search className="w-7 h-7 text-gray-400" aria-hidden="true" />
               )}
             </div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
+            <h2 className="text-lg font-semibold text-gray-900 mb-1">
               {activeTab === 'saved' ? 'Inga sparade jobb' : labels.noJobs}
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
+            <p className="text-sm text-gray-500 max-w-xs">
               {activeTab === 'saved' ? 'Klicka på hjärtat för att spara jobb' : labels.tryOther}
             </p>
           </div>
@@ -1256,7 +1351,7 @@ Om INGET erfarenhetskrav nämns → experienceRequired: false
             transition={springTransition}
             role="status"
             aria-live="polite"
-            className="fixed bottom-24 sm:bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium shadow-xl z-50 flex items-center gap-2"
+            className="fixed bottom-24 sm:bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl bg-gray-900 text-white text-sm font-medium shadow-xl z-50 flex items-center gap-2"
           >
             {toast.icon === 'heart' && <Heart className="w-4 h-4 text-rose-400" fill="currentColor" aria-hidden="true" />}
             {toast.icon === 'check' && <Check className="w-4 h-4 text-emerald-400" aria-hidden="true" />}
