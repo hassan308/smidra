@@ -224,6 +224,130 @@ async function getJobById(jobId) {
   }
 }
 
+// Verify badges by double-checking against job description content
+function verifyBadges(job) {
+  const descText = (job.description?.text || "").toLowerCase();
+  const headline = (job.headline || "").toLowerCase();
+  const fullText = descText + " " + headline;
+
+  // === REMOTE WORK VERIFICATION ===
+  // Positive indicators
+  const remotePositive = [
+    "distans", "remote", "hemarbete", "arbeta hemifrån", "jobba hemifrån",
+    "work from home", "wfh", "hybrid", "flexibel arbetsplats", "distansarbete"
+  ];
+  // Negative indicators (contradicts remote)
+  const remoteNegative = [
+    "ej distans", "inte distans", "ingen distans", "på plats",
+    "på kontoret", "kräver närvaro", "ej remote", "no remote",
+    "kontorsbaserad", "i våra lokaler"
+  ];
+
+  const hasRemotePositive = remotePositive.some(kw => fullText.includes(kw));
+  const hasRemoteNegative = remoteNegative.some(kw => fullText.includes(kw));
+  // Only mark as remote if positive keywords exist AND no negative keywords
+  const verifiedRemote = hasRemotePositive && !hasRemoteNegative;
+
+  // === EXPERIENCE VERIFICATION ===
+  // If API says no experience required, verify description doesn't contradict
+  const apiNoExperience = job.experience_required === false;
+
+  // Patterns that indicate experience IS required (contradicts "no experience")
+  const experienceRequired = [
+    /\d+\s*års?\s*erfarenhet/i,           // "2 års erfarenhet", "3 år erfarenhet"
+    /erfarenhet\s*krävs/i,                // "erfarenhet krävs"
+    /kräver\s*erfarenhet/i,               // "kräver erfarenhet"
+    /tidigare\s*erfarenhet/i,             // "tidigare erfarenhet"
+    /relevant\s*erfarenhet/i,             // "relevant erfarenhet"
+    /dokumenterad\s*erfarenhet/i,         // "dokumenterad erfarenhet"
+    /gedigen\s*erfarenhet/i,              // "gedigen erfarenhet"
+    /flerårig\s*erfarenhet/i,             // "flerårig erfarenhet"
+    /minst\s*\d+\s*års?\s*erfarenhet/i,   // "minst 2 års erfarenhet"
+    /erfarenhet\s*av\s*liknande/i,        // "erfarenhet av liknande"
+    /years?\s*of\s*experience/i,          // English: "years of experience"
+    /experience\s*required/i              // English: "experience required"
+  ];
+
+  // Patterns that confirm no experience needed
+  const noExperiencePatterns = [
+    /ingen\s*erfarenhet/i,                // "ingen erfarenhet"
+    /utan\s*erfarenhet/i,                 // "utan erfarenhet"
+    /erfarenhet\s*är\s*inget\s*krav/i,    // "erfarenhet är inget krav"
+    /nybörjare/i,                         // "nybörjare"
+    /nyexaminerad/i,                      // "nyexaminerad"
+    /trainee/i,                           // "trainee"
+    /entry\s*level/i,                     // "entry level"
+    /junior/i,                            // "junior" (often entry-level)
+    /vi\s*utbildar/i,                     // "vi utbildar" (we train)
+    /lär\s*dig/i                          // "lär dig" (learn)
+  ];
+
+  const descRequiresExperience = experienceRequired.some(pattern => pattern.test(fullText));
+  const descConfirmsNoExperience = noExperiencePatterns.some(pattern => pattern.test(fullText));
+
+  // Verify: API says no experience AND description doesn't require experience
+  // OR description explicitly confirms no experience needed
+  let verifiedNoExperience = false;
+  if (apiNoExperience) {
+    // API says no experience - verify description doesn't contradict
+    verifiedNoExperience = !descRequiresExperience || descConfirmsNoExperience;
+  } else if (descConfirmsNoExperience && !descRequiresExperience) {
+    // API might be wrong, but description clearly says no experience
+    verifiedNoExperience = true;
+  }
+
+  // === DRIVING LICENSE VERIFICATION ===
+  const apiDrivingLicense = job.driving_license_required === true;
+
+  // Check description for driving license keywords
+  const drivingKeywords = [
+    "körkort", "b-körkort", "driving license", "driver's license",
+    "bil krävs", "egen bil", "tillgång till bil"
+  ];
+  const descMentionsDriving = drivingKeywords.some(kw => fullText.includes(kw));
+
+  // Verify: Either API says required OR description mentions it
+  const verifiedDrivingLicense = apiDrivingLicense || descMentionsDriving;
+
+  // === VACANCIES VERIFICATION ===
+  // Check if description mentions multiple positions
+  const vacancyPatterns = [
+    /(\d+)\s*tjänster/i,
+    /(\d+)\s*platser/i,
+    /flera\s*tjänster/i,
+    /multiple\s*positions/i
+  ];
+  let verifiedVacancies = job.number_of_vacancies || 1;
+  for (const pattern of vacancyPatterns) {
+    const match = fullText.match(pattern);
+    if (match && match[1]) {
+      const descVacancies = parseInt(match[1]);
+      if (descVacancies > verifiedVacancies) {
+        verifiedVacancies = descVacancies;
+      }
+    }
+  }
+
+  // Log verification results for debugging
+  const apiRemote = hasRemotePositive; // What we detected from keywords
+  const apiNoExp = job.experience_required === false;
+  const apiDriving = job.driving_license_required === true;
+
+  if (apiNoExp && descRequiresExperience && !descConfirmsNoExperience) {
+    console.log(`⚠️ Badge filtered: "${job.headline}" - API says no experience but description requires it`);
+  }
+  if (hasRemotePositive && hasRemoteNegative) {
+    console.log(`⚠️ Badge filtered: "${job.headline}" - Remote keywords found but negated by "på plats" etc`);
+  }
+
+  return {
+    isRemote: verifiedRemote,
+    experienceRequired: verifiedNoExperience ? false : (job.experience_required ?? null),
+    drivingLicenseRequired: verifiedDrivingLicense,
+    vacancies: verifiedVacancies
+  };
+}
+
 function formatJob(job, includeFullDetails = false) {
   // API returns coordinates as [longitude, latitude]
   const coords = job.workplace_address?.coordinates;
@@ -233,13 +357,8 @@ function formatJob(job, includeFullDetails = false) {
     lat = coords[1];
   }
 
-  // Detect remote work from description keywords
-  const descText = (job.description?.text || "").toLowerCase();
-  const isRemote = descText.includes("distans") ||
-                   descText.includes("remote") ||
-                   descText.includes("hemarbete") ||
-                   descText.includes("arbeta hemifrån") ||
-                   descText.includes("jobba hemifrån");
+  // Verify badges against description content
+  const verifiedBadges = verifyBadges(job);
 
   // Extract skills from must_have and nice_to_have
   const mustHaveSkills = job.must_have?.skills?.map(s => s.label) || [];
@@ -274,18 +393,18 @@ function formatJob(job, includeFullDetails = false) {
     duration: job.duration?.label || "",
     scope: scopeText,
 
-    // Requirements badges
-    experienceRequired: job.experience_required ?? null,
-    drivingLicenseRequired: job.driving_license_required ?? false,
+    // Requirements badges (VERIFIED against description content)
+    experienceRequired: verifiedBadges.experienceRequired,
+    drivingLicenseRequired: verifiedBadges.drivingLicenseRequired,
     accessToOwnCar: job.access_to_own_car ?? false,
-    isRemote: isRemote,
+    isRemote: verifiedBadges.isRemote,
 
     // Category
     occupationField: job.occupation_field?.label || "",
     occupation: job.occupation?.label || "",
 
-    // Vacancies
-    vacancies: job.number_of_vacancies || 1,
+    // Vacancies (verified)
+    vacancies: verifiedBadges.vacancies,
 
     // Publication date
     published: job.publication_date ? new Date(job.publication_date).toLocaleDateString("sv-SE") : ""
