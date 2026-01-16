@@ -622,13 +622,22 @@ Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), l
 
     // If jobs need verification, add instruction for ChatGPT to verify via SSE
     if (jobsNeedingVerification.length > 0) {
-      console.log(`🤖 Adding verification instructions for ${jobsNeedingVerification.length} jobs`);
+      console.log(`\n🤖 ========== BADGE VERIFICATION NEEDED ==========`);
+      console.log(`📊 ${jobsNeedingVerification.length} jobb att verifiera`);
+      console.log(`🔑 Session: ${widgetSessionId}`);
 
-      const verificationData = jobsNeedingVerification.map(j => ({
-        id: j.id,
-        title: j.title,
-        snippets: j.verificationSnippets
-      }));
+      const verificationData = jobsNeedingVerification.map(j => {
+        console.log(`\n📋 JOB: ${j.id}`);
+        console.log(`   Titel: ${j.title}`);
+        console.log(`   Snippets:\n   ${j.verificationSnippets?.replace(/\n/g, '\n   ') || '(inga)'}`);
+        return {
+          id: j.id,
+          title: j.title,
+          snippets: j.verificationSnippets
+        };
+      });
+
+      console.log(`\n🤖 ================================================\n`);
 
       response.structuredContent._verifyBadges = {
         instruction: "EFTER widget visas: Verifiera dessa jobb via SSE. Anropa verify_job_badges för varje jobb.",
@@ -988,7 +997,19 @@ Widgeten visar spinner tills du anropar detta verktyg.`,
     }
   },
   async (params) => {
-    console.log(`🔍 verify_job_badges: Job ${params.jobId} → ${JSON.stringify(params.badges)}`);
+    console.log(`\n🔍 ========== AI BADGE VERIFICATION RESULT ==========`);
+    console.log(`📋 Job ID: ${params.jobId}`);
+    console.log(`🔑 Session: ${params.widgetSessionId}`);
+    console.log(`📊 Badges: ${JSON.stringify(params.badges, null, 2)}`);
+
+    const expReq = params.badges.experienceRequired;
+    if (expReq === true) {
+      console.log(`❌ AI säger: Erfarenhet KRÄVS → badge döljs`);
+    } else if (expReq === false) {
+      console.log(`✅ AI säger: Ingen erfarenhet krävs → badge visas`);
+    } else {
+      console.log(`⚪ AI säger: Okänt → badge döljs (null)`);
+    }
 
     const pushed = pushToWidget(params.widgetSessionId, 'badge_update', {
       jobId: params.jobId,
@@ -996,11 +1017,12 @@ Widgeten visar spinner tills du anropar detta verktyg.`,
     });
 
     if (pushed) {
-      console.log(`✅ Badge update pushed to ${params.widgetSessionId}`);
-      return { content: [] };
+      console.log(`📤 SSE push OK till widget`);
+    } else {
+      console.log(`⚠️ Widget ej ansluten: ${params.widgetSessionId}`);
     }
+    console.log(`🔍 ====================================================\n`);
 
-    console.log(`❌ Widget ${params.widgetSessionId} not connected`);
     return { content: [] };
   }
 );
