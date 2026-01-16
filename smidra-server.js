@@ -601,32 +601,14 @@ Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), l
 
     console.log(`📤 Found ${jobs.length} jobs (${jobsNeedingVerification.length} need verification)`);
 
-    // Always show widget immediately
-    const response = {
-      structuredContent: {
-        _rule: "VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS.",
-        language: lang,
-        direction: dir,
-        query: query,
-        querySwedish: query,
-        location: location || 'Sverige',
-        locationSwedish: location || 'Sverige',
-        total,
-        jobs,
-        translateMode: lang !== 'sv',
-        widgetSessionId: widgetSessionId,
-        // Tell widget which jobs are being verified (show spinner on badge)
-        jobsBeingVerified: jobsNeedingVerification.map(j => j.id)
-      }
-    };
-
-    // If jobs need verification, add instruction for ChatGPT to verify via SSE
+    // Build verification data if needed
+    let verificationData = [];
     if (jobsNeedingVerification.length > 0) {
       console.log(`\n🤖 ========== BADGE VERIFICATION NEEDED ==========`);
       console.log(`📊 ${jobsNeedingVerification.length} jobb att verifiera`);
       console.log(`🔑 Session: ${widgetSessionId}`);
 
-      const verificationData = jobsNeedingVerification.map(j => {
+      verificationData = jobsNeedingVerification.map(j => {
         console.log(`\n📋 JOB: ${j.id}`);
         console.log(`   Titel: ${j.title}`);
         console.log(`   Snippets:\n   ${j.verificationSnippets?.replace(/\n/g, '\n   ') || '(inga)'}`);
@@ -638,15 +620,48 @@ Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), l
       });
 
       console.log(`\n🤖 ================================================\n`);
-
-      response.structuredContent._verifyBadges = {
-        instruction: "EFTER widget visas: Verifiera dessa jobb via SSE. Anropa verify_job_badges för varje jobb.",
-        widgetSessionId: widgetSessionId,
-        jobs: verificationData
-      };
     }
 
-    return response;
+    // Build _rule - verification instruction FIRST if needed
+    let rule;
+    if (jobsNeedingVerification.length > 0) {
+      rule = `⚠️ VIKTIGT: ${jobsNeedingVerification.length} JOBB BEHÖVER BADGE-VERIFIERING!
+
+STEG 1: Widget visas nu med spinner på badges.
+STEG 2: DU MÅSTE anropa verify_job_badges för VARJE jobb nedan:
+
+${verificationData.map(j => `
+📋 JOB ID: ${j.id}
+   Titel: "${j.title}"
+   Snippets: "${j.snippets?.substring(0, 300) || ''}"
+
+   → Om snippets nämner "X års erfarenhet", "senior", "erfaren" → experienceRequired: true
+   → Om INGET erfarenhetskrav nämns → experienceRequired: false
+
+   Anropa: verify_job_badges({ widgetSessionId: "${widgetSessionId}", jobId: "${j.id}", badges: { experienceRequired: true/false } })
+`).join('\n')}
+
+SKRIV INGEN TEXT. Anropa verify_job_badges för varje jobb DIREKT.`;
+    } else {
+      rule = "VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS.";
+    }
+
+    return {
+      structuredContent: {
+        _rule: rule,
+        language: lang,
+        direction: dir,
+        query: query,
+        querySwedish: query,
+        location: location || 'Sverige',
+        locationSwedish: location || 'Sverige',
+        total,
+        jobs,
+        translateMode: lang !== 'sv',
+        widgetSessionId: widgetSessionId,
+        jobsBeingVerified: jobsNeedingVerification.map(j => j.id)
+      }
+    };
   }
 );
 
