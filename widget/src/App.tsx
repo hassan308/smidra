@@ -878,22 +878,14 @@ export default function App() {
 
   useEffect(() => { if (toolOutput) handleData(toolOutput); }, [toolOutput, handleData]);
 
-  // Theme handling - FORCE LIGHT MODE ON MOBILE
+  // FORCE LIGHT MODE ALWAYS - widget always uses white design
   useEffect(() => {
-    if (isMobile) {
-      // On mobile, always use light theme regardless of system/OpenAI theme
-      document.documentElement.classList.remove('dark');
-    } else if (theme) {
-      // On desktop, respect OpenAI theme
-      document.documentElement.classList.toggle('dark', theme === 'dark');
-    }
+    document.documentElement.classList.remove('dark');
   }, [theme]);
 
-  // Force light theme on mobile at mount
+  // Force light theme at mount
   useEffect(() => {
-    if (isMobile) {
-      document.documentElement.classList.remove('dark');
-    }
+    document.documentElement.classList.remove('dark');
   }, []);
   useEffect(() => {
     const h = isFullscreen ? (maxHeight || window.innerHeight) : document.body.scrollHeight;
@@ -1102,7 +1094,7 @@ export default function App() {
               <nav className="flex items-center justify-center gap-3 py-6 border-t border-gray-200/60 dark:border-gray-800" aria-label="Pagination">
                 <button
                   disabled={currentPage === 1}
-                  onClick={() => setWidgetState(s => ({ ...s, currentPage: s.currentPage - 1 }))}
+                  onClick={() => { setJobsBeingVerified([]); setWidgetState(s => ({ ...s, currentPage: s.currentPage - 1 })); }}
                   aria-label="Föregående"
                   className="h-10 w-10 rounded-xl flex items-center justify-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 >
@@ -1113,7 +1105,7 @@ export default function App() {
                 </span>
                 <button
                   disabled={currentPage === totalPages}
-                  onClick={() => setWidgetState(s => ({ ...s, currentPage: s.currentPage + 1 }))}
+                  onClick={() => { setJobsBeingVerified([]); setWidgetState(s => ({ ...s, currentPage: s.currentPage + 1 })); }}
                   aria-label="Nästa"
                   className="h-10 w-10 rounded-xl flex items-center justify-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 >
