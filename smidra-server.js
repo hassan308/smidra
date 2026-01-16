@@ -246,6 +246,36 @@ function detectRemote(job) {
   return hasPositive && !hasNegative;
 }
 
+// Smart verification: Check if job description ACTUALLY requires experience
+// Returns true if badge "Nybörjare OK" should be HIDDEN (because experience IS required)
+function shouldHideNoExperienceBadge(job) {
+  const desc = (job.description?.text || "").toLowerCase();
+  const title = (job.headline || "").toLowerCase();
+  const text = desc + " " + title;
+
+  // Patterns that indicate experience IS required
+  const requiresExp = [
+    /\d+\s*års?\s*erfarenhet/,           // "5 års erfarenhet"
+    /minst\s*\d+\s*års?\s*erfarenhet/,   // "minst 3 års erfarenhet"
+    /erfarenhet\s*(krävs|behövs|önskas)/,// "erfarenhet krävs"
+    /erfaren\s+\w+/,                      // "erfaren utvecklare"
+    /senior/,                             // "senior"
+    /flerårig\s*erfarenhet/,             // "flerårig erfarenhet"
+    /gedigen\s*erfarenhet/,              // "gedigen erfarenhet"
+    /djup\s*(kompetens|erfarenhet)/,     // "djup kompetens"
+    /dokumenterad\s*erfarenhet/,         // "dokumenterad erfarenhet"
+    /years?\s*(of\s*)?experience/,       // "years of experience"
+    /experienced\s+\w+/,                 // "experienced developer"
+  ];
+
+  const needsExperience = requiresExp.some(p => p.test(text));
+
+  if (needsExperience) {
+    console.log(`🔍 Badge hidden: "${job.headline}" - description requires experience`);
+  }
+
+  return needsExperience;
+}
 
 function formatJob(job, includeFullDetails = false) {
   // API returns coordinates as [longitude, latitude]
@@ -271,9 +301,16 @@ function formatJob(job, includeFullDetails = false) {
     ? (scopeMin === scopeMax ? `${scopeMin}%` : `${scopeMin}-${scopeMax}%`)
     : null;
 
-  // Flag for AI verification - if API says "no experience required", AI should verify
-  const apiSaysNoExperience = job.experience_required === false;
-  const needsAIVerification = apiSaysNoExperience && includeFullDetails;
+  // SMART BADGE VERIFICATION:
+  // If API says "no experience required" but description mentions experience,
+  // hide the "Nybörjare OK" badge (set to null instead of false)
+  let verifiedExperienceRequired = job.experience_required ?? null;
+  if (job.experience_required === false && includeFullDetails) {
+    // API says no experience needed - verify against description
+    if (shouldHideNoExperienceBadge(job)) {
+      verifiedExperienceRequired = null; // Hide the badge - description requires experience
+    }
+  }
 
   const baseJob = {
     id: job.id,
@@ -296,8 +333,8 @@ function formatJob(job, includeFullDetails = false) {
     duration: job.duration?.label || "",
     scope: scopeText,
 
-    // Requirements badges - RAW API values (AI will verify experienceRequired: false)
-    experienceRequired: job.experience_required ?? null,
+    // Requirements badges - VERIFIED against description
+    experienceRequired: verifiedExperienceRequired,
     drivingLicenseRequired: job.driving_license_required ?? false,
     accessToOwnCar: job.access_to_own_car ?? false,
     isRemote: isRemote,
@@ -323,10 +360,7 @@ function formatJob(job, includeFullDetails = false) {
       niceToHaveSkills,
       mustHaveLanguages,
       employerUrl: job.employer?.url || "",
-      applicationUrl: job.application_details?.url || job.webpage_url,
-      // AI verification fields - ChatGPT MUST verify these badges
-      needsVerification: needsAIVerification,
-      verificationContext: needsAIVerification ? job.description?.text?.substring(0, 800) : undefined
+      applicationUrl: job.application_details?.url || job.webpage_url
     };
   }
 
@@ -603,82 +637,7 @@ Then call display_jobs with the filtered list.`
     const lang = (language || 'sv').toLowerCase();
     const dir = direction || (lang === 'ar' || lang === 'he' || lang === 'fa' || lang === 'ur' ? 'rtl' : 'ltr');
 
-    // Find jobs that need AI verification (experienceRequired: false from API)
-    const jobsNeedingVerification = jobs.filter(j => j.needsVerification);
-    const verificationNeeded = jobsNeedingVerification.length > 0;
-
-    // ============================================================
-    // IF VERIFICATION NEEDED: Don't show widget yet!
-    // ChatGPT must verify badges FIRST, then call display_jobs
-    // ============================================================
-    if (verificationNeeded) {
-      console.log(`🔍 ${jobsNeedingVerification.length} jobs need AI badge verification BEFORE showing widget`);
-
-      const verificationResponse = {
-        status: "VERIFICATION_REQUIRED",
-        message: `${jobsNeedingVerification.length} jobb har "Nybörjare OK" badge som kan vara fel. Verifiera INNAN widgeten visas.`,
-
-        // Search params for display_jobs
-        searchParams: {
-          query,
-          location: location || 'Sverige',
-          language: lang,
-          direction: dir
-        },
-        total,
-
-        // Jobs to verify - ChatGPT must check these
-        jobsToVerify: jobsNeedingVerification.map(j => ({
-          id: j.id,
-          title: j.title,
-          employer: j.employer,
-          currentBadge: "experienceRequired: false (visar 'Nybörjare OK')",
-          descriptionToCheck: (j.verificationContext || j.fullDescription || '').substring(0, 600)
-        })),
-
-        // All jobs (to pass to display_jobs after verification)
-        allJobs: jobs,
-
-        nextAction: {
-          required: true,
-          tool: "display_jobs",
-          instruction: "Efter verifiering, anropa display_jobs med korrigerade badges"
-        }
-      };
-
-      return {
-        content: [{
-          type: "text",
-          text: `${JSON.stringify(verificationResponse, null, 2)}
-
-⚠️ BADGE-VERIFIERING KRÄVS INNAN WIDGET VISAS!
-
-${jobsNeedingVerification.length} jobb har "experienceRequired: false" (visar "Nybörjare OK" badge).
-
-STEG 1 - VERIFIERA VARJE JOBB:
-${jobsNeedingVerification.map((j, i) => `
-${i + 1}. "${j.title}" hos ${j.employer}
-   Beskrivning: "${(j.verificationContext || '').substring(0, 300)}..."
-
-   FRÅGA: Kräver detta jobb erfarenhet? (Leta efter "X års erfarenhet", "erfarenhet krävs", "senior", etc.)
-   Om JA → sätt experienceRequired: null (ta bort badge)
-   Om NEJ → behåll experienceRequired: false (badge OK)
-`).join('\n')}
-
-STEG 2 - ANROPA display_jobs:
-När du har verifierat alla, anropa display_jobs med allJobs där du har korrigerat experienceRequired för de jobb som faktiskt kräver erfarenhet.
-
-Exempel på korrigering:
-- Jobb "Senior Utvecklare" med "5 års erfarenhet krävs" → experienceRequired: null
-- Jobb "Kundtjänst" med "ingen erfarenhet krävs" → experienceRequired: false (behåll)`
-        }]
-      };
-    }
-
-    // ============================================================
-    // NO VERIFICATION NEEDED: Show widget directly
-    // ============================================================
-    console.log(`📤 Found ${jobs.length} jobs - showing widget directly (no verification needed)`);
+    console.log(`📤 Found ${jobs.length} jobs - showing widget directly`);
 
     return {
       structuredContent: {

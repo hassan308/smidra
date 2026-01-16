@@ -47,10 +47,6 @@ export interface Job {
   // URLs
   employerUrl?: string;
   applicationUrl?: string;
-
-  // ChatGPT verification
-  needsVerification?: boolean;
-  verificationContext?: string;
 }
 
 export interface SalaryData {
