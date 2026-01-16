@@ -408,6 +408,262 @@ if (url.pathname === "/events") {
 
 ---
 
+## 🤖 AI Badge-verifiering (Erfarenhet krävs/ej krävs)
+
+### Problemet
+Arbetsförmedlingens API returnerar `experience_required: false` för vissa jobb, men detta är inte alltid korrekt.
+Många jobb som säger "erfarenhet krävs ej" i API:et nämner ändå erfarenhetskrav i beskrivningen (t.ex. "5 års erfarenhet", "senior").
+
+### Lösningen - AI-verifiering via ChatGPT
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 1. ANVÄNDARE SÖKER JOBB                                     │
+│    - search_jobs anropas                                    │
+│    - Backend identifierar jobb med experienceRequired=false │
+│    - Extraherar snippets runt "erfarenhet"-nyckelord        │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 2. BACKEND RETURNERAR                                       │
+│    - Alla jobb till widget (visas direkt!)                  │
+│    - widgetSessionId för SSE                                │
+│    - jobsBeingVerified[] - lista på jobb-IDs som verifieras │
+│    - _rule med verifieringsinstruktioner till ChatGPT       │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 3. WIDGET VISAR                                             │
+│    - Alla jobb direkt (ingen väntan!)                       │
+│    - Spinner 🔄 på badges för jobb som verifieras           │
+│    - "Erfarenhet krävs" som default för övriga              │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 4. CHATGPT VERIFIERAR (tyst i bakgrunden)                   │
+│    - Läser snippets för varje jobb                          │
+│    - Avgör: nämns "X års erfarenhet", "senior", "erfaren"?  │
+│    - Anropar verify_job_badges för varje jobb               │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 5. SSE PUSH                                                 │
+│    - Backend pushar badge_update till widget                │
+│    - Widget uppdaterar badge i realtid                      │
+│    - Spinner försvinner → visar "Erfarenhet ej krävs" 🎓    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Snippet-extraktion (Backend)
+
+Istället för att skicka hela jobbeskrivningen, extraheras endast relevanta delar:
+
+```javascript
+// I search_jobs tool:
+const keywords = ['erfarenhet', 'erfarenheter', 'erfaren', 'experience', 'års arbete'];
+const snippets = [];
+
+for (const keyword of keywords) {
+  const regex = new RegExp(keyword, 'gi');
+  let match;
+  while ((match = regex.exec(jobDescription)) !== null) {
+    // 200 tecken före och efter varje träff
+    const start = Math.max(0, match.index - 200);
+    const end = Math.min(text.length, match.index + keyword.length + 200);
+    snippets.push(`...${text.substring(start, end)}...`);
+  }
+}
+
+// Max 3 unika snippets per jobb
+const verificationSnippets = [...new Set(snippets)].slice(0, 3).join('\n---\n');
+```
+
+### _rule med verifieringsinstruktioner
+
+```javascript
+// I search_jobs return:
+return {
+  structuredContent: {
+    _rule: jobsNeedingVerification.length > 0
+      ? `⚠️ VIKTIGT: ${jobsNeedingVerification.length} JOBB BEHÖVER BADGE-VERIFIERING!
+
+STEG 1: Widget visas nu med spinner på badges.
+STEG 2: DU MÅSTE anropa verify_job_badges för VARJE jobb nedan:
+
+${verificationData.map(j => `
+📋 JOB ID: ${j.id}
+   Titel: "${j.title}"
+   Snippets: "${j.snippets?.substring(0, 300) || ''}"
+
+   → Om snippets nämner "X års erfarenhet", "senior", "erfaren" → experienceRequired: true
+   → Om INGET erfarenhetskrav nämns → experienceRequired: false
+
+   Anropa: verify_job_badges({ widgetSessionId: "${widgetSessionId}", jobId: "${j.id}", badges: { experienceRequired: true/false } })
+`).join('\n')}
+
+SKRIV INGEN TEXT. Anropa verify_job_badges för varje jobb DIREKT.`
+      : "VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS.",
+
+    // Widget-data
+    widgetSessionId,
+    jobsBeingVerified: verificationData.map(j => j.id),
+    jobs: [...],
+    // ...
+  }
+};
+```
+
+### verify_job_badges Tool
+
+```javascript
+server.registerTool(
+  "verify_job_badges",
+  {
+    title: "Verify Job Badges",
+    description: `Verify experience requirements for jobs.
+
+Called automatically after search_jobs when jobs need badge verification.
+ONLY call this when instructed in _rule - widget is waiting with spinner.`,
+    inputSchema: {
+      widgetSessionId: z.string(),
+      jobId: z.string(),
+      badges: z.object({
+        experienceRequired: z.boolean().optional()
+      })
+    },
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false,
+      destructiveHint: false
+    },
+    _meta: {
+      "openai/widgetAccessible": true
+    }
+  },
+  async (params) => {
+    console.log(`🔍 AI BADGE VERIFICATION: Job ${params.jobId}`);
+    console.log(`   experienceRequired: ${params.badges.experienceRequired}`);
+
+    // Push till widget via SSE
+    const pushed = pushToWidget(params.widgetSessionId, 'badge_update', {
+      jobId: params.jobId,
+      badges: params.badges
+    });
+
+    if (pushed) console.log(`📤 SSE push OK`);
+    return { content: [] };  // Tyst!
+  }
+);
+```
+
+### Widget - SSE Hantering
+
+```typescript
+// Reconnect med server's session ID
+const [sseSessionId, setSseSessionId] = useState<string>(widgetSessionId.current);
+
+useEffect(() => {
+  const es = new EventSource(`https://api.smidra.se/events?session=${sseSessionId}`);
+
+  es.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+
+    // Badge-verifiering uppdatering
+    if (data.type === 'badge_update' && data.jobId && data.badges) {
+      // Uppdatera jobbet
+      setJobs(prev => prev.map(job =>
+        job.id === data.jobId
+          ? { ...job, experienceRequired: data.badges.experienceRequired }
+          : job
+      ));
+
+      // Ta bort från "verifieras"-listan (stoppar spinner)
+      setJobsBeingVerified(prev => prev.filter(id => id !== data.jobId));
+    }
+  };
+
+  return () => es.close();
+}, [sseSessionId]);
+
+// Uppdatera session ID från server
+useEffect(() => {
+  if (data.widgetSessionId) {
+    setSseSessionId(data.widgetSessionId);  // Triggar SSE reconnect
+  }
+}, [data.widgetSessionId]);
+```
+
+### Widget - Badge Display
+
+```jsx
+{/* Experience badge - tre states */}
+{isBeingVerified ? (
+  // 🔄 SPINNER - verifieras just nu
+  <span className="... bg-blue-50 text-blue-600">
+    <div className="w-3.5 h-3.5 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+    Verifierar...
+  </span>
+) : job.experienceRequired === false ? (
+  // 🎓 GRÖNT - AI bekräftat att erfarenhet EJ krävs
+  <span className="... bg-emerald-50 text-emerald-700">
+    <GraduationCap className="w-3.5 h-3.5" />
+    Erfarenhet ej krävs
+  </span>
+) : (
+  // 💼 GRÅTT - Default (erfarenhet krävs)
+  <span className="... bg-gray-100 text-gray-600">
+    <Briefcase className="w-3.5 h-3.5" />
+    Erfarenhet krävs
+  </span>
+)}
+```
+
+### Viktiga lärdomar
+
+| Lärdom | Förklaring |
+|--------|------------|
+| **Snippets, inte hela text** | 200 tecken före/efter nyckelord räcker, minskar tokens |
+| **Widget visas direkt** | Ingen väntan på AI - spinner visar progress |
+| **_rule i början** | ChatGPT ser verifieringsinstruktioner FÖRST |
+| **SSE reconnect** | Widget måste reconnecta med server's session ID |
+| **Default = "krävs"** | Säkrare att anta erfarenhet krävs tills AI bekräftar motsatsen |
+
+### Server-loggar vid verifiering
+
+```
+🤖 ========== BADGE VERIFICATION NEEDED ==========
+📊 2 jobb att verifiera
+🔑 Session: ws_abc123
+
+📋 JOB: 30393859
+   Titel: Systemutvecklare till BM System
+   Snippets: ...erfarenhet inom .NET/C#...God kommunikationsförmåga...
+
+📋 JOB: 29958005
+   Titel: Senior Systemutvecklare – Robotlösningar
+   Snippets: ...Minst 5 års erfarenhet...senior erfarenhet...
+
+🤖 ================================================
+
+🔍 ========== AI BADGE VERIFICATION RESULT ==========
+📋 Job ID: 30393859
+📊 Badges: { "experienceRequired": false }
+✅ AI säger: Ingen erfarenhet krävs → badge visas
+📤 SSE push OK till widget
+
+🔍 ========== AI BADGE VERIFICATION RESULT ==========
+📋 Job ID: 29958005
+📊 Badges: { "experienceRequired": true }
+❌ AI säger: Erfarenhet KRÄVS → badge döljs
+📤 SSE push OK till widget
+```
+
+---
+
 ## 🖥️ Fullscreen Mode
 
 Widget har nu fullscreen-läge med stor karta.
@@ -468,11 +724,23 @@ Pushar lönedata/marknadsinfo till befintlig widget via SSE. **Skapar INGEN ny w
 - `annotations: { readOnlyHint: true, ... }`
 - `_meta: { "openai/widgetAccessible": true }`
 
+### verify_job_badges 🤖 (AI Badge-verifiering)
+Verifierar erfarenhetskrav för jobb via AI. Anropas automatiskt av ChatGPT efter search_jobs.
+
+**Parametrar:**
+- `widgetSessionId` (string) - Session-ID från widgeten
+- `jobId` (string) - Jobbets ID
+- `badges` - { experienceRequired: boolean }
+
+**Flöde:**
+1. search_jobs identifierar jobb med `experienceRequired: false`
+2. Extraherar snippets runt "erfarenhet"-nyckelord
+3. ChatGPT läser snippets och avgör om erfarenhet verkligen krävs
+4. Anropar verify_job_badges med resultatet
+5. Backend pushar uppdatering via SSE till widgeten
+
 ### display_salary
 Visar lönestatistik i ny standalone widget (används när ingen widgetSessionId finns).
-
-### display_cv
-Visar CV i snygg widget med PDF-export.
 
 ---
 
@@ -1207,6 +1475,7 @@ className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bl
 - [x] Sortering (nyast, deadline, företag)
 - [x] Sparade jobb-flik med badge
 - [x] Dela-funktion (Native Share + Clipboard)
+- [x] AI Badge-verifiering (Erfarenhet krävs/ej krävs via ChatGPT + SSE)
 - [ ] Notifikationer för nya jobb
 - [ ] CV-matchning mot jobb
 - [ ] Personligt brev-generator

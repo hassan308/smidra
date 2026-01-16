@@ -11,7 +11,9 @@ import { useOpenAiGlobal, useWidgetState, useDisplayMode, useMaxHeight } from '.
 import { translateJobs, translateLabels, translateBatch } from './utils/translate';
 import type { Job, Labels, SalaryData, ToolOutput, WidgetState } from './types';
 
-const JOBS_PER_PAGE = 12;
+// Detect mobile early for page size
+const isMobileDevice = typeof window !== 'undefined' && window.innerWidth < 640;
+const JOBS_PER_PAGE = isMobileDevice ? 6 : 12;
 
 // Respect prefers-reduced-motion
 const prefersReducedMotion = typeof window !== 'undefined'
@@ -54,8 +56,8 @@ const createDefaultWidgetState = (): WidgetState => ({
   currentPage: 1
 });
 
-// Detect mobile
-const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+// Detect mobile (use same value as isMobileDevice)
+const isMobile = isMobileDevice;
 
 // Premium company logo with elegant fallback
 function CompanyLogo({ name, logoUrl, size = 44 }: { name: string; logoUrl?: string; size?: number }) {
@@ -862,7 +864,24 @@ export default function App() {
   }, [toggleFullscreen, setWidgetState]);
 
   useEffect(() => { if (toolOutput) handleData(toolOutput); }, [toolOutput, handleData]);
-  useEffect(() => { if (theme) document.documentElement.classList.toggle('dark', theme === 'dark'); }, [theme]);
+
+  // Theme handling - FORCE LIGHT MODE ON MOBILE
+  useEffect(() => {
+    if (isMobile) {
+      // On mobile, always use light theme regardless of system/OpenAI theme
+      document.documentElement.classList.remove('dark');
+    } else if (theme) {
+      // On desktop, respect OpenAI theme
+      document.documentElement.classList.toggle('dark', theme === 'dark');
+    }
+  }, [theme]);
+
+  // Force light theme on mobile at mount
+  useEffect(() => {
+    if (isMobile) {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
   useEffect(() => {
     const h = isFullscreen ? (maxHeight || window.innerHeight) : document.body.scrollHeight;
     window.openai?.notifyIntrinsicHeight?.(h);
