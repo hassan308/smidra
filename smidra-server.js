@@ -723,7 +723,26 @@ HOW TO USE:
       query: z.string().describe("Search term"),
       location: z.string().default("Sverige").describe("Location"),
       total: z.number().optional().describe("Total jobs found"),
-      jobs: z.array(z.any()).describe("Jobs array with CORRECTED badges - pass allJobs from search_jobs with experienceRequired fixed")
+      jobs: z.array(z.object({
+        id: z.string(),
+        title: z.string(),
+        employer: z.string(),
+        location: z.string(),
+        url: z.string(),
+        deadline: z.string().optional(),
+        logoUrl: z.string().optional(),
+        workingHours: z.string().optional(),
+        duration: z.string().optional(),
+        experienceRequired: z.boolean().nullable().optional().describe("VERIFY THIS: null = remove badge, false = show 'Nybörjare OK'"),
+        drivingLicenseRequired: z.boolean().optional(),
+        isRemote: z.boolean().optional(),
+        vacancies: z.number().optional(),
+        occupationField: z.string().optional(),
+        description: z.string().optional(),
+        fullDescription: z.string().optional(),
+        mustHaveSkills: z.array(z.string()).optional(),
+        niceToHaveSkills: z.array(z.string()).optional()
+      })).describe("Jobs array with CORRECTED experienceRequired badges")
     },
     _meta: {
       "openai/outputTemplate": "ui://widget/job-list.html",
