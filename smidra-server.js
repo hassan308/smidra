@@ -603,48 +603,86 @@ Then call display_jobs with the filtered list.`
     const lang = (language || 'sv').toLowerCase();
     const dir = direction || (lang === 'ar' || lang === 'he' || lang === 'fa' || lang === 'ur' ? 'rtl' : 'ltr');
 
-    console.log(`📤 Found ${jobs.length} jobs - showing widget directly (Google Translate for ${lang})`);
-
     // Find jobs that need AI verification (experienceRequired: false from API)
     const jobsNeedingVerification = jobs.filter(j => j.needsVerification);
     const verificationNeeded = jobsNeedingVerification.length > 0;
 
+    // ============================================================
+    // IF VERIFICATION NEEDED: Don't show widget yet!
+    // ChatGPT must verify badges FIRST, then call display_jobs
+    // ============================================================
     if (verificationNeeded) {
-      console.log(`🔍 ${jobsNeedingVerification.length} jobs need AI badge verification`);
+      console.log(`🔍 ${jobsNeedingVerification.length} jobs need AI badge verification BEFORE showing widget`);
+
+      const verificationResponse = {
+        status: "VERIFICATION_REQUIRED",
+        message: `${jobsNeedingVerification.length} jobb har "Nybörjare OK" badge som kan vara fel. Verifiera INNAN widgeten visas.`,
+
+        // Search params for display_jobs
+        searchParams: {
+          query,
+          location: location || 'Sverige',
+          language: lang,
+          direction: dir
+        },
+        total,
+
+        // Jobs to verify - ChatGPT must check these
+        jobsToVerify: jobsNeedingVerification.map(j => ({
+          id: j.id,
+          title: j.title,
+          employer: j.employer,
+          currentBadge: "experienceRequired: false (visar 'Nybörjare OK')",
+          descriptionToCheck: (j.verificationContext || j.fullDescription || '').substring(0, 600)
+        })),
+
+        // All jobs (to pass to display_jobs after verification)
+        allJobs: jobs,
+
+        nextAction: {
+          required: true,
+          tool: "display_jobs",
+          instruction: "Efter verifiering, anropa display_jobs med korrigerade badges"
+        }
+      };
+
+      return {
+        content: [{
+          type: "text",
+          text: `${JSON.stringify(verificationResponse, null, 2)}
+
+⚠️ BADGE-VERIFIERING KRÄVS INNAN WIDGET VISAS!
+
+${jobsNeedingVerification.length} jobb har "experienceRequired: false" (visar "Nybörjare OK" badge).
+
+STEG 1 - VERIFIERA VARJE JOBB:
+${jobsNeedingVerification.map((j, i) => `
+${i + 1}. "${j.title}" hos ${j.employer}
+   Beskrivning: "${(j.verificationContext || '').substring(0, 300)}..."
+
+   FRÅGA: Kräver detta jobb erfarenhet? (Leta efter "X års erfarenhet", "erfarenhet krävs", "senior", etc.)
+   Om JA → sätt experienceRequired: null (ta bort badge)
+   Om NEJ → behåll experienceRequired: false (badge OK)
+`).join('\n')}
+
+STEG 2 - ANROPA display_jobs:
+När du har verifierat alla, anropa display_jobs med allJobs där du har korrigerat experienceRequired för de jobb som faktiskt kräver erfarenhet.
+
+Exempel på korrigering:
+- Jobb "Senior Utvecklare" med "5 års erfarenhet krävs" → experienceRequired: null
+- Jobb "Kundtjänst" med "ingen erfarenhet krävs" → experienceRequired: false (behåll)`
+        }]
+      };
     }
 
-    // Build verification data for ChatGPT - MANDATORY second step
-    const verificationData = verificationNeeded ? {
-      _step2_MANDATORY: "BADGE VERIFICATION",
-      _verifyInstructions: `⚠️ MANDATORY STEP 2: VERIFY BADGES BEFORE DONE
+    // ============================================================
+    // NO VERIFICATION NEEDED: Show widget directly
+    // ============================================================
+    console.log(`📤 Found ${jobs.length} jobs - showing widget directly (no verification needed)`);
 
-${jobsNeedingVerification.length} job(s) show "Nybörjare OK" badge that MAY BE WRONG.
-
-YOU MUST:
-1. Read each verificationContext below
-2. Check if description mentions experience requirements ("X års erfarenhet", "erfarenhet krävs", "senior", etc.)
-3. If experience IS required, call verify_job_badges to REMOVE the incorrect badge
-
-Jobs to verify NOW:`,
-      _jobsToVerify: jobsNeedingVerification.map(j => ({
-        id: j.id,
-        title: j.title,
-        currentBadge: "experienceRequired: false (Nybörjare OK)",
-        verificationContext: (j.verificationContext || '').substring(0, 400),
-        action: "Read context. If experience required → call verify_job_badges with experienceRequired: null"
-      }))
-    } : {};
-
-    // Main rule - include verification reminder if needed
-    const mainRule = verificationNeeded
-      ? `VISA WIDGET. ${jobsNeedingVerification.length} JOBB BEHÖVER BADGE-VERIFIERING - LÄS _jobsToVerify OCH ANROPA verify_job_badges FÖR FELAKTIGA.`
-      : "VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS.";
-
-    // ALLTID returnera widget direkt - Google Translate i widget hanterar översättning
     return {
       structuredContent: {
-        _rule: mainRule,
-        ...verificationData,
+        _rule: "VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS.",
         language: lang,
         direction: dir,
         query: query,
@@ -653,69 +691,47 @@ Jobs to verify NOW:`,
         locationSwedish: location || 'Sverige',
         total,
         jobs,
-        translateMode: lang !== 'sv'  // Widget översätter om inte svenska
+        translateMode: lang !== 'sv'
       }
     };
   }
 );
 
 // ============================================================
-// display_jobs - Alternative way to show jobs (rarely needed)
-// Usually search_jobs shows widget directly
+// display_jobs - Show jobs in widget (after badge verification)
 // ============================================================
 server.registerTool(
   "display_jobs",
   {
-    title: "Display Jobs (Smidra MCP)",
-    description: `Show job results in widget. Usually not needed - search_jobs shows widget directly.
+    title: "Display Jobs (Step 2 - After Verification)",
+    description: `Show job results in widget AFTER you have verified badges.
 
-Only use this if you need to filter/modify jobs before showing.
+USE THIS WHEN:
+- search_jobs returned VERIFICATION_REQUIRED status
+- You have verified each job's experienceRequired badge
+- You have corrected any wrong badges (experienceRequired: null for jobs that require experience)
+
+HOW TO USE:
+1. Take the allJobs array from search_jobs response
+2. For each job you verified that DOES require experience, change experienceRequired to null
+3. Call this tool with the corrected jobs array
 
 ⚠️ AFTER CALLING: Do NOT write ANY text. Widget shows everything.`,
     inputSchema: {
       language: z.string().default("sv"),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
-      query: z.string().describe("Translated search term"),
-      querySwedish: z.string().optional().describe("Original Swedish search term"),
-      location: z.string().default("Sverige").describe("Translated location"),
-      locationSwedish: z.string().optional().describe("Original Swedish location"),
+      query: z.string().describe("Search term"),
+      location: z.string().default("Sverige").describe("Location"),
       total: z.number().optional().describe("Total jobs found"),
-      jobs: z.array(z.object({
-        id: z.string().describe("KEEP ORIGINAL - do not change"),
-        title: z.string().describe("Translated job title"),
-        employer: z.string().describe("Employer name (keep original)"),
-        location: z.string().describe("Translated location"),
-        region: z.string().optional(),
-        lat: z.number().optional(),
-        lng: z.number().optional(),
-        deadline: z.string().optional().describe("Translated deadline"),
-        url: z.string().describe("KEEP ORIGINAL URL - do not modify!"),
-        logoUrl: z.string().optional().describe("Company logo URL")
-      })),
-      labels: z.object({
-        jobs: z.string().optional(),
-        map: z.string().optional(),
-        all: z.string().optional(),
-        fulltime: z.string().optional(),
-        parttime: z.string().optional(),
-        showMore: z.string().optional(),
-        apply: z.string().optional(),
-        applyNow: z.string().optional(),
-        noJobs: z.string().optional(),
-        tryOther: z.string().optional(),
-        fetchingSalary: z.string().optional(),
-        salaryInfo: z.string().optional(),
-        salaryTitle: z.string().optional(),
-        salaryShown: z.string().optional()
-      }).optional().describe("Translated UI labels")
+      jobs: z.array(z.any()).describe("Jobs array with CORRECTED badges - pass allJobs from search_jobs with experienceRequired fixed")
     },
     _meta: {
       "openai/outputTemplate": "ui://widget/job-list.html",
-      "openai/widgetDescription": "Visar översatta jobbresultat i en interaktiv lista. Ingen ytterligare text behövs."
+      "openai/widgetDescription": "Visar jobbresultat med verifierade badges. Ingen ytterligare text behövs."
     }
   },
-  async ({ language, direction, query, querySwedish, location, locationSwedish, total, jobs, labels }) => {
-    console.log(`✅ display_jobs: ${jobs.length} jobs (translated to ${language})`);
+  async ({ language, direction, query, location, total, jobs }) => {
+    console.log(`✅ display_jobs: ${jobs.length} jobs with verified badges`);
 
     return {
       structuredContent: {
@@ -723,12 +739,12 @@ Only use this if you need to filter/modify jobs before showing.
         language: language || 'sv',
         direction: direction || 'ltr',
         query: query,
-        querySwedish: querySwedish || query,
+        querySwedish: query,
         location: location || 'Sverige',
-        locationSwedish: locationSwedish || location || '',
+        locationSwedish: location || 'Sverige',
         total: total || jobs.length,
         jobs,
-        labels: labels || null
+        translateMode: (language || 'sv') !== 'sv'
       }
     };
   }
