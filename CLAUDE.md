@@ -819,6 +819,376 @@ const defaultLabels = {
 
 ---
 
+## 🎨 Premium Widget Design (Januar 2026)
+
+### Design Stack
+- **React 19** med TypeScript
+- **Tailwind CSS v4** (viktigt: använd `gray-*` inte `neutral-*`)
+- **Framer Motion** för animationer
+- **Lucide React** för ikoner
+- **clsx** för conditional classes
+
+### Filstruktur
+```
+widget/
+├── src/
+│   ├── App.tsx           # Huvudkomponent
+│   ├── hooks.ts          # OpenAI hooks (useOpenAiGlobal, useWidgetState, etc)
+│   ├── types.ts          # TypeScript types
+│   ├── index.css         # Tailwind import + custom styles
+│   └── utils/
+│       └── translate.ts  # Google Translate + Lingva fallback
+├── dist/
+│   └── index.html        # Byggd widget (single-file)
+└── package.json
+```
+
+### Bygga widgeten
+```bash
+cd /mnt/c/Users/test/smidra/widget
+npm run build                    # Bygger till dist/index.html
+cp dist/index.html ../job-list-widget-v2.html   # ⚠️ VIKTIGT: v2!
+```
+
+### Deploy
+```bash
+cd /mnt/c/Users/test/smidra
+git add -A && git commit -m "Update widget" && git push
+ssh vps "cd /home/studioboka/smidra && git pull && docker-compose up -d --build"
+```
+
+### ⚠️ VIKTIGT: Rätt widget-fil!
+Servern laddar `job-list-widget-v2.html`, INTE `job-list-widget.html`!
+```javascript
+// I smidra-server.js:
+const jobListHTML = readFileSync(join(__dirname, "job-list-widget-v2.html"), "utf-8");
+```
+
+### Design Principer
+
+#### 1. Tailwind v4 - Använd `gray`, INTE `neutral`
+```javascript
+// ❌ FEL - neutral finns inte i Tailwind v4:
+className="bg-neutral-100 text-neutral-900"
+
+// ✅ RÄTT - gray fungerar:
+className="bg-gray-100 text-gray-900"
+```
+
+#### 2. Glassmorphism Header
+```jsx
+<header className="sticky top-0 z-20 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-b border-gray-200/60 dark:border-gray-800">
+```
+
+#### 3. Dynamiska Företagslogotyper
+Genererar unik färg baserat på företagsnamn:
+```jsx
+function CompanyLogo({ name, logoUrl, size = 44 }) {
+  const [error, setError] = useState(false);
+  const initial = name?.charAt(0)?.toUpperCase() || '?';
+
+  // Generera konsekvent hue från namn
+  const hue = name?.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 360 || 0;
+
+  if (error || !logoUrl) {
+    return (
+      <div
+        className="flex items-center justify-center rounded-xl font-semibold text-white shadow-sm"
+        style={{
+          width: size,
+          height: size,
+          fontSize: size * 0.4,
+          background: `linear-gradient(135deg, hsl(${hue}, 60%, 55%) 0%, hsl(${hue + 30}, 70%, 45%) 100%)`
+        }}
+      >
+        {initial}
+      </div>
+    );
+  }
+  // ... bild-fallback
+}
+```
+
+#### 4. Skeleton Loading
+```jsx
+function JobCardSkeleton() {
+  return (
+    <div className="rounded-2xl border border-gray-200/60 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 animate-pulse">
+      <div className="flex items-start gap-4">
+        <div className="w-11 h-11 rounded-xl bg-gray-200 dark:bg-gray-800" />
+        <div className="flex-1 space-y-2">
+          <div className="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded" />
+          <div className="h-3 w-16 bg-gray-200 dark:bg-gray-800 rounded" />
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+#### 5. Premium Jobbkort
+```jsx
+<motion.article
+  className={clsx(
+    'group relative flex cursor-pointer flex-col rounded-2xl border bg-white dark:bg-gray-900',
+    'border-gray-200/60 dark:border-gray-800',
+    'hover:border-gray-300 dark:hover:border-gray-700',
+    'hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-gray-950/50',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+    'transition-all duration-200'
+  )}
+>
+```
+
+#### 6. Filter Pills med Blå Highlight
+```jsx
+function FilterPill({ active, onClick, children }) {
+  return (
+    <button
+      onClick={onClick}
+      className={clsx(
+        'px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap',
+        active
+          ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 ring-1 ring-blue-200'
+          : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200'
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+```
+
+#### 7. Tab-knappar
+```jsx
+function TabButton({ active, onClick, icon: Icon, children, count }) {
+  return (
+    <button
+      className={clsx(
+        'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all',
+        active
+          ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-lg'
+          : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+      )}
+    >
+      <Icon className="w-4 h-4" />
+      {children}
+      {count > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs">{count}</span>}
+    </button>
+  );
+}
+```
+
+### Funktioner i Widgeten
+
+#### 🖥️ Fullskärm (Mobil & Web)
+```jsx
+const toggleFullscreen = useCallback(async (forced?: boolean) => {
+  const newMode = forced !== undefined ? forced : !isFullscreen;
+  setIsFullscreen(newMode);
+  try {
+    await window.openai?.requestDisplayMode?.({ mode: newMode ? 'fullscreen' : 'inline' });
+  } catch {}
+}, [isFullscreen]);
+
+// CSS för fullskärm:
+<div className={clsx(
+  'w-full bg-gray-50 dark:bg-gray-950 flex flex-col',
+  isFullscreen && 'fixed inset-0 z-40'
+)}>
+```
+
+#### 🔍 Sökfält i Widget
+```jsx
+const handleSearch = useCallback(() => {
+  if (!searchInput.trim()) return;
+  window.openai?.sendFollowUpMessage?.({ prompt: `Sök jobb: ${searchInput}` });
+  setSearchInput('');
+}, [searchInput]);
+
+// Visar bara i fullskärm:
+{isFullscreen && (
+  <div className="flex gap-2 mb-4">
+    <input
+      type="text"
+      value={searchInput}
+      onChange={(e) => setSearchInput(e.target.value)}
+      onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+      placeholder="Sök nytt jobb..."
+      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800"
+    />
+    <button onClick={handleSearch} className="px-4 py-2.5 rounded-xl bg-blue-600 text-white">
+      Sök
+    </button>
+  </div>
+)}
+```
+
+#### 📑 Sparade Jobb (Tab + Persistens)
+```jsx
+// State:
+const [activeTab, setActiveTab] = useState<'all' | 'saved'>('all');
+
+// Filtrera:
+const displayJobs = useMemo(() => {
+  let filtered = activeTab === 'saved'
+    ? jobs.filter(j => widgetState.savedJobs.includes(j.id))
+    : jobs;
+  // ... mer filtrering
+}, [jobs, activeTab, widgetState.savedJobs]);
+
+// Spara (persisteras via OpenAI widgetState):
+const toggleSave = useCallback((id: string) => {
+  setWidgetState(prev => ({
+    ...prev,
+    savedJobs: prev.savedJobs.includes(id)
+      ? prev.savedJobs.filter(x => x !== id)
+      : [...prev.savedJobs, id]
+  }));
+}, [setWidgetState]);
+```
+
+#### ↕️ Sortering
+```jsx
+const [sortBy, setSortBy] = useState('newest');
+
+const displayJobs = useMemo(() => {
+  // ... filtrering först
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === 'newest') return 0;
+    if (sortBy === 'deadline') {
+      if (!a.deadline) return 1;
+      if (!b.deadline) return -1;
+      return a.deadline.localeCompare(b.deadline);
+    }
+    if (sortBy === 'employer') return a.employer.localeCompare(b.employer);
+    return 0;
+  });
+  return sorted;
+}, [jobs, sortBy]);
+
+// Dropdown:
+<select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+  <option value="newest">Nyast först</option>
+  <option value="deadline">Deadline</option>
+  <option value="employer">Företag A-Ö</option>
+</select>
+```
+
+#### 📤 Dela-funktion
+```jsx
+const shareJob = useCallback(async (job: Job) => {
+  const shareData = {
+    title: job.title,
+    text: `${job.title} hos ${job.employer}`,
+    url: job.url
+  };
+
+  // Native Share API på mobil
+  if (navigator.share && isMobile) {
+    try {
+      await navigator.share(shareData);
+      showToast('Delat!', 'share');
+      return;
+    } catch {}
+  }
+
+  // Fallback: kopiera till clipboard
+  try {
+    await navigator.clipboard.writeText(job.url);
+    showToast('Länk kopierad!', 'check');
+  } catch {
+    window.openai?.openExternal?.({ href: job.url });
+  }
+}, [showToast]);
+```
+
+### Responsiv Grid
+```jsx
+<div className={clsx(
+  'grid gap-3 sm:gap-4 p-4 sm:p-6',
+  isFullscreen
+    ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+    : 'grid-cols-1 sm:grid-cols-2'
+)}>
+```
+
+### Animationer med Framer Motion
+```jsx
+// Respektera prefers-reduced-motion:
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const springTransition = prefersReducedMotion
+  ? { duration: 0 }
+  : { type: 'spring', stiffness: 400, damping: 30 };
+
+// Jobbkort animation:
+<motion.article
+  layout
+  layoutId={job.id}
+  initial={{ opacity: 0, y: 8 }}
+  animate={{ opacity: 1, y: 0 }}
+  exit={{ opacity: 0, y: -8 }}
+  transition={springTransition}
+>
+
+// AnimatePresence för lista:
+<AnimatePresence mode="popLayout">
+  {pageJobs.map((job) => <JobCard key={job.id} ... />)}
+</AnimatePresence>
+```
+
+### Dark Mode
+```jsx
+// Automatiskt från OpenAI theme:
+useEffect(() => {
+  if (theme) document.documentElement.classList.toggle('dark', theme === 'dark');
+}, [theme]);
+
+// Tailwind dark classes:
+className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+```
+
+### Toast Notifications
+```jsx
+const [toast, setToast] = useState({ message: '', visible: false, icon: 'heart' });
+
+const showToast = useCallback((msg: string, icon: 'heart' | 'check' | 'share' = 'heart') => {
+  setToast({ message: msg, visible: true, icon });
+  setTimeout(() => setToast(t => ({ ...t, visible: false })), 2500);
+}, []);
+
+// Render:
+<AnimatePresence>
+  {toast.visible && (
+    <motion.div
+      initial={{ opacity: 0, y: 16, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 16, scale: 0.95 }}
+      className="fixed bottom-24 sm:bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900"
+    >
+      {toast.icon === 'heart' && <Heart className="w-4 h-4 text-rose-400" fill="currentColor" />}
+      {toast.icon === 'check' && <Check className="w-4 h-4 text-emerald-400" />}
+      {toast.message}
+    </motion.div>
+  )}
+</AnimatePresence>
+```
+
+### Accessibility
+```jsx
+// Focus-visible för tangentbordsnavigering:
+className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+
+// ARIA-labels:
+<button aria-label={isSaved ? 'Ta bort från sparade' : 'Spara jobb'} aria-pressed={isSaved}>
+<nav aria-label="Pagination">
+<div role="tablist" aria-label="Filter">
+<button role="tab" aria-selected={active}>
+```
+
+---
+
 ## Framtida förbättringar
 
 - [x] Översätta jobbinnehåll (Google Translate i klient)
@@ -832,6 +1202,11 @@ const defaultLabels = {
 - [x] Mobil UX fix för ChatGPT-appen (padding, centrerad modal)
 - [x] Google Translate + Lingva fallback
 - [x] Översättning av löne-labels och tips
+- [x] Premium widget design (Tailwind v4 + Framer Motion)
+- [x] Sökfält i widget
+- [x] Sortering (nyast, deadline, företag)
+- [x] Sparade jobb-flik med badge
+- [x] Dela-funktion (Native Share + Clipboard)
 - [ ] Notifikationer för nya jobb
 - [ ] CV-matchning mot jobb
 - [ ] Personligt brev-generator
