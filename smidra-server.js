@@ -224,128 +224,26 @@ async function getJobById(jobId) {
   }
 }
 
-// Verify badges by double-checking against job description content
-function verifyBadges(job) {
+// Detect remote work from description (simple keyword check - NOT for experience)
+function detectRemote(job) {
   const descText = (job.description?.text || "").toLowerCase();
   const headline = (job.headline || "").toLowerCase();
   const fullText = descText + " " + headline;
 
-  // === REMOTE WORK VERIFICATION ===
-  // Positive indicators
   const remotePositive = [
     "distans", "remote", "hemarbete", "arbeta hemifrån", "jobba hemifrån",
     "work from home", "wfh", "hybrid", "flexibel arbetsplats", "distansarbete"
   ];
-  // Negative indicators (contradicts remote)
   const remoteNegative = [
     "ej distans", "inte distans", "ingen distans", "på plats",
     "på kontoret", "kräver närvaro", "ej remote", "no remote",
     "kontorsbaserad", "i våra lokaler"
   ];
 
-  const hasRemotePositive = remotePositive.some(kw => fullText.includes(kw));
-  const hasRemoteNegative = remoteNegative.some(kw => fullText.includes(kw));
-  // Only mark as remote if positive keywords exist AND no negative keywords
-  const verifiedRemote = hasRemotePositive && !hasRemoteNegative;
+  const hasPositive = remotePositive.some(kw => fullText.includes(kw));
+  const hasNegative = remoteNegative.some(kw => fullText.includes(kw));
 
-  // === EXPERIENCE VERIFICATION ===
-  // If API says no experience required, verify description doesn't contradict
-  const apiNoExperience = job.experience_required === false;
-
-  // Patterns that indicate experience IS required (contradicts "no experience")
-  const experienceRequired = [
-    /\d+\s*års?\s*erfarenhet/i,           // "2 års erfarenhet", "3 år erfarenhet"
-    /erfarenhet\s*krävs/i,                // "erfarenhet krävs"
-    /kräver\s*erfarenhet/i,               // "kräver erfarenhet"
-    /tidigare\s*erfarenhet/i,             // "tidigare erfarenhet"
-    /relevant\s*erfarenhet/i,             // "relevant erfarenhet"
-    /dokumenterad\s*erfarenhet/i,         // "dokumenterad erfarenhet"
-    /gedigen\s*erfarenhet/i,              // "gedigen erfarenhet"
-    /flerårig\s*erfarenhet/i,             // "flerårig erfarenhet"
-    /minst\s*\d+\s*års?\s*erfarenhet/i,   // "minst 2 års erfarenhet"
-    /erfarenhet\s*av\s*liknande/i,        // "erfarenhet av liknande"
-    /years?\s*of\s*experience/i,          // English: "years of experience"
-    /experience\s*required/i              // English: "experience required"
-  ];
-
-  // Patterns that confirm no experience needed
-  const noExperiencePatterns = [
-    /ingen\s*erfarenhet/i,                // "ingen erfarenhet"
-    /utan\s*erfarenhet/i,                 // "utan erfarenhet"
-    /erfarenhet\s*är\s*inget\s*krav/i,    // "erfarenhet är inget krav"
-    /nybörjare/i,                         // "nybörjare"
-    /nyexaminerad/i,                      // "nyexaminerad"
-    /trainee/i,                           // "trainee"
-    /entry\s*level/i,                     // "entry level"
-    /junior/i,                            // "junior" (often entry-level)
-    /vi\s*utbildar/i,                     // "vi utbildar" (we train)
-    /lär\s*dig/i                          // "lär dig" (learn)
-  ];
-
-  const descRequiresExperience = experienceRequired.some(pattern => pattern.test(fullText));
-  const descConfirmsNoExperience = noExperiencePatterns.some(pattern => pattern.test(fullText));
-
-  // Verify: API says no experience AND description doesn't require experience
-  // OR description explicitly confirms no experience needed
-  let verifiedNoExperience = false;
-  if (apiNoExperience) {
-    // API says no experience - verify description doesn't contradict
-    verifiedNoExperience = !descRequiresExperience || descConfirmsNoExperience;
-  } else if (descConfirmsNoExperience && !descRequiresExperience) {
-    // API might be wrong, but description clearly says no experience
-    verifiedNoExperience = true;
-  }
-
-  // === DRIVING LICENSE VERIFICATION ===
-  const apiDrivingLicense = job.driving_license_required === true;
-
-  // Check description for driving license keywords
-  const drivingKeywords = [
-    "körkort", "b-körkort", "driving license", "driver's license",
-    "bil krävs", "egen bil", "tillgång till bil"
-  ];
-  const descMentionsDriving = drivingKeywords.some(kw => fullText.includes(kw));
-
-  // Verify: Either API says required OR description mentions it
-  const verifiedDrivingLicense = apiDrivingLicense || descMentionsDriving;
-
-  // === VACANCIES VERIFICATION ===
-  // Check if description mentions multiple positions
-  const vacancyPatterns = [
-    /(\d+)\s*tjänster/i,
-    /(\d+)\s*platser/i,
-    /flera\s*tjänster/i,
-    /multiple\s*positions/i
-  ];
-  let verifiedVacancies = job.number_of_vacancies || 1;
-  for (const pattern of vacancyPatterns) {
-    const match = fullText.match(pattern);
-    if (match && match[1]) {
-      const descVacancies = parseInt(match[1]);
-      if (descVacancies > verifiedVacancies) {
-        verifiedVacancies = descVacancies;
-      }
-    }
-  }
-
-  // Log verification results for debugging
-  const apiRemote = hasRemotePositive; // What we detected from keywords
-  const apiNoExp = job.experience_required === false;
-  const apiDriving = job.driving_license_required === true;
-
-  if (apiNoExp && descRequiresExperience && !descConfirmsNoExperience) {
-    console.log(`⚠️ Badge filtered: "${job.headline}" - API says no experience but description requires it`);
-  }
-  if (hasRemotePositive && hasRemoteNegative) {
-    console.log(`⚠️ Badge filtered: "${job.headline}" - Remote keywords found but negated by "på plats" etc`);
-  }
-
-  return {
-    isRemote: verifiedRemote,
-    experienceRequired: verifiedNoExperience ? false : (job.experience_required ?? null),
-    drivingLicenseRequired: verifiedDrivingLicense,
-    vacancies: verifiedVacancies
-  };
+  return hasPositive && !hasNegative;
 }
 
 function formatJob(job, includeFullDetails = false) {
@@ -357,8 +255,8 @@ function formatJob(job, includeFullDetails = false) {
     lat = coords[1];
   }
 
-  // Verify badges against description content
-  const verifiedBadges = verifyBadges(job);
+  // Detect remote work from description keywords
+  const isRemote = detectRemote(job);
 
   // Extract skills from must_have and nice_to_have
   const mustHaveSkills = job.must_have?.skills?.map(s => s.label) || [];
@@ -371,6 +269,11 @@ function formatJob(job, includeFullDetails = false) {
   const scopeText = scopeMin && scopeMax
     ? (scopeMin === scopeMax ? `${scopeMin}%` : `${scopeMin}-${scopeMax}%`)
     : null;
+
+  // Check if this job needs ChatGPT verification
+  // Only verify if API says "no experience required" - ChatGPT will check description
+  const apiSaysNoExperience = job.experience_required === false;
+  const needsVerification = apiSaysNoExperience && includeFullDetails;
 
   const baseJob = {
     id: job.id,
@@ -393,18 +296,18 @@ function formatJob(job, includeFullDetails = false) {
     duration: job.duration?.label || "",
     scope: scopeText,
 
-    // Requirements badges (VERIFIED against description content)
-    experienceRequired: verifiedBadges.experienceRequired,
-    drivingLicenseRequired: verifiedBadges.drivingLicenseRequired,
+    // Requirements badges - RAW API values (ChatGPT will verify if needed)
+    experienceRequired: job.experience_required ?? null,
+    drivingLicenseRequired: job.driving_license_required ?? false,
     accessToOwnCar: job.access_to_own_car ?? false,
-    isRemote: verifiedBadges.isRemote,
+    isRemote: isRemote,
 
     // Category
     occupationField: job.occupation_field?.label || "",
     occupation: job.occupation?.label || "",
 
-    // Vacancies (verified)
-    vacancies: verifiedBadges.vacancies,
+    // Vacancies
+    vacancies: job.number_of_vacancies || 1,
 
     // Publication date
     published: job.publication_date ? new Date(job.publication_date).toLocaleDateString("sv-SE") : ""
@@ -420,7 +323,11 @@ function formatJob(job, includeFullDetails = false) {
       niceToHaveSkills,
       mustHaveLanguages,
       employerUrl: job.employer?.url || "",
-      applicationUrl: job.application_details?.url || job.webpage_url
+      applicationUrl: job.application_details?.url || job.webpage_url,
+      // Flag for ChatGPT verification - only when experienceRequired: false
+      needsVerification: needsVerification,
+      // Include description snippet for ChatGPT to verify
+      verificationContext: needsVerification ? job.description?.text?.substring(0, 500) : undefined
     };
   }
 
@@ -699,10 +606,39 @@ Then call display_jobs with the filtered list.`
 
     console.log(`📤 Found ${jobs.length} jobs - showing widget directly (Google Translate for ${lang})`);
 
+    // Find jobs that need badge verification (experienceRequired: false from API)
+    const jobsNeedingVerification = jobs.filter(j => j.needsVerification);
+    const verificationNeeded = jobsNeedingVerification.length > 0;
+
+    if (verificationNeeded) {
+      console.log(`🔍 ${jobsNeedingVerification.length} jobs need ChatGPT badge verification`);
+    }
+
+    // Build verification instruction for ChatGPT
+    const verificationInstruction = verificationNeeded ? {
+      _verifyBadges: `BADGE VERIFICATION REQUIRED:
+${jobsNeedingVerification.length} job(s) have "experienceRequired: false" badge that needs verification.
+
+For each job with needsVerification: true, read the verificationContext and check:
+- If description mentions experience requirements like "X års erfarenhet", "erfarenhet krävs", "experience required"
+- If so, the badge is WRONG and should be corrected
+
+After showing the widget, call verify_job_badges for any incorrect badges:
+{
+  "widgetSessionId": "[from widget]",
+  "jobId": "[job.id]",
+  "badges": { "experienceRequired": true }
+}
+
+Jobs to verify:
+${jobsNeedingVerification.map(j => `- ID: ${j.id}, Title: "${j.title}", Context: "${(j.verificationContext || '').substring(0, 150)}..."`).join('\n')}`
+    } : {};
+
     // ALLTID returnera widget direkt - Google Translate i widget hanterar översättning
     return {
       structuredContent: {
         _rule: "VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS.",
+        ...verificationInstruction,
         language: lang,
         direction: dir,
         query: query,
@@ -1027,6 +963,60 @@ This is a read-only display operation. Widget is already open and waiting.`,
         text: `Information kunde inte visas. Widgeten är inte ansluten.`
       }]
     };
+  }
+);
+
+// Verify and update job badges via SSE (ChatGPT verification)
+server.registerTool(
+  "verify_job_badges",
+  {
+    title: "Verify Job Badges",
+    description: `Verify and update job badges after reading the job description.
+
+WHEN TO USE:
+When you see jobs with "needsVerification: true" in the job list, you should:
+1. Read the job's verificationContext (description snippet)
+2. Check if the badge "experienceRequired: false" is accurate
+3. If the description mentions experience requirements (e.g., "2 years experience", "erfarenhet krävs"),
+   call this tool to correct the badge
+
+Example: If a job has experienceRequired: false but description says "Vi söker dig med minst 2 års erfarenhet",
+call this tool with experienceRequired: true to correct the badge.
+
+This updates the badge in the widget via SSE - user sees the corrected badge.`,
+    inputSchema: {
+      widgetSessionId: z.string().describe("Session ID from the widget"),
+      jobId: z.string().describe("ID of the job to update"),
+      badges: z.object({
+        experienceRequired: z.boolean().nullable().optional().describe("true = experience required, false = no experience needed, null = unknown"),
+        isRemote: z.boolean().optional().describe("true if job allows remote work"),
+        drivingLicenseRequired: z.boolean().optional().describe("true if driving license is required")
+      }).describe("Updated badge values")
+    },
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false,
+      destructiveHint: false
+    },
+    _meta: {
+      "openai/widgetAccessible": true
+    }
+  },
+  async (params) => {
+    console.log(`🔍 verify_job_badges: Job ${params.jobId} → ${JSON.stringify(params.badges)}`);
+
+    const pushed = pushToWidget(params.widgetSessionId, 'badge_update', {
+      jobId: params.jobId,
+      badges: params.badges
+    });
+
+    if (pushed) {
+      console.log(`✅ Badge update pushed to ${params.widgetSessionId}`);
+      return { content: [] };
+    }
+
+    console.log(`❌ Widget ${params.widgetSessionId} not connected`);
+    return { content: [] };
   }
 );
 

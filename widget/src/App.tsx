@@ -745,7 +745,7 @@ export default function App() {
 
   const closeModal = useCallback(() => { setSelectedJob(null); setSalaryData(null); setSalaryLoading(false); }, []);
 
-  // SSE for salary
+  // SSE for salary and badge updates
   useEffect(() => {
     const es = new EventSource(`https://api.smidra.se/events?session=${widgetSessionId.current}`);
     es.onmessage = async (event) => {
@@ -757,6 +757,21 @@ export default function App() {
           } else { data.translatedTips = data.tips || []; }
           setSalaryData(data);
           setSalaryLoading(false);
+        }
+        // Handle badge verification updates from ChatGPT
+        if (data.type === 'badge_update' && data.jobId && data.badges) {
+          console.log('🔍 Badge update received:', data.jobId, data.badges);
+          setJobs(prevJobs => prevJobs.map(job => {
+            if (job.id === data.jobId) {
+              return {
+                ...job,
+                experienceRequired: data.badges.experienceRequired ?? job.experienceRequired,
+                isRemote: data.badges.isRemote ?? job.isRemote,
+                drivingLicenseRequired: data.badges.drivingLicenseRequired ?? job.drivingLicenseRequired
+              };
+            }
+            return job;
+          }));
         }
       } catch {}
     };
