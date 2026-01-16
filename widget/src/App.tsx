@@ -659,8 +659,8 @@ export default function App() {
   const maxHeight = useMaxHeight();
   const isMobile = useIsMobile();
 
-  // Dynamic jobs per page: 6 on mobile, 12 on desktop
-  const jobsPerPage = isMobile ? 6 : 12;
+  // 6 jobs per page for all devices
+  const jobsPerPage = 6;
 
   const [widgetState, setWidgetState] = useWidgetState<WidgetState>(createDefaultWidgetState);
   const [jobs, setJobs] = useState<Job[]>([]);
