@@ -216,15 +216,24 @@ function JobCard({
             </span>
           )}
 
-          {/* Entry level - no experience required (with verification spinner) */}
-          {job.experienceRequired === false && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 ring-1 ring-violet-200 dark:ring-violet-800">
-              {isBeingVerified ? (
-                <div className="w-3 h-3 border-2 border-violet-300 border-t-violet-600 rounded-full animate-spin" aria-label="Verifierar..." />
-              ) : (
-                <GraduationCap className="w-3 h-3" aria-hidden="true" />
-              )}
-              Nybörjare OK
+          {/* Experience badge - three states:
+              1. Being verified → spinner with "Verifierar..."
+              2. Verified: no experience needed → "Erfarenhet ej krävs" (green)
+              3. All other jobs → "Erfarenhet krävs" (gray) */}
+          {isBeingVerified ? (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800">
+              <div className="w-3.5 h-3.5 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" aria-label="Verifierar..." />
+              Verifierar...
+            </span>
+          ) : job.experienceRequired === false ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-800">
+              <GraduationCap className="w-3.5 h-3.5" aria-hidden="true" />
+              Erfarenhet ej krävs
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+              <Briefcase className="w-3.5 h-3.5" aria-hidden="true" />
+              Erfarenhet krävs
             </span>
           )}
 
@@ -442,10 +451,15 @@ function JobDetailModal({
                 Distansarbete
               </span>
             )}
-            {job.experienceRequired === false && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-50 dark:bg-violet-900/30 text-sm font-medium text-violet-700 dark:text-violet-400 ring-1 ring-violet-200 dark:ring-violet-800">
+            {job.experienceRequired === false ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-sm font-medium text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-800">
                 <GraduationCap className="w-4 h-4" aria-hidden="true" />
-                Ingen erfarenhet krävs
+                Erfarenhet ej krävs
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-400">
+                <Briefcase className="w-4 h-4" aria-hidden="true" />
+                Erfarenhet krävs
               </span>
             )}
             {job.vacancies && job.vacancies > 1 && (
