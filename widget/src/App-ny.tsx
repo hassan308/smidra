@@ -655,7 +655,268 @@ function JobCard({
   );
 }
 
-// Job Detail Modal with full description loading and salary
+// Modal Salary Content - fullscreen salary view for modal
+function ModalSalaryContent({
+  job,
+  salaryData,
+  colors,
+  labels,
+  onBack,
+  onApply
+}: {
+  job: Job;
+  salaryData: SalaryData;
+  colors: { brand: string; brandTint: string; brandDim: string };
+  labels: Labels;
+  onBack: () => void;
+  onApply: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, rotateY: 90 }}
+      animate={{ opacity: 1, rotateY: 0 }}
+      exit={{ opacity: 0, rotateY: -90 }}
+      transition={{ duration: 0.4 }}
+      style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+    >
+      {/* Salary Header */}
+      <div style={{
+        background: `linear-gradient(135deg, ${colors.brand} 0%, ${colors.brandDim} 100%)`,
+        padding: '32px 24px',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Decorative circles */}
+        <div style={{
+          position: 'absolute',
+          top: '-20%',
+          right: '-10%',
+          width: '200px',
+          height: '200px',
+          borderRadius: '50%',
+          background: 'rgba(255,255,255,0.1)',
+          pointerEvents: 'none'
+        }} />
+        <div style={{
+          position: 'absolute',
+          bottom: '-30%',
+          left: '-5%',
+          width: '150px',
+          height: '150px',
+          borderRadius: '50%',
+          background: 'rgba(255,255,255,0.08)',
+          pointerEvents: 'none'
+        }} />
+
+        {/* Back button */}
+        <button
+          onClick={onBack}
+          style={{
+            position: 'absolute',
+            top: '16px',
+            left: '16px',
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            border: 'none',
+            background: 'rgba(255,255,255,0.2)',
+            color: '#fff',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'background 0.2s'
+          }}
+        >
+          <ChevronLeft size={20} />
+        </button>
+
+        <div style={{ textAlign: 'center', position: 'relative', zIndex: 1, paddingTop: '20px' }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '10px',
+            background: 'rgba(255,255,255,0.15)',
+            padding: '8px 16px',
+            borderRadius: '20px',
+            marginBottom: '16px'
+          }}>
+            <TrendingUp size={18} color="#fff" />
+            <span style={{ color: '#fff', fontWeight: 600, fontSize: '0.9rem' }}>{labels.salaryTitle}</span>
+          </div>
+
+          <p style={{
+            fontSize: '3rem',
+            fontWeight: 700,
+            color: '#fff',
+            margin: '0 0 8px 0',
+            textShadow: '0 2px 10px rgba(0,0,0,0.2)'
+          }}>
+            {salaryData.salary?.avg?.toLocaleString('sv-SE')}
+          </p>
+          <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1rem', margin: 0 }}>
+            {labels.krPerMonth}
+          </p>
+        </div>
+      </div>
+
+      {/* Job info mini header */}
+      <div style={{
+        padding: '16px 24px',
+        borderBottom: '1px solid rgba(0,0,0,0.05)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        background: '#fafafa'
+      }}>
+        <CompanyLogo name={job.employer} logoUrl={job.logoUrl} size={40} brandColor={colors.brand} />
+        <div>
+          <p style={{ fontWeight: 600, color: '#1e293b', margin: 0, fontSize: '0.95rem' }}>{job.title}</p>
+          <p style={{ color: '#64748b', margin: 0, fontSize: '0.85rem' }}>{job.employer}</p>
+        </div>
+      </div>
+
+      {/* Salary details */}
+      <div style={{
+        padding: '24px',
+        flex: 1,
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch'
+      }}>
+        {/* Min/Max range */}
+        <div style={{
+          display: 'flex',
+          gap: '16px',
+          marginBottom: '24px'
+        }}>
+          <div style={{
+            flex: 1,
+            padding: '20px',
+            background: '#f8fafc',
+            borderRadius: '16px',
+            textAlign: 'center',
+            border: '1px solid rgba(0,0,0,0.04)'
+          }}>
+            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {labels.salaryMin}
+            </p>
+            <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>
+              {salaryData.salary?.min?.toLocaleString('sv-SE')}
+            </p>
+            <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '4px 0 0 0' }}>kr/mån</p>
+          </div>
+          <div style={{
+            flex: 1,
+            padding: '20px',
+            background: '#f8fafc',
+            borderRadius: '16px',
+            textAlign: 'center',
+            border: '1px solid rgba(0,0,0,0.04)'
+          }}>
+            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {labels.salaryMax}
+            </p>
+            <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>
+              {salaryData.salary?.max?.toLocaleString('sv-SE')}
+            </p>
+            <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '4px 0 0 0' }}>kr/mån</p>
+          </div>
+        </div>
+
+        {/* Tips */}
+        {salaryData.translatedTips && salaryData.translatedTips.length > 0 && (
+          <div style={{ marginBottom: '24px' }}>
+            <p style={{
+              fontSize: '0.8rem',
+              color: '#94a3b8',
+              marginBottom: '12px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              fontWeight: 600
+            }}>
+              Tips
+            </p>
+            {salaryData.translatedTips.map((tip, i) => (
+              <div key={i} style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '12px',
+                marginBottom: '12px',
+                padding: '14px 16px',
+                background: colors.brandTint,
+                borderRadius: '12px',
+                border: `1px solid ${colors.brandDim}`
+              }}>
+                <span style={{ fontSize: '1.1rem' }}>💡</span>
+                <span style={{ fontSize: '0.9rem', color: '#475569', lineHeight: 1.5 }}>{tip}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Sources */}
+        {salaryData.sources && salaryData.sources.length > 0 && (
+          <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>
+            {labels.sources}: {salaryData.sources.join(', ')}
+          </p>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div style={{
+        padding: '16px 24px',
+        borderTop: '1px solid rgba(0,0,0,0.05)',
+        display: 'flex',
+        gap: '12px',
+        background: '#fafafa'
+      }}>
+        <button
+          onClick={onBack}
+          style={{
+            flex: 1,
+            padding: '14px',
+            borderRadius: '12px',
+            border: '1px solid rgba(0,0,0,0.1)',
+            background: '#fff',
+            color: '#64748b',
+            fontWeight: 600,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px'
+          }}
+        >
+          <ChevronLeft size={18} />
+          Tillbaka
+        </button>
+        <button
+          onClick={onApply}
+          style={{
+            flex: 2,
+            padding: '14px',
+            borderRadius: '12px',
+            border: 'none',
+            background: colors.brand,
+            color: '#fff',
+            fontWeight: 600,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            boxShadow: `0 4px 12px ${colors.brandDim}`
+          }}
+        >
+          {labels.applyNow}
+          <ExternalLink size={16} />
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+// Job Detail Modal with full description loading and salary flip
 function JobDetailModal({
   job,
   onClose,
@@ -679,7 +940,15 @@ function JobDetailModal({
 }) {
   const [fullDescription, setFullDescription] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showSalaryView, setShowSalaryView] = useState(false);
   const colors = useLogoColor(job.logoUrl, job.employer);
+
+  // Auto-show salary view when data arrives
+  useEffect(() => {
+    if (salaryData && salaryLoading === false) {
+      setShowSalaryView(true);
+    }
+  }, [salaryData, salaryLoading]);
 
   // Fetch full job description
   useEffect(() => {
@@ -708,6 +977,16 @@ function JobDetailModal({
         setLoading(false);
       });
   }, [job, labels.noDesc, langRef]);
+
+  const handleSalaryClick = () => {
+    if (salaryData) {
+      // Already have data, just show it
+      setShowSalaryView(true);
+    } else {
+      // Request salary data
+      onRequestSalary(job);
+    }
+  };
 
   return (
     <motion.div
@@ -743,271 +1022,250 @@ function JobDetailModal({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header with brand color gradient */}
-        <div style={{
-          background: `linear-gradient(145deg, #fff 0%, ${colors.brandTint} 40%, ${colors.brandDim} 100%)`,
-          padding: '28px 24px',
-          borderBottom: `2px solid ${colors.brandTint}`,
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          {/* Decorative brand glow */}
-          <div style={{
-            position: 'absolute',
-            top: '-30%',
-            right: '-10%',
-            width: '250px',
-            height: '250px',
-            borderRadius: '50%',
-            background: `radial-gradient(circle, ${colors.brandDim} 0%, transparent 60%)`,
-            opacity: 0.8,
-            pointerEvents: 'none'
-          }} />
-          <div style={{
-            position: 'absolute',
-            bottom: '-50%',
-            left: '-10%',
-            width: '200px',
-            height: '200px',
-            borderRadius: '50%',
-            background: `radial-gradient(circle, ${colors.brandTint} 0%, transparent 70%)`,
-            opacity: 0.5,
-            pointerEvents: 'none'
-          }} />
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', position: 'relative', zIndex: 1 }}>
-            <CompanyLogo name={job.employer} logoUrl={job.logoUrl} size={64} brandColor={colors.brand} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h2 style={{
-                fontFamily: 'Space Grotesk, sans-serif',
-                fontSize: '1.4rem',
-                fontWeight: 700,
-                color: '#1e293b',
-                marginBottom: '6px',
-                lineHeight: 1.3
-              }}>
-                {job.title}
-              </h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
-                <span style={{ fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.03em', fontSize: '0.9rem' }}>
-                  {job.employer}
-                </span>
-                <VerifiedBadge />
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {job.location && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', color: '#64748b' }}>
-                    <MapPin size={14} /> {job.location}
-                  </span>
-                )}
-                {job.workingHours && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', color: '#64748b' }}>
-                    <Briefcase size={14} /> {job.workingHours}
-                  </span>
-                )}
-                {job.deadline && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', color: '#64748b' }}>
-                    <Clock size={14} /> {job.deadline}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Close & Save buttons */}
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                onClick={onSave}
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  border: 'none',
-                  background: isSaved ? '#f43f5e' : '#fff',
-                  color: isSaved ? '#fff' : '#94a3b8',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                }}
-              >
-                <Heart size={18} fill={isSaved ? 'currentColor' : 'none'} />
-              </button>
-              <button
-                onClick={onClose}
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  border: 'none',
-                  background: '#fff',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                }}
-              >
-                <X size={18} />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Tags */}
-        <div style={{ padding: '16px 24px', display: 'flex', flexWrap: 'wrap', gap: '8px', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
-          {job.isRemote && (
-            <span className="tag remote-tag">Distans</span>
-          )}
-          {job.experienceRequired === false ? (
-            <span className="tag no-exp-tag">Kräver ej erfarenhet</span>
+        <AnimatePresence mode="wait">
+          {showSalaryView && salaryData ? (
+            /* Salary View */
+            <ModalSalaryContent
+              key="modal-salary"
+              job={job}
+              salaryData={salaryData}
+              colors={colors}
+              labels={labels}
+              onBack={() => setShowSalaryView(false)}
+              onApply={() => window.openai?.openExternal?.({ href: job.url })}
+            />
           ) : (
-            <span className="tag exp-tag">Kräver erfarenhet</span>
-          )}
-          {job.vacancies && job.vacancies > 1 && (
-            <span className="tag" style={{ background: '#f0f9ff', color: '#0369a1', borderColor: 'rgba(3, 105, 161, 0.1)' }}>
-              {job.vacancies} platser
-            </span>
-          )}
-        </div>
-
-        {/* Body - scrollable */}
-        <div style={{
-          padding: '24px',
-          overflowY: 'auto',
-          maxHeight: 'calc(85vh - 280px)',
-          WebkitOverflowScrolling: 'touch'
-        }}>
-          {loading ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#64748b' }}>
-              <Loader2 size={20} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
-              {labels.loadingDesc}
-            </div>
-          ) : (
-            <div style={{
-              fontSize: '1rem',
-              lineHeight: 1.7,
-              color: '#475569',
-              whiteSpace: 'pre-wrap'
-            }}>
-              {fullDescription}
-            </div>
-          )}
-
-          {/* Salary section */}
-          {salaryLoading && (
-            <div style={{
-              marginTop: '24px',
-              padding: '16px',
-              borderRadius: '12px',
-              background: '#f8fafc',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px'
-            }}>
-              <Loader2 size={20} style={{ animation: 'spin 1s linear infinite', color: '#64748b' }} />
-              <span style={{ color: '#64748b' }}>{labels.fetchingSalary}</span>
-            </div>
-          )}
-
-          {salaryData?.salary && (
+            /* Job View */
             <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              style={{
-                marginTop: '24px',
-                padding: '20px',
-                borderRadius: '16px',
-                background: `linear-gradient(135deg, ${colors.brandTint} 0%, rgba(255,255,255,0.8) 100%)`,
-                border: `1px solid ${colors.brandDim}`
-              }}
+              key="modal-job"
+              initial={{ opacity: 0, rotateY: -90 }}
+              animate={{ opacity: 1, rotateY: 0 }}
+              exit={{ opacity: 0, rotateY: 90 }}
+              transition={{ duration: 0.4 }}
+              style={{ display: 'flex', flexDirection: 'column', maxHeight: '85vh' }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                <div style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '10px',
-                  background: colors.brand,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <TrendingUp size={18} color="#fff" />
-                </div>
-                <span style={{ fontWeight: 600, color: '#1e293b' }}>{labels.salaryTitle}</span>
-              </div>
-              <p style={{
-                fontSize: '2rem',
-                fontWeight: 700,
-                color: colors.brand,
-                marginBottom: '8px'
+              {/* Header with brand color gradient */}
+              <div style={{
+                background: `linear-gradient(145deg, #fff 0%, ${colors.brandTint} 40%, ${colors.brandDim} 100%)`,
+                padding: '28px 24px',
+                borderBottom: `2px solid ${colors.brandTint}`,
+                position: 'relative',
+                overflow: 'hidden',
+                flexShrink: 0
               }}>
-                {salaryData.salary.avg?.toLocaleString('sv-SE')} {labels.krPerMonth}
-              </p>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#64748b' }}>
-                <span>{labels.salaryMin}: {salaryData.salary.min?.toLocaleString('sv-SE')} kr</span>
-                <span>{labels.salaryMax}: {salaryData.salary.max?.toLocaleString('sv-SE')} kr</span>
+                {/* Decorative brand glow */}
+                <div style={{
+                  position: 'absolute',
+                  top: '-30%',
+                  right: '-10%',
+                  width: '250px',
+                  height: '250px',
+                  borderRadius: '50%',
+                  background: `radial-gradient(circle, ${colors.brandDim} 0%, transparent 60%)`,
+                  opacity: 0.8,
+                  pointerEvents: 'none'
+                }} />
+                <div style={{
+                  position: 'absolute',
+                  bottom: '-50%',
+                  left: '-10%',
+                  width: '200px',
+                  height: '200px',
+                  borderRadius: '50%',
+                  background: `radial-gradient(circle, ${colors.brandTint} 0%, transparent 70%)`,
+                  opacity: 0.5,
+                  pointerEvents: 'none'
+                }} />
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', position: 'relative', zIndex: 1 }}>
+                  <CompanyLogo name={job.employer} logoUrl={job.logoUrl} size={64} brandColor={colors.brand} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h2 style={{
+                      fontFamily: 'Space Grotesk, sans-serif',
+                      fontSize: '1.4rem',
+                      fontWeight: 700,
+                      color: '#1e293b',
+                      marginBottom: '6px',
+                      lineHeight: 1.3
+                    }}>
+                      {job.title}
+                    </h2>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
+                      <span style={{ fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.03em', fontSize: '0.9rem' }}>
+                        {job.employer}
+                      </span>
+                      <VerifiedBadge />
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {job.location && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', color: '#64748b' }}>
+                          <MapPin size={14} /> {job.location}
+                        </span>
+                      )}
+                      {job.workingHours && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', color: '#64748b' }}>
+                          <Briefcase size={14} /> {job.workingHours}
+                        </span>
+                      )}
+                      {job.deadline && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', color: '#64748b' }}>
+                          <Clock size={14} /> {job.deadline}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Close & Save buttons */}
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      onClick={onSave}
+                      style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        border: 'none',
+                        background: isSaved ? '#f43f5e' : '#fff',
+                        color: isSaved ? '#fff' : '#94a3b8',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}
+                    >
+                      <Heart size={18} fill={isSaved ? 'currentColor' : 'none'} />
+                    </button>
+                    <button
+                      onClick={onClose}
+                      style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        border: 'none',
+                        background: '#fff',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                </div>
               </div>
-              {salaryData.translatedTips && salaryData.translatedTips.length > 0 && (
-                <ul style={{ marginTop: '16px', paddingTop: '16px', borderTop: `1px solid ${colors.brandDim}`, listStyle: 'none', padding: 0 }}>
-                  {salaryData.translatedTips.map((tip, i) => (
-                    <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px', fontSize: '0.9rem', color: '#475569' }}>
-                      <span style={{ color: colors.brand }}>•</span>
-                      {tip}
-                    </li>
-                  ))}
-                </ul>
-              )}
+
+              {/* Tags */}
+              <div style={{ padding: '16px 24px', display: 'flex', flexWrap: 'wrap', gap: '8px', borderBottom: '1px solid rgba(0,0,0,0.05)', flexShrink: 0 }}>
+                {job.isRemote && (
+                  <span className="tag remote-tag">Distans</span>
+                )}
+                {job.experienceRequired === false ? (
+                  <span className="tag no-exp-tag">Kräver ej erfarenhet</span>
+                ) : (
+                  <span className="tag exp-tag">Kräver erfarenhet</span>
+                )}
+                {job.vacancies && job.vacancies > 1 && (
+                  <span className="tag" style={{ background: '#f0f9ff', color: '#0369a1', borderColor: 'rgba(3, 105, 161, 0.1)' }}>
+                    {job.vacancies} platser
+                  </span>
+                )}
+              </div>
+
+              {/* Body - scrollable */}
+              <div style={{
+                padding: '24px',
+                overflowY: 'auto',
+                flex: 1,
+                WebkitOverflowScrolling: 'touch'
+              }}>
+                {loading ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#64748b' }}>
+                    <Loader2 size={20} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
+                    {labels.loadingDesc}
+                  </div>
+                ) : (
+                  <div style={{
+                    fontSize: '1rem',
+                    lineHeight: 1.7,
+                    color: '#475569',
+                    whiteSpace: 'pre-wrap'
+                  }}>
+                    {fullDescription}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div style={{
+                padding: '16px 24px',
+                borderTop: '1px solid rgba(0,0,0,0.05)',
+                display: 'flex',
+                gap: '12px',
+                background: '#fafafa',
+                flexShrink: 0
+              }}>
+                <button
+                  onClick={handleSalaryClick}
+                  disabled={salaryLoading}
+                  style={{
+                    flex: 1,
+                    padding: '14px',
+                    borderRadius: '12px',
+                    border: `1px solid ${salaryData ? colors.brand : 'rgba(0,0,0,0.1)'}`,
+                    background: salaryData ? colors.brandTint : '#fff',
+                    color: salaryData ? colors.brand : '#1e293b',
+                    fontWeight: 600,
+                    cursor: salaryLoading ? 'wait' : 'pointer',
+                    opacity: salaryLoading ? 0.7 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  {salaryLoading ? (
+                    <>
+                      <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                      {labels.fetching}
+                    </>
+                  ) : salaryData ? (
+                    <>
+                      <TrendingUp size={18} />
+                      {salaryData.salary?.avg?.toLocaleString('sv-SE')} kr
+                    </>
+                  ) : (
+                    <>
+                      <TrendingUp size={18} />
+                      {labels.salaryInfo}
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => window.openai?.openExternal?.({ href: job.url })}
+                  style={{
+                    flex: 2,
+                    padding: '14px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    background: colors.brand,
+                    color: '#fff',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    boxShadow: `0 4px 12px ${colors.brandDim}`
+                  }}
+                >
+                  {labels.applyNow}
+                  <ExternalLink size={16} />
+                </button>
+              </div>
             </motion.div>
           )}
-        </div>
-
-        {/* Footer */}
-        <div style={{
-          padding: '16px 24px',
-          borderTop: '1px solid rgba(0,0,0,0.05)',
-          display: 'flex',
-          gap: '12px',
-          background: '#fafafa'
-        }}>
-          <button
-            onClick={() => onRequestSalary(job)}
-            disabled={salaryLoading || !!salaryData}
-            style={{
-              flex: 1,
-              padding: '14px',
-              borderRadius: '12px',
-              border: '1px solid rgba(0,0,0,0.1)',
-              background: salaryData ? colors.brandTint : '#fff',
-              color: salaryData ? colors.brand : '#1e293b',
-              fontWeight: 600,
-              cursor: salaryLoading ? 'wait' : salaryData ? 'default' : 'pointer',
-              opacity: salaryLoading ? 0.7 : 1
-            }}
-          >
-            {salaryLoading ? labels.fetching : salaryData ? `✓ ${labels.salaryShown}` : labels.salaryInfo}
-          </button>
-          <button
-            onClick={() => window.openai?.openExternal?.({ href: job.url })}
-            style={{
-              flex: 2,
-              padding: '14px',
-              borderRadius: '12px',
-              border: 'none',
-              background: colors.brand,
-              color: '#fff',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              boxShadow: `0 4px 12px ${colors.brandDim}`
-            }}
-          >
-            {labels.applyNow}
-            <ExternalLink size={16} />
-          </button>
-        </div>
+        </AnimatePresence>
       </motion.div>
     </motion.div>
   );
