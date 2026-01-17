@@ -12,6 +12,7 @@ export interface Job {
 }
 
 export interface Labels {
+  [key: string]: string;
   jobs: string;
   map: string;
   all: string;

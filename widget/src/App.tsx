@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
+import { AnimatePresence, LayoutGroup, motion, type Transition } from 'framer-motion';
 import {
   MapPin, Clock, Heart, ExternalLink, X, Search, ChevronLeft, ChevronRight,
   Building2, Sparkles, TrendingUp, Maximize2, Minimize2, Share2, Bookmark,
@@ -19,9 +19,9 @@ const prefersReducedMotion = typeof window !== 'undefined'
   ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
   : false;
 
-const springTransition = prefersReducedMotion
+const springTransition: Transition = prefersReducedMotion
   ? { duration: 0 }
-  : { type: 'spring', stiffness: 400, damping: 30 };
+  : { type: 'spring' as const, stiffness: 400, damping: 30 };
 
 // ============================================
 // FILTER TOGGLE COMPONENT (shadcn-inspired)
@@ -41,23 +41,27 @@ function FilterToggle({ active, onClick, icon, children, count, variant }: Filte
     <button
       onClick={onClick}
       className={cn(
-        'inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold',
-        'transition-all duration-200 whitespace-nowrap',
+        'inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold',
+        'transition-all duration-200 whitespace-nowrap relative overflow-hidden',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+        'active:scale-95',
         variant === 'emerald' && 'focus-visible:ring-emerald-500',
         variant === 'blue' && 'focus-visible:ring-blue-500',
-        active && variant === 'emerald' && 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/30',
-        active && variant === 'blue' && 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/30',
-        !active && variant === 'emerald' && 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300',
-        !active && variant === 'blue' && 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 hover:border-blue-300'
+        // Active state - glossy gradient with glow
+        active && variant === 'emerald' && 'bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600 text-white shadow-xl shadow-emerald-500/40 hover:shadow-2xl hover:shadow-emerald-500/50 before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/20 before:via-transparent before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity',
+        active && variant === 'blue' && 'bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 text-white shadow-xl shadow-blue-500/40 hover:shadow-2xl hover:shadow-blue-600/50 before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/20 before:via-transparent before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity',
+        // Inactive state - subtle with border
+        !active && variant === 'emerald' && 'bg-gradient-to-br from-emerald-50 to-green-50 text-emerald-700 border-2 border-emerald-200 shadow-md hover:from-emerald-100 hover:to-green-100 hover:border-emerald-300 hover:shadow-lg',
+        !active && variant === 'blue' && 'bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-700 border-2 border-blue-200 shadow-md hover:from-blue-100 hover:to-indigo-100 hover:border-blue-300 hover:shadow-lg'
       )}
     >
-      {icon}
-      {children}
+      <span className="relative z-10">{icon}</span>
+      <span className="relative z-10">{children}</span>
       {count !== undefined && count > 0 && (
         <span className={cn(
-          'ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums',
-          active ? 'bg-white/25' : variant === 'emerald' ? 'bg-emerald-200/70 text-emerald-700' : 'bg-blue-200/70 text-blue-700'
+          'relative z-10 ml-1 px-2 py-0.5 rounded-lg text-[10px] font-bold tabular-nums',
+          'shadow-sm',
+          active ? 'bg-white/30 backdrop-blur-sm' : variant === 'emerald' ? 'bg-emerald-200 text-emerald-800' : 'bg-blue-200 text-blue-800'
         )}>
           {count}
         </span>
@@ -430,7 +434,7 @@ function JobDetailModal({
           <button
             onClick={() => onSave(job.id)}
             aria-label={isSaved ? 'Ta bort' : 'Spara'}
-            className={clsx(
+            className={cn(
               'flex h-9 w-9 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
               isSaved
                 ? 'bg-rose-500 text-white'
@@ -567,7 +571,7 @@ function JobDetailModal({
                 <span>{labels.salaryMin}: {salaryData.salary.min?.toLocaleString('sv-SE')} kr</span>
                 <span>{labels.salaryMax}: {salaryData.salary.max?.toLocaleString('sv-SE')} kr</span>
               </div>
-              {salaryData.translatedTips?.length > 0 && (
+              {salaryData.translatedTips && salaryData.translatedTips.length > 0 && (
                 <ul className="mt-4 pt-4 border-t border-emerald-200 space-y-2">
                   {salaryData.translatedTips.map((tip, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
@@ -586,7 +590,7 @@ function JobDetailModal({
           <button
             onClick={() => onRequestSalary(job)}
             disabled={salaryLoading || !!salaryData}
-            className={clsx(
+            className={cn(
               'flex-1 px-5 py-3 rounded-xl text-sm font-medium transition-all',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
               salaryData
@@ -620,7 +624,7 @@ function TabButton({ active, onClick, icon: Icon, children, count }: {
       onClick={onClick}
       role="tab"
       aria-selected={active}
-      className={clsx(
+      className={cn(
         'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
         active
@@ -631,7 +635,7 @@ function TabButton({ active, onClick, icon: Icon, children, count }: {
       <Icon className="w-4 h-4" aria-hidden="true" />
       {children}
       {count !== undefined && count > 0 && (
-        <span className={clsx(
+        <span className={cn(
           'ml-1 px-1.5 py-0.5 rounded-full text-xs font-semibold tabular-nums',
           active ? 'bg-white/20' : 'bg-gray-200'
         )}>
@@ -647,7 +651,7 @@ function FilterPill({ active, onClick, children }: { active: boolean; onClick: (
   return (
     <button
       onClick={onClick}
-      className={clsx(
+      className={cn(
         'px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
         active
@@ -916,7 +920,7 @@ Om INGET erfarenhetskrav nämns → experienceRequired: false
     if ((data.translateMode || lang !== 'sv') && data.jobs?.length) {
       const [translatedJobs, translatedLabels] = await Promise.all([
         translateJobs(data.jobs, lang),
-        translateLabels(DEFAULT_LABELS, lang)
+        translateLabels(DEFAULT_LABELS as Record<string, string>, lang)
       ]);
       setJobs(translatedJobs);
       setLabels(translatedLabels);
@@ -999,7 +1003,7 @@ Om INGET erfarenhetskrav nämns → experienceRequired: false
 
   return (
     <div
-      className={clsx(
+      className={cn(
         'w-full bg-gray-50 flex flex-col',
         isFullscreen && 'fixed inset-0 z-40'
       )}
@@ -1134,12 +1138,12 @@ Om INGET erfarenhetskrav nämns → experienceRequired: false
       </header>
 
       {/* Content - only enable scroll in fullscreen mode */}
-      <div className={clsx(
+      <div className={cn(
         'flex-1',
         isFullscreen && 'overflow-y-auto overscroll-contain'
       )} style={isFullscreen ? { WebkitOverflowScrolling: 'touch' } : undefined}>
         {isLoading ? (
-          <div className={clsx(
+          <div className={cn(
             'grid gap-3 sm:gap-4 p-4 sm:p-6',
             isFullscreen ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'
           )}>
@@ -1167,7 +1171,7 @@ Om INGET erfarenhetskrav nämns → experienceRequired: false
               <div
                 id="job-list"
                 role="tabpanel"
-                className={clsx(
+                className={cn(
                   'grid gap-3 sm:gap-4 p-4 sm:p-6',
                   isFullscreen ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'
                 )}
