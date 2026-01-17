@@ -35,15 +35,17 @@ Användare → ChatGPT → MCP Server (api.smidra.se) → Arbetsförmedlingen AP
 
 ```
 smidra/
-├── smidra-server.js       # MCP-server med alla tools + SSE endpoint
-├── job-list-widget.html   # Huvudwidget för jobblista (med SSE-klient + fullscreen)
-├── job-detail-widget.html # Widget för jobbdetaljer
-├── salary-widget.html     # Widget för lönestatistik (standalone)
-├── cv-widget.html         # Widget för CV-visning
-├── package.json           # Dependencies
-├── Dockerfile             # Docker-konfiguration
-├── docker-compose.yml     # Docker Compose
-└── CLAUDE.md              # Denna fil
+├── smidra-server.js         # MCP-server med alla tools + SSE endpoint
+├── job-list-widget-v2.html  # Huvudwidget för jobblista (React, byggt från widget/)
+├── job-detail-widget.html   # Widget för jobbdetaljer
+├── salary-widget.html       # Widget för lönestatistik (standalone)
+├── widget/                  # React-projekt för jobblista-widget
+│   ├── src/App-ny.tsx       # Huvudkomponent
+│   └── dist/index.html      # Byggd widget → kopieras till job-list-widget-v2.html
+├── package.json             # Dependencies
+├── Dockerfile               # Docker-konfiguration
+├── docker-compose.yml       # Docker Compose
+└── CLAUDE.md                # Denna fil
 ```
 
 ---
@@ -56,26 +58,24 @@ Särskilt vid MÅNGA sökresultat tappar ChatGPT fokus och skriver text ändå.
 
 ### Lösningen - `_rule` i structuredContent (FUNGERAR!)
 
-#### Nyckeln: Lägg regeln FÖRST i structuredContent, skippa content helt
+#### Nyckeln: `_rule` FÖRST + `content: []` ALLTID
 
 ```javascript
 return {
   structuredContent: {
     // REGEL FÖRST - ChatGPT ser detta innan jobbdatan
-    _rule: "VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS.",
+    _rule: "⛔ VIKTIGT: VISA ENDAST WIDGET. SKRIV ABSOLUT INGEN TEXT FÖRE ELLER EFTER WIDGET. TYST!",
 
     // Sen resten av datan för widgeten
     translateMode: true,
     language: language || 'sv',
     direction: direction || 'ltr',
-    loadingText: loadingText || 'Söker jobb...',
-    translatingText: translatingText || 'Översätter...',
     query: query,
     location: location || 'Sverige',
     total,
     jobs
-  }
-  // INGEN content! - content är optional enligt MCP-spec
+  },
+  content: []  // ⚠️ VIKTIGT: Tom array = ChatGPT säger INGET!
 };
 ```
 
@@ -84,9 +84,9 @@ return {
 | Element | Effekt |
 |---------|--------|
 | `_rule` FÖRST i structuredContent | ChatGPT läser regeln innan all jobbdata |
-| INGEN `content` field | ChatGPT har inget att citera/bygga vidare på |
+| `content: []` (tom array) | ChatGPT har INGET att säga |
 | `(Smidra MCP)` i tool title | ChatGPT förstår vilken plugin |
-| Tool description med instruktion | Extra påminnelse |
+| `⛔ TYST VERKTYG` i description | Starkare instruktion i tool-beskrivningen |
 
 ### Flödet:
 ```
@@ -273,54 +273,68 @@ const sendToChatGPT = useCallback((message, toolName = null) => {
   window.openai?.sendFollowUpMessage?.({ prompt: fullMessage });
 }, []);
 
-// Användning:
+// Användning - med FULLSTÄNDIG jobbinfo för personlig analys:
 const requestSalary = useCallback((job) => {
   setSalaryLoading(true);
   setSalaryData(null);
 
-  // Inkludera JSON-exempel så ChatGPT vet exakt format!
-  const message = `Visa lönestatistik för "${job.title}" i ${job.location || 'Sverige'}.
+  // Skicka ALL jobbinfo så AI kan analysera och anpassa löneuppskattningen
+  const msg = `⛔ TYST LÄGE - SKRIV ABSOLUT INGEN TEXT!
 
-Anropa med denna data:
+ANALYSERA DENNA ANNONS OCH UPPSKATTA LÖN:
+
+Titel: ${job.title}
+Företag: ${job.employer}
+Plats: ${job.location || 'Sverige'}
+Typ: ${job.workingHours || 'Heltid'}
+${job.description ? `Beskrivning: ${job.description.substring(0, 500)}` : ''}
+${job.experienceRequired === false ? 'Kräver EJ erfarenhet (entry-level)' : 'Kräver erfarenhet'}
+
+INSTRUKTIONER:
+1. Sök på webben efter lönestatistik för "${job.title}" i Sverige
+2. Analysera annonsen ovan och anpassa löneuppskattningen
+3. Anropa update_widget_info med data:
+
 {
   "widgetSessionId": "${widgetSessionId}",
   "jobContext": { "title": "${job.title}", "location": "${job.location || 'Sverige'}" },
   "info": {
     "type": "compensation",
-    "data": { "avg": [genomsnitt], "min": [lägsta], "max": [högsta] },
-    "tips": ["förhandlingstips..."],
-    "sources": ["SCB", "Unionen", "Sveriges Ingenjörer"]
+    "data": { "avg": [genomsnitt SEK/mån], "min": [lägsta], "max": [högsta] },
+    "tips": ["2-3 förhandlingstips baserat på denna specifika roll"],
+    "sources": ["SCB", "Unionen", "Glassdoor"]
   }
-}`;
+}
 
-  sendToChatGPT(message, 'update_widget_info');
-}, [widgetSessionId, sendToChatGPT]);
+⛔⛔⛔ KRITISKT: SKRIV ABSOLUT INGEN TEXT! ANROPA BARA VERKTYGET! ⛔⛔⛔`;
+
+  window.openai?.sendFollowUpMessage?.({ prompt: msg });
+}, [widgetSessionId]);
 ```
 
 **Varför detta fungerar:**
-1. `sendToChatGPT` helper lägger ALLTID till MCP-suffix
-2. JSON-exempel visar ChatGPT exakt format
-3. `[Använd endast X verktyget från Smidra MCP. Skicka ingen text - anropa bara verktyget.]`
+1. Fullständig jobbinfo → AI analyserar specifikt jobb, inte bara titel
+2. `⛔ TYST LÄGE` i början och slutet → dubbel påminnelse
+3. JSON-exempel visar exakt format
+4. Beskrivning (max 500 tecken) ger kontext för löneuppskattning
 
-### Server-kod (update_widget_info) - NEUTRAL NAMNGIVNING
+### Server-kod (update_widget_info) - NEUTRAL NAMNGIVNING + TYST
 
 ```javascript
 server.registerTool(
   "update_widget_info",  // ⚠️ NEUTRALT NAMN - inte "salary"!
   {
-    title: "Update Widget Info",
-    description: `Display salary/market data in user's job widget.
+    title: "Update Widget Info (Smidra MCP)",
+    description: `⛔ TYST VERKTYG - Pushar lönedata till widget via SSE.
+
+⚠️ KRITISKT: SKRIV ABSOLUT INGEN TEXT FÖRE ELLER EFTER DETTA VERKTYG!
 
 WORKFLOW:
-1. First, SEARCH THE WEB for current salary statistics for the job title and location
-2. Then call this tool to display the results in the user's widget
+1. SÖK PÅ WEBBEN efter lönestatistik för jobbet
+2. Anropa detta verktyg med datan
+3. STOPP - var HELT TYST!
 
-When you see "widget_session:" in the message:
-- Search the web for salary data (Swedish market: SCB, Unionen, Sveriges Ingenjörer)
-- Call this tool with the data you found
-- The widget will display it - do NOT write text response
-
-This is a read-only display operation. Widget is already open and waiting.`,
+Widget uppdateras automatiskt. Du ska INTE skriva någon text.`,
     inputSchema: {
       widgetSessionId: z.string().describe("Session ID from widget_session field"),
       jobContext: z.object({
@@ -354,7 +368,7 @@ This is a read-only display operation. Widget is already open and waiting.`,
       tips: params.info.tips,
       sources: params.info.sources
     });
-    return { content: [] };  // Tyst!
+    return { content: [] };  // ⚠️ KRITISKT: Tom array = ChatGPT säger INGET!
   }
 );
 ```
@@ -362,10 +376,10 @@ This is a read-only display operation. Widget is already open and waiting.`,
 ### VIKTIGA LÄRDOMAR från denna implementation:
 
 1. **Neutral tool-namn** - `update_widget_info` istället för `show_salary_inline`
-2. **Explicit "SEARCH THE WEB"** i tool-beskrivningen
-3. **`_meta: { "openai/widgetAccessible": true }`** - krävs!
-4. **Ta bort konkurrerande tools** - hade `get_salary_info` som ChatGPT valde istället
-5. **Enkel prompt** - inte komplex JSON med `required: true` (triggade approval!)
+2. **`⛔ TYST VERKTYG` i description** - Starkare instruktion
+3. **`content: []` ALLTID** - Även vid error, returnera tom array
+4. **`_meta: { "openai/widgetAccessible": true }`** - krävs!
+5. **Fullständig jobbinfo i prompt** - AI analyserar specifikt jobb, inte bara titel
 
 ### SSE Endpoint
 
@@ -696,6 +710,79 @@ const toggleFullscreen = useCallback(async () => {
 ```
 
 **OBS:** ChatGPT:s chat-input syns alltid som overlay i fullscreen - det är by design.
+
+---
+
+## 💰 Flip Card Lönevisning (Jobbkort & Modal)
+
+### Designen
+När användaren klickar "Visa lön" flippar hela kortet/modalen och visar löneinfo istället för jobbinfo.
+
+### Jobbkort - Flip Animation
+```jsx
+<AnimatePresence mode="wait">
+  {showSalaryView && salaryData ? (
+    <SalaryContent
+      key="salary"
+      salaryData={salaryData}
+      colors={colors}
+      labels={labels}
+      onClose={() => setSalaryViewJobId(null)}
+      onApply={() => window.openai?.openExternal?.({ href: job.url })}
+    />
+  ) : (
+    <motion.div key="job">
+      {/* Normal job content */}
+    </motion.div>
+  )}
+</AnimatePresence>
+```
+
+### Modal - Flip Animation
+Hela modalinnehållet byts ut med `ModalSalaryContent`:
+```jsx
+<AnimatePresence mode="wait">
+  {showSalaryView && salaryData ? (
+    <ModalSalaryContent
+      key="modal-salary"
+      job={job}
+      salaryData={salaryData}
+      colors={colors}
+      labels={labels}
+      onBack={() => setShowSalaryView(false)}
+      onApply={() => window.openai?.openExternal?.({ href: job.url })}
+    />
+  ) : (
+    <motion.div key="modal-job">
+      {/* Normal modal content */}
+    </motion.div>
+  )}
+</AnimatePresence>
+```
+
+### Framer Motion Flip Animation
+```jsx
+<motion.div
+  initial={{ opacity: 0, rotateY: 90 }}
+  animate={{ opacity: 1, rotateY: 0 }}
+  exit={{ opacity: 0, rotateY: -90 }}
+  transition={{ duration: 0.4 }}
+>
+```
+
+### Caching av lönedata
+Lönedata cachas per jobb-ID. Om användaren klickar igen visas cachad data direkt:
+```javascript
+const requestSalary = useCallback((job) => {
+  const existingSalaryData = jobSalaryData[job.id];
+  if (existingSalaryData) {
+    // Data already exists - just show the salary view (no new fetch!)
+    setSalaryViewJobId(job.id);
+    return;
+  }
+  // ... fetch new data via sendFollowUpMessage
+}, [jobSalaryData]);
+```
 
 ---
 
@@ -1476,6 +1563,8 @@ className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bl
 - [x] Sparade jobb-flik med badge
 - [x] Dela-funktion (Native Share + Clipboard)
 - [x] AI Badge-verifiering (Erfarenhet krävs/ej krävs via ChatGPT + SSE)
+- [x] Flip Card lönevisning (jobbkort och modal flippar med animation)
+- [x] Personlig löneanalys per annons (skickar jobbinfo till AI)
 - [ ] Notifikationer för nya jobb
 - [ ] CV-matchning mot jobb
 - [ ] Personligt brev-generator

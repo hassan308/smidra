@@ -1410,26 +1410,35 @@ export default function App() {
       return;
     }
 
-    // Send strong prompt with MCP suffix to prevent ChatGPT from writing text
-    const msg = `⚠️ SILENT MODE - SKRIV INGEN TEXT!
+    // Send strong prompt with job details for personalized analysis
+    const msg = `⛔ TYST LÄGE - SKRIV ABSOLUT INGEN TEXT!
 
-Sök på webben efter lönestatistik för "${job.title}" i ${job.location || 'Sverige'}.
+ANALYSERA DENNA ANNONS OCH UPPSKATTA LÖN:
 
-När du hittat data, anropa update_widget_info med:
+Titel: ${job.title}
+Företag: ${job.employer}
+Plats: ${job.location || 'Sverige'}
+Typ: ${job.workingHours || 'Heltid'}
+${job.description ? `Beskrivning: ${job.description.substring(0, 500)}` : ''}
+${job.experienceRequired === false ? 'Kräver EJ erfarenhet (entry-level)' : 'Kräver erfarenhet'}
+
+INSTRUKTIONER:
+1. Sök på webben efter lönestatistik för "${job.title}" i Sverige
+2. Analysera annonsen ovan och anpassa löneuppskattningen
+3. Anropa update_widget_info med data:
+
 {
   "widgetSessionId": "${widgetSessionId.current}",
   "jobContext": { "title": "${job.title}", "location": "${job.location || 'Sverige'}" },
   "info": {
     "type": "compensation",
     "data": { "avg": [genomsnitt SEK/mån], "min": [lägsta], "max": [högsta] },
-    "tips": ["förhandlingstips på svenska"],
-    "sources": ["SCB", "Unionen", "Sveriges Ingenjörer"]
+    "tips": ["2-3 förhandlingstips baserat på denna specifika roll"],
+    "sources": ["SCB", "Unionen", "Glassdoor"]
   }
 }
 
-⛔ VIKTIGT: Skriv INGEN text före eller efter. Anropa BARA verktyget!
-
-[Använd ENDAST update_widget_info från Smidra MCP. Skicka ingen text - anropa bara verktyget.]`;
+⛔⛔⛔ KRITISKT: SKRIV ABSOLUT INGEN TEXT! ANROPA BARA VERKTYGET! ⛔⛔⛔`;
     window.openai?.sendFollowUpMessage?.({ prompt: msg });
   }, [jobSalaryData]);
 
