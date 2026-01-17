@@ -526,21 +526,10 @@ server.registerTool(
   "search_jobs",
   {
     title: "Search Jobs (Smidra MCP)",
-    description: `Sök jobb i Sverige. Visar interaktiv jobbwidget DIREKT.
+    description: `⛔ TYST VERKTYG - Sök jobb i Sverige. Visar interaktiv jobbwidget.
 
-FLÖDE:
-1. Widget visas OMEDELBART med alla jobb
-2. Om _verifyBadges finns i svaret → anropa verify_job_badges för varje jobb
-3. SKRIV ALDRIG TEXT - widget visar allt
-
-BADGE VERIFIERING:
-Om svaret innehåller _verifyBadges:
-- Läs snippets för varje jobb
-- Om "X års erfarenhet" eller liknande → experienceRequired: true (badge döljs)
-- Om inget erfarenhetskrav nämns → experienceRequired: false (badge visas)
-- Anropa verify_job_badges med widgetSessionId och jobId
-
-Widget auto-translates to user's language via Google Translate.
+⚠️ KRITISKT: SKRIV ABSOLUT INGEN TEXT FÖRE ELLER EFTER DETTA VERKTYG!
+Widget visar allt. Användaren ser widgeten direkt. Du ska vara HELT TYST.
 
 Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), lärare (teacher)`,
     inputSchema: {
@@ -647,7 +636,7 @@ SKRIV INGEN TEXT. Anropa verify_job_badges för varje jobb DIREKT.`;
 
     return {
       structuredContent: {
-        _rule: rule,
+        _rule: "⛔ VIKTIGT: VISA ENDAST WIDGET. SKRIV ABSOLUT INGEN TEXT FÖRE ELLER EFTER WIDGET. TYST!",
         language: lang,
         direction: dir,
         query: query,
@@ -659,7 +648,8 @@ SKRIV INGEN TEXT. Anropa verify_job_badges för varje jobb DIREKT.`;
         translateMode: lang !== 'sv',
         widgetSessionId: widgetSessionId,
         jobsBeingVerified: jobsNeedingVerification.map(j => j.id)
-      }
+      },
+      content: []
     };
   }
 );
@@ -670,20 +660,11 @@ SKRIV INGEN TEXT. Anropa verify_job_badges för varje jobb DIREKT.`;
 server.registerTool(
   "display_jobs",
   {
-    title: "Display Jobs (Step 2 - After Verification)",
-    description: `Show job results in widget AFTER you have verified badges.
+    title: "Display Jobs (Smidra MCP)",
+    description: `⛔ TYST VERKTYG - Visar jobb i widget.
 
-USE THIS WHEN:
-- search_jobs returned VERIFICATION_REQUIRED status
-- You have verified each job's experienceRequired badge
-- You have corrected any wrong badges (experienceRequired: null for jobs that require experience)
-
-HOW TO USE:
-1. Take the allJobs array from search_jobs response
-2. For each job you verified that DOES require experience, change experienceRequired to null
-3. Call this tool with the corrected jobs array
-
-⚠️ AFTER CALLING: Do NOT write ANY text. Widget shows everything.`,
+⚠️ KRITISKT: SKRIV ABSOLUT INGEN TEXT FÖRE ELLER EFTER DETTA VERKTYG!
+Widget visar allt. Användaren ser widgeten direkt. Du ska vara HELT TYST.`,
     inputSchema: {
       language: z.string().default("sv"),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
@@ -721,7 +702,7 @@ HOW TO USE:
 
     return {
       structuredContent: {
-        _rule: "VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS.",
+        _rule: "⛔ VIKTIGT: VISA ENDAST WIDGET. SKRIV ABSOLUT INGEN TEXT FÖRE ELLER EFTER WIDGET. TYST!",
         language: language || 'sv',
         direction: direction || 'ltr',
         query: query,
@@ -731,7 +712,8 @@ HOW TO USE:
         total: total || jobs.length,
         jobs,
         translateMode: (language || 'sv') !== 'sv'
-      }
+      },
+      content: []
     };
   }
 );
@@ -743,9 +725,10 @@ server.registerTool(
   "get_job_details",
   {
     title: "Show Job Details (Smidra MCP)",
-    description: `Show detailed job information in widget.
+    description: `⛔ TYST VERKTYG - Visar jobbdetaljer i widget.
 
-⚠️ AFTER CALLING: Do NOT write any text. Widget shows all details.`,
+⚠️ KRITISKT: SKRIV ABSOLUT INGEN TEXT FÖRE ELLER EFTER DETTA VERKTYG!
+Widget visar allt. Du ska vara HELT TYST.`,
     inputSchema: {
       jobId: z.string(),
       language: z.string(),
@@ -775,7 +758,13 @@ server.registerTool(
     console.log(`✅ Returning: ${formatted.title}`);
 
     return {
-      structuredContent: { language, direction, labels, job: formatted },
+      structuredContent: {
+        _rule: "⛔ VIKTIGT: VISA ENDAST WIDGET. SKRIV ABSOLUT INGEN TEXT FÖRE ELLER EFTER WIDGET. TYST!",
+        language,
+        direction,
+        labels,
+        job: formatted
+      },
       content: []
     };
   }
@@ -909,19 +898,17 @@ Respond in ${language}.`
 server.registerTool(
   "update_widget_info",
   {
-    title: "Update Widget Info (Silent)",
-    description: `⚠️ SILENT TOOL - Display salary/market data in user's job widget.
+    title: "Update Widget Info (Smidra MCP)",
+    description: `⛔ TYST VERKTYG - Pushar lönedata till widget via SSE.
 
-CRITICAL: DO NOT WRITE ANY TEXT BEFORE OR AFTER CALLING THIS TOOL!
+⚠️ KRITISKT: SKRIV ABSOLUT INGEN TEXT FÖRE ELLER EFTER DETTA VERKTYG!
 
 WORKFLOW:
-1. SEARCH THE WEB for current salary statistics for the job title and location
-2. Call this tool with the salary data you found
-3. STOP - do NOT write any text response!
+1. SÖK PÅ WEBBEN efter lönestatistik för jobbet
+2. Anropa detta verktyg med datan
+3. STOPP - var HELT TYST!
 
-The widget will display the data automatically. User sees loading spinner until you call this tool.
-
-IMPORTANT: This tool returns empty content. Do NOT try to explain what you did.`,
+Widget uppdateras automatiskt. Du ska INTE skriva någon text.`,
     inputSchema: {
       widgetSessionId: z.string().describe("Session ID from widget_session field"),
       jobContext: z.object({
@@ -1041,11 +1028,11 @@ Widgeten visar spinner tills du anropar detta verktyg.`,
 server.registerTool(
   "display_salary",
   {
-    title: "Display Salary Widget",
-    description: `Show salary in a standalone widget.
+    title: "Display Salary Widget (Smidra MCP)",
+    description: `⛔ TYST VERKTYG - Visar lönestatistik i widget.
 
-⚠️ AFTER CALLING: Do NOT write any text. Widget shows everything.
-⚠️ If message has "widgetSessionId:" → use show_salary_inline instead!`,
+⚠️ KRITISKT: SKRIV ABSOLUT INGEN TEXT FÖRE ELLER EFTER DETTA VERKTYG!
+Widget visar allt. Du ska vara HELT TYST.`,
     inputSchema: {
       language: z.string().default("sv"),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
@@ -1100,7 +1087,10 @@ server.registerTool(
     console.log(`💰 display_salary: ${params.job.title} - avg ${params.salary.avg} kr`);
 
     return {
-      structuredContent: params,
+      structuredContent: {
+        _rule: "⛔ VIKTIGT: VISA ENDAST WIDGET. SKRIV ABSOLUT INGEN TEXT FÖRE ELLER EFTER WIDGET. TYST!",
+        ...params
+      },
       content: []
     };
   }
