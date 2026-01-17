@@ -1,15 +1,18 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
-import clsx from 'clsx';
 import {
   MapPin, Clock, Heart, ExternalLink, X, Search, ChevronLeft, ChevronRight,
   Building2, Sparkles, TrendingUp, Maximize2, Minimize2, Share2, Bookmark,
   ArrowUpDown, Calendar, Filter, Copy, Check, RefreshCw, Home, Car, Briefcase,
-  GraduationCap, Users, Wifi, Award, Zap
+  GraduationCap, Users, Wifi, Award, Zap, Loader2
 } from 'lucide-react';
 import { useOpenAiGlobal, useWidgetState, useDisplayMode, useMaxHeight } from './hooks';
 import { translateJobs, translateLabels, translateBatch } from './utils/translate';
 import type { Job, Labels, SalaryData, ToolOutput, WidgetState } from './types';
+import { cn } from './lib/utils';
+import { Button } from './components/ui/button';
+import { Badge } from './components/ui/badge';
+import { Card, CardContent, CardFooter, CardHeader } from './components/ui/card';
 
 // Respect prefers-reduced-motion
 const prefersReducedMotion = typeof window !== 'undefined'
@@ -21,145 +24,40 @@ const springTransition = prefersReducedMotion
   : { type: 'spring', stiffness: 400, damping: 30 };
 
 // ============================================
-// PREMIUM REUSABLE COMPONENTS
+// FILTER TOGGLE COMPONENT (shadcn-inspired)
 // ============================================
 
-type BadgeVariant = 'remote' | 'noExperience' | 'experienceRequired' | 'vacancies' | 'verifying' | 'workType' | 'deadline';
-
-interface BadgeProps {
-  variant: BadgeVariant;
-  children: React.ReactNode;
-  icon?: React.ReactNode;
-  count?: number;
-}
-
-// Premium Badge Component with gradient styling
-function Badge({ variant, children, icon, count }: BadgeProps) {
-  const styles: Record<BadgeVariant, string> = {
-    remote: 'bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/30',
-    noExperience: 'bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 text-white shadow-md shadow-emerald-500/30',
-    experienceRequired: 'bg-white text-gray-600 border border-gray-300 shadow-sm',
-    vacancies: 'bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500 text-white shadow-md shadow-purple-500/30',
-    verifying: 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border border-blue-200',
-    workType: 'bg-gradient-to-r from-sky-50 to-cyan-50 text-sky-800 border border-sky-200 shadow-sm',
-    deadline: 'bg-gradient-to-r from-amber-50 to-orange-50 text-amber-800 border border-amber-200 shadow-sm'
-  };
-
-  return (
-    <span className={clsx(
-      'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider',
-      'transition-all duration-200',
-      styles[variant]
-    )}>
-      {icon}
-      {children}
-      {count !== undefined && count > 0 && (
-        <span className="ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] bg-white/20 font-bold">
-          {count}
-        </span>
-      )}
-    </span>
-  );
-}
-
-type ButtonVariant = 'primary' | 'secondary' | 'ghost';
-type ButtonSize = 'sm' | 'md' | 'lg';
-
-interface PremiumButtonProps {
-  variant?: ButtonVariant;
-  size?: ButtonSize;
-  children: React.ReactNode;
-  onClick?: (e: React.MouseEvent) => void;
-  disabled?: boolean;
-  icon?: React.ReactNode;
-  iconPosition?: 'left' | 'right';
-  className?: string;
-}
-
-// Premium Button Component
-function PremiumButton({
-  variant = 'primary',
-  size = 'md',
-  children,
-  onClick,
-  disabled,
-  icon,
-  iconPosition = 'right',
-  className
-}: PremiumButtonProps) {
-  const variants: Record<ButtonVariant, string> = {
-    primary: 'bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 hover:from-blue-700 hover:via-blue-600 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40',
-    secondary: 'bg-white text-gray-800 border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 shadow-sm hover:shadow-md',
-    ghost: 'bg-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-  };
-
-  const sizes: Record<ButtonSize, string> = {
-    sm: 'px-3 py-1.5 text-xs rounded-lg',
-    md: 'px-4 py-2.5 text-sm rounded-xl',
-    lg: 'px-6 py-3 text-base rounded-xl'
-  };
-
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={clsx(
-        'inline-flex items-center justify-center gap-2 font-semibold',
-        'transition-all duration-200 ease-out',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
-        'disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none',
-        'active:scale-[0.98]',
-        variants[variant],
-        sizes[size],
-        className
-      )}
-    >
-      {icon && iconPosition === 'left' && icon}
-      {children}
-      {icon && iconPosition === 'right' && icon}
-    </button>
-  );
-}
-
-// Filter Badge Component (for header filters)
-interface FilterBadgeProps {
+interface FilterToggleProps {
   active: boolean;
   onClick: () => void;
   icon: React.ReactNode;
   children: React.ReactNode;
   count?: number;
-  color: 'emerald' | 'blue';
+  variant: 'emerald' | 'blue';
 }
 
-function FilterBadge({ active, onClick, icon, children, count, color }: FilterBadgeProps) {
-  const colors = {
-    emerald: {
-      active: 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/40',
-      inactive: 'bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 border border-emerald-200/80 hover:border-emerald-300 hover:shadow-md'
-    },
-    blue: {
-      active: 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/40',
-      inactive: 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border border-blue-200/80 hover:border-blue-300 hover:shadow-md'
-    }
-  };
-
+function FilterToggle({ active, onClick, icon, children, count, variant }: FilterToggleProps) {
   return (
     <button
       onClick={onClick}
-      className={clsx(
-        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold',
+      className={cn(
+        'inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold',
         'transition-all duration-200 whitespace-nowrap',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
-        color === 'emerald' ? 'focus-visible:ring-emerald-500' : 'focus-visible:ring-blue-500',
-        active ? colors[color].active : colors[color].inactive
+        variant === 'emerald' && 'focus-visible:ring-emerald-500',
+        variant === 'blue' && 'focus-visible:ring-blue-500',
+        active && variant === 'emerald' && 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/30',
+        active && variant === 'blue' && 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/30',
+        !active && variant === 'emerald' && 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300',
+        !active && variant === 'blue' && 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 hover:border-blue-300'
       )}
     >
       {icon}
       {children}
       {count !== undefined && count > 0 && (
-        <span className={clsx(
+        <span className={cn(
           'ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums',
-          active ? 'bg-white/25' : color === 'emerald' ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'
+          active ? 'bg-white/25' : variant === 'emerald' ? 'bg-emerald-200/70 text-emerald-700' : 'bg-blue-200/70 text-blue-700'
         )}>
           {count}
         </span>
@@ -254,26 +152,37 @@ function CompanyLogo({ name, logoUrl, size = 44 }: { name: string; logoUrl?: str
   );
 }
 
-// Skeleton loader
+// Skeleton loader with shimmer effect
 function JobCardSkeleton() {
   return (
-    <div className="rounded-2xl border border-gray-200/60 bg-white p-5 animate-pulse">
-      <div className="flex items-start gap-4">
-        <div className="w-11 h-11 rounded-xl bg-gray-200" />
-        <div className="flex-1 space-y-2">
-          <div className="h-4 w-24 bg-gray-200 rounded" />
-          <div className="h-3 w-16 bg-gray-200 rounded" />
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-3">
+        <div className="flex items-start gap-3">
+          <div className="w-12 h-12 rounded-xl bg-slate-200 shimmer" />
+          <div className="flex-1 space-y-2">
+            <div className="h-4 w-28 bg-slate-200 rounded shimmer" />
+            <div className="h-3 w-20 bg-slate-200 rounded shimmer" />
+          </div>
         </div>
-      </div>
-      <div className="mt-4 space-y-2">
-        <div className="h-5 w-3/4 bg-gray-200 rounded" />
-        <div className="h-5 w-1/2 bg-gray-200 rounded" />
-      </div>
-    </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="h-5 w-4/5 bg-slate-200 rounded shimmer" />
+        <div className="flex gap-2">
+          <div className="h-6 w-16 bg-slate-200 rounded-md shimmer" />
+          <div className="h-6 w-24 bg-slate-200 rounded-md shimmer" />
+        </div>
+      </CardContent>
+      <CardFooter className="border-t border-slate-100 pt-4">
+        <div className="flex gap-2 w-full">
+          <div className="h-10 flex-1 bg-slate-200 rounded-lg shimmer" />
+          <div className="h-10 flex-1 bg-slate-200 rounded-lg shimmer" />
+        </div>
+      </CardFooter>
+    </Card>
   );
 }
 
-// Premium job card with enhanced design
+// Premium job card with shadcn design
 function JobCard({
   job,
   isSaved,
@@ -294,156 +203,154 @@ function JobCard({
   isBeingVerified?: boolean;
 }) {
   return (
-    <motion.article
+    <motion.div
       layout
       layoutId={job.id}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={springTransition}
-      onClick={() => onClick(job)}
-      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onClick(job))}
-      tabIndex={0}
-      role="button"
-      aria-label={`${job.title} hos ${job.employer}`}
-      className={clsx(
-        'group relative flex cursor-pointer flex-col overflow-hidden',
-        'rounded-2xl bg-white',
-        'shadow-[0_2px_8px_rgba(0,0,0,0.04),0_4px_24px_rgba(0,0,0,0.06)]',
-        'hover:shadow-[0_8px_32px_rgba(0,0,0,0.12),0_2px_8px_rgba(59,130,246,0.08)]',
-        'border border-gray-200/80',
-        'hover:border-blue-300/60 hover:-translate-y-0.5',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
-        'transition-all duration-200 ease-out'
-      )}
     >
-      {/* Save button - premium style */}
-      <button
-        type="button"
-        onClick={(e) => { e.stopPropagation(); onSave(job.id); }}
-        aria-label={isSaved ? 'Ta bort från sparade' : 'Spara jobb'}
-        aria-pressed={isSaved}
-        className={clsx(
-          'absolute top-3 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
-          isSaved
-            ? 'bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/40 scale-105'
-            : 'bg-white/90 backdrop-blur-sm text-gray-400 hover:text-rose-500 shadow-sm border border-gray-200/60 hover:border-rose-200 hover:bg-rose-50'
+      <Card
+        className={cn(
+          'group relative cursor-pointer overflow-hidden',
+          'hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-0.5',
+          'hover:border-blue-200 transition-all duration-200'
         )}
+        onClick={() => onClick(job)}
+        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onClick(job))}
+        tabIndex={0}
+        role="button"
+        aria-label={`${job.title} hos ${job.employer}`}
       >
-        <Heart className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} aria-hidden="true" />
-      </button>
+        {/* Save button - floating */}
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onSave(job.id); }}
+          aria-label={isSaved ? 'Ta bort från sparade' : 'Spara jobb'}
+          aria-pressed={isSaved}
+          className={cn(
+            'absolute top-3 right-3 z-10 flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2',
+            isSaved
+              ? 'bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/30 scale-105'
+              : 'bg-white text-slate-400 shadow-md border border-slate-100 hover:text-rose-500 hover:border-rose-200 hover:bg-rose-50'
+          )}
+        >
+          <Heart className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} aria-hidden="true" />
+        </button>
 
-      {/* Content */}
-      <div className={clsx('p-4', compact && 'p-3')}>
-        <div className="flex items-start gap-3 mb-3">
-          <CompanyLogo name={job.employer} logoUrl={job.logoUrl} size={compact ? 38 : 42} />
-          <div className="min-w-0 flex-1 pr-10">
-            <p className="text-sm font-semibold text-gray-900 truncate leading-tight">
-              {job.employer}
-            </p>
-            <div className="flex items-center gap-1.5 mt-0.5 text-gray-500">
-              <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-gray-400" aria-hidden="true" />
-              <span className="text-xs truncate">{job.location || 'Sverige'}</span>
+        <CardHeader className={cn('pb-2', compact && 'p-3 pb-2')}>
+          <div className="flex items-start gap-3">
+            <CompanyLogo name={job.employer} logoUrl={job.logoUrl} size={compact ? 40 : 48} />
+            <div className="min-w-0 flex-1 pr-10">
+              <p className="text-sm font-semibold text-slate-900 truncate">
+                {job.employer}
+              </p>
+              <div className="flex items-center gap-1.5 mt-0.5 text-slate-500">
+                <MapPin className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+                <span className="text-xs truncate">{job.location || 'Sverige'}</span>
+              </div>
             </div>
           </div>
-        </div>
+        </CardHeader>
 
-        <h3 className={clsx(
-          'font-bold text-gray-900 leading-snug line-clamp-2 mb-3',
-          'group-hover:text-blue-600 transition-colors duration-150',
-          compact ? 'text-sm' : 'text-[15px]'
-        )}>
-          {job.title}
-        </h3>
+        <CardContent className={cn('pt-0', compact && 'px-3')}>
+          <h3 className={cn(
+            'font-semibold text-slate-900 leading-snug line-clamp-2 mb-3',
+            'group-hover:text-blue-600 transition-colors',
+            compact ? 'text-sm' : 'text-base'
+          )}>
+            {job.title}
+          </h3>
 
-        {/* Badges - Using reusable Badge components */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {/* Remote work */}
-          {job.isRemote && (
-            <Badge variant="remote" icon={<Wifi className="w-3 h-3" aria-hidden="true" />}>
-              Distans
-            </Badge>
-          )}
+          {/* Badges row */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {job.isRemote && (
+              <Badge variant="remote">
+                <Wifi className="w-3 h-3" aria-hidden="true" />
+                Distans
+              </Badge>
+            )}
 
-          {/* Experience badge */}
-          {isBeingVerified ? (
-            <Badge variant="verifying" icon={
-              <div className="w-2.5 h-2.5 border-[1.5px] border-blue-200 border-t-blue-600 rounded-full animate-spin" />
-            }>
-              Verifierar...
-            </Badge>
-          ) : job.experienceRequired === false ? (
-            <Badge variant="noExperience" icon={<GraduationCap className="w-3 h-3" aria-hidden="true" />}>
-              Erfarenhet ej krävs
-            </Badge>
-          ) : (
-            <Badge variant="experienceRequired" icon={<Briefcase className="w-3 h-3" aria-hidden="true" />}>
-              Erfarenhet krävs
-            </Badge>
-          )}
+            {isBeingVerified ? (
+              <Badge variant="verifying">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Verifierar...
+              </Badge>
+            ) : job.experienceRequired === false ? (
+              <Badge variant="noExperience">
+                <GraduationCap className="w-3 h-3" aria-hidden="true" />
+                Erfarenhet ej krävs
+              </Badge>
+            ) : (
+              <Badge variant="experience">
+                <Briefcase className="w-3 h-3" aria-hidden="true" />
+                Erfarenhet krävs
+              </Badge>
+            )}
 
-          {/* Multiple vacancies */}
-          {job.vacancies && job.vacancies > 1 && (
-            <Badge variant="vacancies" icon={<Users className="w-3 h-3" aria-hidden="true" />}>
-              {job.vacancies} platser
-            </Badge>
-          )}
-        </div>
-
-        {/* Work type & deadline row */}
-        <div className="flex items-center gap-1.5 flex-wrap mt-2">
-          {job.workingHours && (
-            <Badge variant="workType">{job.workingHours}</Badge>
-          )}
-          {job.deadline && (
-            <Badge variant="deadline" icon={<Calendar className="w-3 h-3" aria-hidden="true" />}>
-              {job.deadline}
-            </Badge>
-          )}
-        </div>
-
-        {/* Skills preview (only if available and not compact) */}
-        {!compact && job.mustHaveSkills && job.mustHaveSkills.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-gray-100">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <Zap className="w-3 h-3 text-amber-500 flex-shrink-0" aria-hidden="true" />
-              {job.mustHaveSkills.slice(0, 3).map((skill, i) => (
-                <span key={i} className="text-[11px] text-gray-600 font-medium">
-                  {skill}{i < Math.min(job.mustHaveSkills!.length, 3) - 1 ? ',' : ''}
-                </span>
-              ))}
-              {job.mustHaveSkills.length > 3 && (
-                <span className="text-[11px] text-gray-400 font-medium">+{job.mustHaveSkills.length - 3}</span>
-              )}
-            </div>
+            {job.vacancies && job.vacancies > 1 && (
+              <Badge variant="vacancies">
+                <Users className="w-3 h-3" aria-hidden="true" />
+                {job.vacancies} platser
+              </Badge>
+            )}
           </div>
+
+          {/* Work type & deadline row */}
+          <div className="flex items-center gap-1.5 flex-wrap mt-2">
+            {job.workingHours && (
+              <Badge variant="workType">{job.workingHours}</Badge>
+            )}
+            {job.deadline && (
+              <Badge variant="deadline">
+                <Calendar className="w-3 h-3" aria-hidden="true" />
+                {job.deadline}
+              </Badge>
+            )}
+          </div>
+
+          {/* Skills preview */}
+          {!compact && job.mustHaveSkills && job.mustHaveSkills.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-slate-100">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Zap className="w-3 h-3 text-amber-500 flex-shrink-0" aria-hidden="true" />
+                {job.mustHaveSkills.slice(0, 3).map((skill, i) => (
+                  <span key={i} className="text-xs text-slate-600">
+                    {skill}{i < Math.min(job.mustHaveSkills!.length, 3) - 1 ? ',' : ''}
+                  </span>
+                ))}
+                {job.mustHaveSkills.length > 3 && (
+                  <span className="text-xs text-slate-400">+{job.mustHaveSkills.length - 3}</span>
+                )}
+              </div>
+            </div>
+          )}
+        </CardContent>
+
+        {/* Footer with shadcn buttons */}
+        {!compact && (
+          <CardFooter className="border-t border-slate-100 bg-slate-50/50 gap-2 pt-4">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={(e) => { e.stopPropagation(); onClick(job); }}
+            >
+              {labels.showMore}
+            </Button>
+            <Button
+              variant="primary"
+              className="flex-1"
+              onClick={(e) => { e.stopPropagation(); window.openai?.openExternal?.({ href: job.url }); }}
+            >
+              {labels.apply}
+              <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+            </Button>
+          </CardFooter>
         )}
-      </div>
-
-      {/* Footer - Using PremiumButton components */}
-      {!compact && (
-        <div className="mt-auto border-t border-gray-100 p-3 flex gap-2 bg-gradient-to-b from-gray-50/80 to-white">
-          <PremiumButton
-            variant="secondary"
-            size="md"
-            onClick={(e) => { e.stopPropagation(); onClick(job); }}
-            className="flex-1"
-          >
-            {labels.showMore}
-          </PremiumButton>
-          <PremiumButton
-            variant="primary"
-            size="md"
-            onClick={(e) => { e.stopPropagation(); window.openai?.openExternal?.({ href: job.url }); }}
-            icon={<ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />}
-            className="flex-1"
-          >
-            {labels.apply}
-          </PremiumButton>
-        </div>
-      )}
-    </motion.article>
+      </Card>
+    </motion.div>
   );
 }
 
@@ -1186,27 +1093,27 @@ Om INGET erfarenhetskrav nämns → experienceRequired: false
           </div>
         </div>
 
-        {/* Special filters row - Using FilterBadge components */}
+        {/* Special filters row - Using FilterToggle components */}
         <div className="flex items-center gap-2 px-4 sm:px-6 pb-2 overflow-x-auto">
-          <FilterBadge
+          <FilterToggle
             active={showNoExperience}
             onClick={() => { setShowNoExperience(!showNoExperience); setWidgetState(s => ({ ...s, currentPage: 1 })); }}
             icon={<GraduationCap className="w-3.5 h-3.5" />}
             count={noExperienceCount}
-            color="emerald"
+            variant="emerald"
           >
             Inga krav på erfarenhet
-          </FilterBadge>
+          </FilterToggle>
 
-          <FilterBadge
+          <FilterToggle
             active={showRemote}
             onClick={() => { setShowRemote(!showRemote); setWidgetState(s => ({ ...s, currentPage: 1 })); }}
             icon={<Wifi className="w-3.5 h-3.5" />}
             count={remoteCount}
-            color="blue"
+            variant="blue"
           >
             Distansjobb
-          </FilterBadge>
+          </FilterToggle>
         </div>
 
         {/* Work type filters row */}
