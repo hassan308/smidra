@@ -1,0 +1,9 @@
+{
+  "name": "job-seeker-openai-app",
+  "version": "1.0.0",
+  "main": "mcp-server.js",
+  "type": "module",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.1"
+  }
+}

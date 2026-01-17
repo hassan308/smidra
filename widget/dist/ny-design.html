@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="sv">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jobbannonser - Expanded Interaction</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Space+Grotesk:wght@500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #f8fafc;
+            background-image:
+                radial-gradient(at 0% 0%, rgba(0, 0, 0, 0.02) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(0, 0, 0, 0.02) 0px, transparent 50%);
+            color: var(--text-main);
+            padding: 40px 16px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 32px;
+            padding-left: 4px;
+        }
+
+        header h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            font-size: 1rem;
+            color: var(--text-muted);
+        }
+
+        .job-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 16px;
+        }
+
+        .job-card {
+            --brand: #64748b;
+            --brand-tint: rgba(100, 116, 139, 0.1);
+            --brand-dim: rgba(100, 116, 139, 0.2);
+
+            background: #fff;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            padding: 24px;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            height: auto;
+            /* Allow growth */
+            background-clip: padding-box;
+
+            box-shadow:
+                0 4px 6px -1px rgba(0, 0, 0, 0.02),
+                0 2px 4px -1px rgba(0, 0, 0, 0.02),
+                0 0 0 1px inset rgba(255, 255, 255, 0.5);
+        }
+
+        .job-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at top right, var(--brand-tint), transparent 70%);
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .job-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--brand-tint);
+            box-shadow:
+                0 12px 30px -10px var(--brand-dim),
+                0 4px 8px -4px rgba(0, 0, 0, 0.05);
+        }
+
+        .job-card:hover::before {
+            opacity: 1;
+        }
+
+        /* Expanded State */
+        .job-card.expanded {
+            grid-column: span 2;
+            /* Span 2 columns if grid supports it, otherwise fallback */
+            transform: none;
+            /* Disable hover lift when expanded */
+            box-shadow:
+                0 20px 40px -12px rgba(0, 0, 0, 0.1),
+                0 0 0 2px var(--brand-tint);
+            cursor: default;
+            z-index: 10;
+        }
+
+        .card-content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .card-header {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .logo-box {
+            width: 52px;
+            height: 52px;
+            background: #fff;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+            flex-shrink: 0;
+        }
+
+        .logo-svg {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .header-text {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .job-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+            line-height: 1.2;
+            margin-bottom: 4px;
+            white-space: wrap;
+            /* Expanded allows wrap */
+        }
+
+        .company-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .company-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .verified-badge {
+            display: inline-flex;
+            width: 18px;
+            height: 18px;
+            color: var(--brand);
+            filter: drop-shadow(0 2px 4px var(--brand-dim));
+        }
+
+        .info-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            white-space: nowrap;
+        }
+
+        .tag.remote-tag {
+            background-color: #ecfdf5;
+            /* Light green tint */
+            color: #059669;
+            /* Green text */
+            border-color: rgba(5, 150, 105, 0.1);
+        }
+
+        .job-description {
+            font-size: 1rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 0;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            /* Default collapsed state */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .job-card.expanded .job-description {
+            -webkit-line-clamp: unset;
+            /* Expand text */
+            margin-bottom: 24px;
+        }
+
+        /* Action Area (Hidden by default, shown on expand) */
+        .expanded-actions {
+            display: none;
+            /* JS will toggle this nicely */
+            flex-direction: row;
+            gap: 12px;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+        }
+
+        .job-card.expanded .expanded-actions {
+            display: flex;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-salary {
+            background: #fff;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            color: var(--text-main);
+            flex: 1;
+        }
+
+        .btn-salary:hover {
+            background: #f1f5f9;
+        }
+
+        .btn-apply {
+            background: var(--brand);
+            color: #fff;
+            flex: 2;
+            box-shadow: 0 4px 12px var(--brand-dim);
+        }
+
+        .btn-apply:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .salary-value {
+            display: none;
+        }
+
+        .btn-salary.revealed .salary-label {
+            display: none;
+        }
+
+        .btn-salary.revealed .salary-value {
+            display: block;
+        }
+
+        @media (max-width: 600px) {
+            .job-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .job-card.expanded {
+                grid-column: span 1;
+            }
+
+            .expanded-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Jobbannonser</h1>
+            <p>Hitta ditt nästa drömjobb.</p>
+        </header>
+
+        <div class="job-grid" id="grid"></div>
+    </div>
+
+    <script>
+        const verifiedIcon = `<svg class="verified-badge" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
+
+        const logos = {
+            figma: `<svg class="logo-svg" viewBox="0 0 38 57" fill="none"><path d="M19 28.5C19 25.8753 21.1278 23.7475 23.7525 23.7475C26.3772 23.7475 28.505 21.6197 28.505 18.995C28.505 16.3703 26.3772 14.2425 23.7525 14.2425H14.2475V23.7475C14.2475 26.3722 16.3753 28.5 19 28.5Z" fill="#1ABCFE"/><path d="M9.5 47.5C14.7467 47.5 19 43.2467 19 38V28.5H9.5C4.25329 28.5 0 32.7533 0 38C0 43.2467 4.25329 47.5 9.5 47.5Z" fill="#0ACF83"/><path d="M28.505 18.995C28.505 21.6197 26.3772 23.7475 23.7525 23.7475C21.1278 23.7475 19 25.8753 19 28.5V18.995H28.505Z" fill="#FF7262"/><path d="M9.5 28.5C4.25329 28.5 0 24.2467 0 19C0 13.7533 4.25329 9.5 9.5 9.5H19V28.5H9.5Z" fill="#F24E1E"/><path d="M28.505 9.5C28.505 14.7467 24.2517 19 19 19V0C24.2517 0 28.505 4.25329 28.505 9.5Z" fill="#A259FF"/></svg>`,
+            apple: `<svg class="logo-svg" viewBox="0 0 384 512" fill="#000"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 52.3-11.4 69.5-34.3z"/></svg>`,
+            spotify: `<svg class="logo-svg" viewBox="0 0 24 24" fill="#1DB954"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.48.66.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141 4.32-1.38 9.841-.719 13.561 1.56.42.3.6.84.18 1.26zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.4-1.02 15.96 1.74.54.3.66 1.02.3 1.56-.3.48-1.02.6-1.56.3z"/></svg>`,
+            linear: `<svg class="logo-svg" viewBox="0 0 24 24" fill="#5E6AD2"><path d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12z"/><path d="M8.25 18h2.083V7.083H8.25V18zm5.417 0h2.083V6h-2.083v12z" fill="#fff"/></svg>`
+        };
+
+        const jobs = [
+            {
+                title: "UX/UI Designer",
+                company: "IKEA",
+                logo: `<svg viewBox="0 0 24 24" fill="#0058a3"><rect width="24" height="24" fill="#FFDA1A"/><path d="M2.5 2.5h19v19h-19z" fill="#0058a3"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" fill="#FFDA1A"/></svg>`,
+                verified: true,
+                badges: [
+                    { text: "Kräver erfarenhet", type: "exp" },
+                    { text: "Möjlighet för distans", type: "remote" },
+                    { text: "Heltid", type: "time" },
+                    { text: "Ansök senast 12 okt", type: "date" }
+                ],
+                desc: "Vi söker en passionerad UX/UI Designer som vill vara med och forma framtidens digitala upplevelser på IKEA. Du kommer att arbeta agilt i tvärfunktionella team och ansvara för att skapa intuitiva och tillgängliga gränssnitt som når miljontals användare globalt. Erfarenhet av designsystem och användartester är ett krav.",
+                salary: "45 000 - 55 000 SEK",
+                brand: "#0058a3",
+                brandTint: "rgba(0, 88, 163, 0.1)",
+                brandDim: "rgba(0, 88, 163, 0.3)"
+            },
+            {
+                title: "Senior Product Designer",
+                company: "Figma",
+                logo: logos.figma,
+                verified: true,
+                badges: [
+                    { text: "Kräver erfarenhet", type: "exp" },
+                    { text: "Möjlighet för distans", type: "remote" },
+                    { text: "Heltid", type: "time" },
+                    { text: "Ansök senast 30 okt", type: "date" }
+                ],
+                desc: "Join our core product team to build the future of collaborative design. As a Senior Product Designer, you will lead high-impact projects, mentor junior designers, and push the boundaries of what's possible in a browser-based tool. Deep knowledge of interaction design and systems thinking is essential.",
+                salary: "140 000 USD / år",
+                brand: "#A259FF",
+                brandTint: "rgba(162, 89, 255, 0.1)",
+                brandDim: "rgba(162, 89, 255, 0.3)"
+            },
+            {
+                title: "Frontend Developer",
+                company: "Spotify",
+                logo: logos.spotify,
+                verified: true,
+                badges: [
+                    { text: "Kräver ej erfarenhet", type: "entry" },
+                    { text: "Hybrid", type: "time" },
+                    { text: "Heltid", type: "time" },
+                    { text: "Ansök senast 5 nov", type: "date" }
+                ],
+                desc: "Start your career at Spotify! We are looking for emphasis on potential over experience. You will join our 'Growth' tribe, working on experiments to improve user onboarding. Perfect for a recent graduate who loves React and wants to learn from the best engineers in the industry.",
+                salary: "35 000 - 42 000 SEK",
+                brand: "#1DB954",
+                brandTint: "rgba(29, 185, 84, 0.1)",
+                brandDim: "rgba(29, 185, 84, 0.3)"
+            },
+            {
+                title: "AI Engineer",
+                company: "OpenAI",
+                logo: logos.openai,
+                verified: true,
+                badges: [
+                    { text: "Kräver erfarenhet", type: "exp" },
+                    { text: "På plats", type: "office" },
+                    { text: "Heltid", type: "time" },
+                    { text: "Ansök senast 15 nov", type: "date" }
+                ],
+                desc: "Help us build safe AGI. We are looking for engineers with deep expertise in large language models and reinforcement learning. You will work on optimizing model inference and training infrastructure. Ideally, you have a PhD or equivalent experience in CS/ML.",
+                salary: "200 000 USD / år",
+                brand: "#10a37f",
+                brandTint: "rgba(16, 163, 127, 0.1)",
+                brandDim: "rgba(16, 163, 127, 0.3)"
+            },
+            {
+                title: "iOS Developer",
+                company: "Apple",
+                logo: logos.apple,
+                verified: true,
+                badges: [
+                    { text: "Kräver erfarenhet", type: "exp" },
+                    { text: "Hybrid", type: "time" },
+                    { text: "Heltid", type: "time" },
+                    { text: "Ansök senast 28 okt", type: "date" }
+                ],
+                desc: "Join the team that builds the foundation of iOS. You will work on core frameworks used by millions of developers. Strong proficiency in Swift and Objective-C is required. Passion for performance optimization and battery life is a huge plus.",
+                salary: "65 000 SEK",
+                brand: "#1a1a1a",
+                brandTint: "rgba(0,0,0,0.05)",
+                brandDim: "rgba(0,0,0,0.2)"
+            }
+        ];
+
+        const grid = document.getElementById('grid');
+
+        function render() {
+            grid.innerHTML = jobs.map((j, index) => `
+                <div class="job-card" id="card-${index}" style="
+                    --brand: ${j.brand}; 
+                    --brand-tint: ${j.brandTint};
+                    --brand-dim: ${j.brandDim};
+                " onclick="toggleCard(${index})">
+                    
+                    <div class="card-content">
+                        <div class="card-header">
+                            <div class="logo-box">
+                                ${j.logo}
+                            </div>
+                            <div class="header-text">
+                                <h2 class="job-title">${j.title}</h2>
+                                <div class="company-row">
+                                    <span class="company-name">${j.company}</span>
+                                    ${j.verified ? verifiedIcon : ''}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="info-tags">
+                            ${j.badges.map(b => {
+                let className = "tag";
+                if (b.type === 'remote') b.text = '✅ ' + b.text;
+                if (b.type === 'remote') className += ' remote-tag';
+                return `<span class="${className}">${b.text}</span>`;
+            }).join('')}
+                        </div>
+
+                        <p class="job-description">
+                            ${j.desc}
+                        </p>
+
+                        <div class="expanded-actions">
+                            <button class="btn btn-salary" onclick="toggleSalary(event, this, '${j.salary}')">
+                                <span class="salary-label">Visa lön</span>
+                                <span class="salary-value">${j.salary}</span>
+                            </button>
+                            <button class="btn btn-apply" onclick="applyJob(event, '${j.title}')">
+                                Ansök nu
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleCard(index) {
+            const card = document.getElementById(`card-${index}`);
+
+            // Close others (optional, maybe nice for "accordion" feel)
+            document.querySelectorAll('.job-card.expanded').forEach(c => {
+                if (c !== card) c.classList.remove('expanded');
+            });
+
+            card.classList.toggle('expanded');
+        }
+
+        function toggleSalary(e, btn) {
+            e.stopPropagation(); // prevent card toggle
+            btn.classList.add('revealed');
+        }
+
+        function applyJob(e, title) {
+            e.stopPropagation();
+            if (window.openai?.callTool) {
+                window.openai.callTool("apply_for_job", { job_title: title });
+            } else {
+                console.log("Applying for:", title);
+                alert("Applying for " + title);
+            }
+        }
+
+        render();
+    </script>
+</body>
+
+</html>

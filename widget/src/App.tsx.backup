@@ -125,8 +125,8 @@ function useIsMobile() {
   return isMobile;
 }
 
-// Premium company logo with elegant fallback
-function CompanyLogo({ name, logoUrl, size = 44 }: { name: string; logoUrl?: string; size?: number }) {
+// Premium company logo with elegant fallback - updated to match new design
+function CompanyLogo({ name, logoUrl, size = 52 }: { name: string; logoUrl?: string; size?: number }) {
   const [error, setError] = useState(false);
   const initial = name?.charAt(0)?.toUpperCase() || '?';
   const hue = name?.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 360 || 0;
@@ -134,7 +134,7 @@ function CompanyLogo({ name, logoUrl, size = 44 }: { name: string; logoUrl?: str
   if (error || !logoUrl) {
     return (
       <div
-        className="flex items-center justify-center rounded-xl font-semibold text-white shadow-sm"
+        className="flex items-center justify-center rounded-[14px] font-semibold text-white shadow-[0_4px_12px_rgba(0,0,0,0.04)] border border-black/[0.04]"
         style={{
           width: size,
           height: size,
@@ -156,10 +156,24 @@ function CompanyLogo({ name, logoUrl, size = 44 }: { name: string; logoUrl?: str
       width={size}
       height={size}
       loading="lazy"
-      className="rounded-xl object-cover ring-1 ring-black/5"
+      className="rounded-[14px] object-cover border border-black/[0.04] shadow-[0_4px_12px_rgba(0,0,0,0.04)]"
       style={{ width: size, height: size }}
       onError={() => setError(true)}
     />
+  );
+}
+
+// Verified badge icon (matches new design)
+function VerifiedBadge({ brand }: { brand: string }) {
+  return (
+    <svg
+      className="w-[18px] h-[18px] flex-shrink-0"
+      viewBox="0 0 24 24"
+      fill={brand}
+      style={{ filter: `drop-shadow(0 2px 4px ${brand}40)` }}
+    >
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+    </svg>
   );
 }
 
@@ -193,7 +207,7 @@ function JobCardSkeleton() {
   );
 }
 
-// Premium job card with shadcn design
+// Premium job card with new expandable design
 function JobCard({
   job,
   isSaved,
@@ -202,7 +216,9 @@ function JobCard({
   onShare,
   labels,
   compact = false,
-  isBeingVerified = false
+  isBeingVerified = false,
+  isExpanded = false,
+  onToggleExpand
 }: {
   job: Job;
   isSaved: boolean;
@@ -212,7 +228,28 @@ function JobCard({
   labels: Labels;
   compact?: boolean;
   isBeingVerified?: boolean;
+  isExpanded?: boolean;
+  onToggleExpand?: (id: string) => void;
 }) {
+  // Brand color based on employer name
+  const brandColors = {
+    brand: job.employer.includes('Spotify') ? '#1DB954' :
+           job.employer.includes('IKEA') ? '#0058a3' :
+           job.employer.includes('Apple') ? '#1a1a1a' :
+           job.employer.includes('Figma') ? '#A259FF' :
+           '#64748b',
+  };
+  brandColors['brandTint'] = `${brandColors.brand}1a`;
+  brandColors['brandDim'] = `${brandColors.brand}4d`;
+
+  const handleCardClick = () => {
+    if (onToggleExpand) {
+      onToggleExpand(job.id);
+    } else {
+      onClick(job);
+    }
+  };
+
   return (
     <motion.div
       layout
@@ -221,18 +258,26 @@ function JobCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={springTransition}
+      className={cn(isExpanded && 'col-span-2')}
     >
       <Card
         className={cn(
-          'group relative cursor-pointer overflow-hidden',
-          'hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-0.5',
-          'hover:border-blue-200 transition-all duration-200'
+          'group relative cursor-pointer overflow-hidden transition-all duration-[400ms]',
+          isExpanded
+            ? 'shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] border-2 z-10'
+            : 'hover:-translate-y-1'
         )}
-        onClick={() => onClick(job)}
-        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onClick(job))}
+        onClick={handleCardClick}
+        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), handleCardClick())}
         tabIndex={0}
         role="button"
         aria-label={`${job.title} hos ${job.employer}`}
+        style={{
+          // @ts-ignore
+          '--card-brand': brandColors.brand,
+          '--card-brand-tint': brandColors.brandTint,
+          '--card-brand-dim': brandColors.brandDim
+        }}
       >
         {/* Save button - floating */}
         <button
@@ -241,7 +286,7 @@ function JobCard({
           aria-label={isSaved ? 'Ta bort från sparade' : 'Spara jobb'}
           aria-pressed={isSaved}
           className={cn(
-            'absolute top-3 right-3 z-10 flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200',
+            'absolute top-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2',
             isSaved
               ? 'bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/30 scale-105'
@@ -251,32 +296,26 @@ function JobCard({
           <Heart className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} aria-hidden="true" />
         </button>
 
-        <CardHeader className={cn('pb-2', compact && 'p-3 pb-2')}>
-          <div className="flex items-start gap-3">
-            <CompanyLogo name={job.employer} logoUrl={job.logoUrl} size={compact ? 40 : 48} />
-            <div className="min-w-0 flex-1 pr-10">
-              <p className="text-sm font-semibold text-slate-900 truncate">
-                {job.employer}
-              </p>
-              <div className="flex items-center gap-1.5 mt-0.5 text-slate-500">
-                <MapPin className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
-                <span className="text-xs truncate">{job.location || 'Sverige'}</span>
+        <CardHeader className="pb-5">
+          <div className="flex items-center gap-4 pr-12">
+            <CompanyLogo name={job.employer} logoUrl={job.logoUrl} size={52} />
+            <div className="min-w-0 flex-1">
+              <h3 className="font-['Space_Grotesk'] text-xl font-bold text-slate-900 leading-tight mb-1">
+                {job.title}
+              </h3>
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-semibold text-slate-500 uppercase tracking-wide">
+                  {job.employer}
+                </span>
+                <VerifiedBadge brand={brandColors.brand} />
               </div>
             </div>
           </div>
         </CardHeader>
 
-        <CardContent className={cn('pt-0', compact && 'px-3')}>
-          <h3 className={cn(
-            'font-semibold text-slate-900 leading-snug line-clamp-2 mb-3',
-            'group-hover:text-blue-600 transition-colors',
-            compact ? 'text-sm' : 'text-base'
-          )}>
-            {job.title}
-          </h3>
-
+        <CardContent className="space-y-4 relative z-10">
           {/* Badges row */}
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             {job.isRemote && (
               <Badge variant="remote">
                 <Wifi className="w-3 h-3" aria-hidden="true" />
@@ -301,19 +340,10 @@ function JobCard({
               </Badge>
             )}
 
-            {job.vacancies && job.vacancies > 1 && (
-              <Badge variant="vacancies">
-                <Users className="w-3 h-3" aria-hidden="true" />
-                {job.vacancies} platser
-              </Badge>
-            )}
-          </div>
-
-          {/* Work type & deadline row */}
-          <div className="flex items-center gap-1.5 flex-wrap mt-2">
             {job.workingHours && (
               <Badge variant="workType">{job.workingHours}</Badge>
             )}
+
             {job.deadline && (
               <Badge variant="deadline">
                 <Calendar className="w-3 h-3" aria-hidden="true" />
@@ -322,44 +352,40 @@ function JobCard({
             )}
           </div>
 
-          {/* Skills preview */}
-          {!compact && job.mustHaveSkills && job.mustHaveSkills.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-slate-100">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <Zap className="w-3 h-3 text-amber-500 flex-shrink-0" aria-hidden="true" />
-                {job.mustHaveSkills.slice(0, 3).map((skill, i) => (
-                  <span key={i} className="text-xs text-slate-600">
-                    {skill}{i < Math.min(job.mustHaveSkills!.length, 3) - 1 ? ',' : ''}
-                  </span>
-                ))}
-                {job.mustHaveSkills.length > 3 && (
-                  <span className="text-xs text-slate-400">+{job.mustHaveSkills.length - 3}</span>
-                )}
-              </div>
-            </div>
+          {/* Job description */}
+          <p className={cn(
+            'text-base text-slate-600 leading-relaxed transition-all duration-300',
+            !isExpanded && 'line-clamp-3'
+          )}>
+            {job.description || 'Ingen beskrivning tillgänglig.'}
+          </p>
+
+          {/* Expanded actions */}
+          {isExpanded && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="flex gap-3 pt-5 border-t border-slate-100"
+            >
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={(e) => { e.stopPropagation(); onClick(job); }}
+              >
+                {labels.salaryInfo}
+              </Button>
+              <Button
+                variant="primary"
+                className="flex-[2]"
+                onClick={(e) => { e.stopPropagation(); window.openai?.openExternal?.({ href: job.url }); }}
+              >
+                {labels.applyNow}
+                <ExternalLink className="w-4 h-4" aria-hidden="true" />
+              </Button>
+            </motion.div>
           )}
         </CardContent>
-
-        {/* Footer with shadcn buttons */}
-        {!compact && (
-          <CardFooter className="border-t border-slate-100 bg-slate-50/50 gap-2 pt-4">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={(e) => { e.stopPropagation(); onClick(job); }}
-            >
-              {labels.showMore}
-            </Button>
-            <Button
-              variant="primary"
-              className="flex-1"
-              onClick={(e) => { e.stopPropagation(); window.openai?.openExternal?.({ href: job.url }); }}
-            >
-              {labels.apply}
-              <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
-            </Button>
-          </CardFooter>
-        )}
       </Card>
     </motion.div>
   );
@@ -719,6 +745,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [jobsBeingVerified, setJobsBeingVerified] = useState<string[]>([]);
+  const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
 
   const widgetSessionId = useRef('ws_' + Math.random().toString(36).substr(2, 9));
   const langRef = useRef('sv');
@@ -793,6 +820,10 @@ export default function App() {
       return { ...prev, savedJobs: isSaved ? prev.savedJobs.filter(x => x !== id) : [...prev.savedJobs, id] };
     });
   }, [setWidgetState, showToast]);
+
+  const toggleExpand = useCallback((id: string) => {
+    setExpandedJobId(prev => prev === id ? null : id);
+  }, []);
 
   const shareJob = useCallback(async (job: Job) => {
     const shareData = {
@@ -1195,6 +1226,8 @@ Om INGET erfarenhetskrav nämns → experienceRequired: false
                       labels={labels}
                       compact={isFullscreen && isMobile}
                       isBeingVerified={jobsBeingVerified.includes(job.id)}
+                      isExpanded={expandedJobId === job.id}
+                      onToggleExpand={toggleExpand}
                     />
                   ))}
                 </AnimatePresence>
