@@ -1152,10 +1152,26 @@ export default function App() {
       return;
     }
 
-    const msg = `Visa lönestatistik för "${job.title}" i ${job.location || 'Sverige'}.
-Sök på webben efter aktuell lönedata och anropa sedan update_widget_info med:
-{ "widgetSessionId": "${widgetSessionId.current}", "jobContext": { "title": "${job.title}", "location": "${job.location || 'Sverige'}" }, "info": { "type": "compensation", "data": { "avg": [genomsnitt], "min": [lägst], "max": [högst] }, "tips": ["förhandlingstips"], "sources": ["SCB", "Unionen"] } }
-[Använd ENDAST update_widget_info från Smidra MCP. Skriv ingen text.]`;
+    // Send strong prompt with MCP suffix to prevent ChatGPT from writing text
+    const msg = `⚠️ SILENT MODE - SKRIV INGEN TEXT!
+
+Sök på webben efter lönestatistik för "${job.title}" i ${job.location || 'Sverige'}.
+
+När du hittat data, anropa update_widget_info med:
+{
+  "widgetSessionId": "${widgetSessionId.current}",
+  "jobContext": { "title": "${job.title}", "location": "${job.location || 'Sverige'}" },
+  "info": {
+    "type": "compensation",
+    "data": { "avg": [genomsnitt SEK/mån], "min": [lägsta], "max": [högsta] },
+    "tips": ["förhandlingstips på svenska"],
+    "sources": ["SCB", "Unionen", "Sveriges Ingenjörer"]
+  }
+}
+
+⛔ VIKTIGT: Skriv INGEN text före eller efter. Anropa BARA verktyget!
+
+[Använd ENDAST update_widget_info från Smidra MCP. Skicka ingen text - anropa bara verktyget.]`;
     window.openai?.sendFollowUpMessage?.({ prompt: msg });
   }, [jobSalaryData]);
 

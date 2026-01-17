@@ -910,19 +910,19 @@ Respond in ${language}.`
 server.registerTool(
   "update_widget_info",
   {
-    title: "Update Widget Info",
-    description: `Display salary/market data in user's job widget.
+    title: "Update Widget Info (Silent)",
+    description: `⚠️ SILENT TOOL - Display salary/market data in user's job widget.
+
+CRITICAL: DO NOT WRITE ANY TEXT BEFORE OR AFTER CALLING THIS TOOL!
 
 WORKFLOW:
-1. First, SEARCH THE WEB for current salary statistics for the job title and location
-2. Then call this tool to display the results in the user's widget
+1. SEARCH THE WEB for current salary statistics for the job title and location
+2. Call this tool with the salary data you found
+3. STOP - do NOT write any text response!
 
-When you see "widget_session:" in the message:
-- Search the web for salary data (Swedish market: SCB, Unionen, Sveriges Ingenjörer)
-- Call this tool with the data you found
-- The widget will display it - do NOT write text response
+The widget will display the data automatically. User sees loading spinner until you call this tool.
 
-This is a read-only display operation. Widget is already open and waiting.`,
+IMPORTANT: This tool returns empty content. Do NOT try to explain what you did.`,
     inputSchema: {
       widgetSessionId: z.string().describe("Session ID from widget_session field"),
       jobContext: z.object({
@@ -932,12 +932,12 @@ This is a read-only display operation. Widget is already open and waiting.`,
       info: z.object({
         type: z.string().describe("Type of info: compensation, market, trends"),
         data: z.object({
-          avg: z.number().describe("Average value"),
-          min: z.number().describe("Minimum value"),
-          max: z.number().describe("Maximum value")
+          avg: z.number().describe("Average salary (SEK/month)"),
+          min: z.number().describe("Minimum salary"),
+          max: z.number().describe("Maximum salary")
         }),
-        tips: z.array(z.string()).optional().describe("Helpful tips"),
-        sources: z.array(z.string()).optional().describe("Data sources")
+        tips: z.array(z.string()).optional().describe("Salary negotiation tips"),
+        sources: z.array(z.string()).optional().describe("Data sources like SCB, Unionen")
       })
     },
     annotations: {
@@ -946,7 +946,7 @@ This is a read-only display operation. Widget is already open and waiting.`,
       destructiveHint: false
     },
     _meta: {
-      "openai/widgetAccessible": true  // Can be called from widget
+      "openai/widgetAccessible": true
     }
   },
   async (params) => {
@@ -955,23 +955,19 @@ This is a read-only display operation. Widget is already open and waiting.`,
     // Push to widget - use 'market_info' event type
     const pushed = pushToWidget(params.widgetSessionId, 'market_info', {
       job: params.jobContext,
-      salary: params.info.data,  // Widget expects salary format
+      salary: params.info.data,
       tips: params.info.tips,
       sources: params.info.sources
     });
 
     if (pushed) {
       console.log(`✅ Info pushed to ${params.widgetSessionId}`);
-      return { content: [] };
+    } else {
+      console.log(`❌ Widget ${params.widgetSessionId} not connected`);
     }
 
-    console.log(`❌ Widget ${params.widgetSessionId} not connected`);
-    return {
-      content: [{
-        type: "text",
-        text: `Information kunde inte visas. Widgeten är inte ansluten.`
-      }]
-    };
+    // ALWAYS return empty content - never return text!
+    return { content: [] };
   }
 );
 
