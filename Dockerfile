@@ -10,7 +10,6 @@ RUN npm ci --only=production
 
 # Copy source files
 COPY smidra-server.js ./
-COPY job-list-widget.html ./
 COPY job-list-widget-v2.html ./
 COPY job-detail-widget.html ./
 COPY salary-widget.html ./
