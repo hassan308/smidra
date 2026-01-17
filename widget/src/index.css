@@ -5,37 +5,25 @@
 
 @layer base {
   :root {
-    /* shadcn-style CSS variables */
+    /* Modern Color Palette */
+    --primary: 221.2 83.2% 53.3%;        /* Blue-600 */
+    --primary-dark: 224 76.3% 48%;       /* Blue-700 */
+    --primary-light: 213.7 93.9% 67.8%;  /* Blue-400 */
+
+    --accent: 173.4 80.4% 40%;           /* Teal-600 */
+    --accent-light: 172.5 66% 50.4%;     /* Teal-500 */
+
+    --success: 142.1 70.6% 45.3%;        /* Green-600 */
+    --success-light: 142.1 76.2% 36.3%;  /* Green-700 */
+
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+
     --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
     --radius: 0.75rem;
-
-    /* Smidra accent colors */
-    --smidra-accent: #C85A38;
-    --smidra-accent-hover: #B54E2E;
-    --smidra-sage: #7B9E87;
-
-    /* Badge colors */
-    --badge-remote: 221.2 83.2% 53.3%;
-    --badge-no-exp: 142.1 76.2% 36.3%;
-    --badge-vacancies: 262.1 83.3% 57.8%;
   }
 
   * {
@@ -51,15 +39,17 @@
   }
 
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'Helvetica Neue', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background: hsl(var(--background));
+    background: #F9FAFB;
     color: hsl(var(--foreground));
+    line-height: 1.6;
   }
 }
 
 @layer utilities {
+  /* Smooth scrolling */
   .overflow-auto,
   .overflow-scroll,
   .overflow-x-auto,
@@ -73,85 +63,32 @@
     scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
   }
 
-  /* shadcn-style animations */
-  .animate-in {
-    animation: animate-in 0.2s ease-out;
-  }
-
-  .animate-out {
-    animation: animate-out 0.2s ease-in;
-  }
-
-  .fade-in {
-    animation: fade-in 0.2s ease-out;
-  }
-
-  .fade-out {
-    animation: fade-out 0.2s ease-in;
-  }
-
-  .slide-in-from-bottom {
-    animation: slide-in-from-bottom 0.3s ease-out;
-  }
-
-  .slide-in-from-top {
-    animation: slide-in-from-top 0.3s ease-out;
-  }
-
-  .zoom-in-95 {
-    animation: zoom-in-95 0.2s ease-out;
-  }
-
-  @keyframes animate-in {
-    from { opacity: 0; transform: translateY(4px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  @keyframes animate-out {
-    from { opacity: 1; transform: translateY(0); }
-    to { opacity: 0; transform: translateY(4px); }
-  }
-
-  @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  @keyframes fade-out {
-    from { opacity: 1; }
-    to { opacity: 0; }
-  }
-
-  @keyframes slide-in-from-bottom {
+  /* Clean animations */
+  @keyframes fadeIn {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
   }
 
-  @keyframes slide-in-from-top {
-    from { opacity: 0; transform: translateY(-8px); }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
     to { opacity: 1; transform: translateY(0); }
   }
 
-  @keyframes zoom-in-95 {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-out;
   }
 
-  @keyframes spin {
-    to { transform: rotate(360deg); }
+  .animate-slideUp {
+    animation: slideUp 0.4s ease-out;
   }
 
-  .animate-spin {
-    animation: spin 0.8s linear infinite;
-  }
-
-  /* Shimmer effect for loading */
+  /* Shimmer for loading */
   .shimmer {
     background: linear-gradient(
       90deg,
-      hsl(var(--muted)) 0%,
-      hsl(var(--muted-foreground) / 0.1) 50%,
-      hsl(var(--muted)) 100%
+      #F3F4F6 0%,
+      #E5E7EB 50%,
+      #F3F4F6 100%
     );
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
@@ -162,12 +99,18 @@
     100% { background-position: -200% 0; }
   }
 
-  /* Card animation delays */
-  .animation-delay-75 { animation-delay: 75ms; }
-  .animation-delay-100 { animation-delay: 100ms; }
-  .animation-delay-150 { animation-delay: 150ms; }
-  .animation-delay-200 { animation-delay: 200ms; }
-  .animation-delay-300 { animation-delay: 300ms; }
+  /* Modern shadow utilities */
+  .shadow-soft {
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  }
+
+  .shadow-medium {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  }
+
+  .shadow-strong {
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  }
 }
 
 /* Mapbox overrides */

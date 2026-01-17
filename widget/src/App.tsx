@@ -37,31 +37,38 @@ interface FilterToggleProps {
 }
 
 function FilterToggle({ active, onClick, icon, children, count, variant }: FilterToggleProps) {
+  const colorClasses = {
+    emerald: {
+      active: 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700',
+      inactive: 'bg-white text-emerald-700 border-emerald-200 hover:border-emerald-300 hover:bg-emerald-50'
+    },
+    blue: {
+      active: 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700',
+      inactive: 'bg-white text-blue-700 border-blue-200 hover:border-blue-300 hover:bg-blue-50'
+    }
+  };
+
+  const colors = colorClasses[variant];
+
   return (
     <button
       onClick={onClick}
       className={cn(
-        'inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold',
-        'transition-all duration-200 whitespace-nowrap relative overflow-hidden',
+        'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border',
+        'transition-all duration-200 whitespace-nowrap',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
-        'active:scale-95',
+        'active:scale-[0.98]',
         variant === 'emerald' && 'focus-visible:ring-emerald-500',
         variant === 'blue' && 'focus-visible:ring-blue-500',
-        // Active state - glossy gradient with glow
-        active && variant === 'emerald' && 'bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600 text-white shadow-xl shadow-emerald-500/40 hover:shadow-2xl hover:shadow-emerald-500/50 before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/20 before:via-transparent before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity',
-        active && variant === 'blue' && 'bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 text-white shadow-xl shadow-blue-500/40 hover:shadow-2xl hover:shadow-blue-600/50 before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/20 before:via-transparent before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity',
-        // Inactive state - subtle with border
-        !active && variant === 'emerald' && 'bg-gradient-to-br from-emerald-50 to-green-50 text-emerald-700 border-2 border-emerald-200 shadow-md hover:from-emerald-100 hover:to-green-100 hover:border-emerald-300 hover:shadow-lg',
-        !active && variant === 'blue' && 'bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-700 border-2 border-blue-200 shadow-md hover:from-blue-100 hover:to-indigo-100 hover:border-blue-300 hover:shadow-lg'
+        active ? colors.active : colors.inactive
       )}
     >
-      <span className="relative z-10">{icon}</span>
-      <span className="relative z-10">{children}</span>
+      {icon}
+      {children}
       {count !== undefined && count > 0 && (
         <span className={cn(
-          'relative z-10 ml-1 px-2 py-0.5 rounded-lg text-[10px] font-bold tabular-nums',
-          'shadow-sm',
-          active ? 'bg-white/30 backdrop-blur-sm' : variant === 'emerald' ? 'bg-emerald-200 text-emerald-800' : 'bg-blue-200 text-blue-800'
+          'ml-0.5 px-2 py-0.5 rounded-md text-xs font-semibold',
+          active ? 'bg-white/20' : variant === 'emerald' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
         )}>
           {count}
         </span>
@@ -1013,7 +1020,7 @@ Om INGET erfarenhetskrav nämns → experienceRequired: false
       }}
     >
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-xl border-b border-gray-200/60 flex-shrink-0">
+      <header className="sticky top-0 z-20 bg-white border-b border-gray-200 flex-shrink-0">
         <div className="px-4 sm:px-6 py-4">
           {/* Top row */}
           <div className="flex items-center justify-between gap-3 mb-3">
