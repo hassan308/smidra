@@ -1350,7 +1350,7 @@ const httpServer = http.createServer(async (req, res) => {
       return;
     }
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(formatJob(job)));
+    res.end(JSON.stringify(formatJob(job, true)));  // Include full description
     return;
   }
 
