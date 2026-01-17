@@ -253,55 +253,47 @@ function useLogoColor(logoUrl: string | undefined, employer: string) {
   return colors;
 }
 
-// Salary Widget Component - beautiful popup
-function SalaryWidget({
+// Salary Content Component - replaces card content
+function SalaryContent({
   salaryData,
   colors,
   labels,
   onClose,
+  onApply,
   isMobile
 }: {
   salaryData: SalaryData;
   colors: { brand: string; brandTint: string; brandDim: string };
   labels: Labels;
   onClose: () => void;
+  onApply: () => void;
   isMobile: boolean;
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9, y: 10 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.9, y: 10 }}
-      onClick={(e) => e.stopPropagation()}
-      style={{
-        position: 'absolute',
-        bottom: '100%',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        marginBottom: '12px',
-        width: isMobile ? 'calc(100vw - 48px)' : '320px',
-        maxWidth: '320px',
-        background: '#fff',
-        borderRadius: '20px',
-        boxShadow: '0 20px 40px -10px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.05)',
-        overflow: 'hidden',
-        zIndex: 100
-      }}
+      initial={{ opacity: 0, rotateY: 90 }}
+      animate={{ opacity: 1, rotateY: 0 }}
+      exit={{ opacity: 0, rotateY: -90 }}
+      transition={{ duration: 0.3 }}
+      style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
     >
-      {/* Header with gradient */}
+      {/* Header with salary */}
       <div style={{
         background: `linear-gradient(135deg, ${colors.brand} 0%, ${colors.brandDim} 100%)`,
-        padding: '20px',
+        padding: isMobile ? '16px' : '20px',
+        borderRadius: '16px',
+        marginBottom: '16px',
         position: 'relative'
       }}>
+        {/* Close button */}
         <button
-          onClick={onClose}
+          onClick={(e) => { e.stopPropagation(); onClose(); }}
           style={{
             position: 'absolute',
             top: '12px',
             right: '12px',
-            width: '28px',
-            height: '28px',
+            width: '32px',
+            height: '32px',
             borderRadius: '50%',
             border: 'none',
             background: 'rgba(255,255,255,0.2)',
@@ -309,88 +301,115 @@ function SalaryWidget({
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            transition: 'background 0.2s'
           }}
         >
-          <X size={14} />
+          <X size={16} />
         </button>
+
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
           <div style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '12px',
+            width: '36px',
+            height: '36px',
+            borderRadius: '10px',
             background: 'rgba(255,255,255,0.2)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
           }}>
-            <TrendingUp size={20} color="#fff" />
+            <TrendingUp size={18} color="#fff" />
           </div>
-          <span style={{ color: '#fff', fontWeight: 600, fontSize: '1rem' }}>{labels.salaryTitle}</span>
+          <span style={{ color: '#fff', fontWeight: 600, fontSize: '0.95rem' }}>{labels.salaryTitle}</span>
         </div>
+
         <p style={{
-          fontSize: '2.2rem',
+          fontSize: isMobile ? '2rem' : '2.4rem',
           fontWeight: 700,
           color: '#fff',
           margin: 0,
-          textShadow: '0 2px 10px rgba(0,0,0,0.1)'
+          textShadow: '0 2px 10px rgba(0,0,0,0.15)'
         }}>
           {salaryData.salary?.avg?.toLocaleString('sv-SE')} <span style={{ fontSize: '1rem', fontWeight: 500 }}>{labels.krPerMonth}</span>
         </p>
       </div>
 
-      {/* Body */}
-      <div style={{ padding: '16px 20px' }}>
-        {/* Min/Max range */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          marginBottom: '16px',
-          padding: '12px',
-          background: '#f8fafc',
-          borderRadius: '12px'
-        }}>
-          <div style={{ textAlign: 'center' }}>
-            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>{labels.salaryMin}</p>
-            <p style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>
-              {salaryData.salary?.min?.toLocaleString('sv-SE')} kr
-            </p>
-          </div>
-          <div style={{ width: '1px', background: '#e2e8f0' }} />
-          <div style={{ textAlign: 'center' }}>
-            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>{labels.salaryMax}</p>
-            <p style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>
-              {salaryData.salary?.max?.toLocaleString('sv-SE')} kr
-            </p>
-          </div>
-        </div>
-
-        {/* Tips */}
-        {salaryData.translatedTips && salaryData.translatedTips.length > 0 && (
-          <div style={{ marginBottom: '12px' }}>
-            {salaryData.translatedTips.slice(0, 2).map((tip, i) => (
-              <div key={i} style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '8px',
-                marginBottom: '8px',
-                fontSize: '0.85rem',
-                color: '#64748b'
-              }}>
-                <span style={{ color: colors.brand, marginTop: '2px' }}>💡</span>
-                <span>{tip}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Sources */}
-        {salaryData.sources && salaryData.sources.length > 0 && (
-          <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: 0 }}>
-            {labels.sources}: {salaryData.sources.join(', ')}
+      {/* Min/Max range */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        marginBottom: '16px',
+        padding: '14px',
+        background: '#f8fafc',
+        borderRadius: '12px',
+        border: '1px solid rgba(0,0,0,0.04)'
+      }}>
+        <div style={{ textAlign: 'center', flex: 1 }}>
+          <p style={{ fontSize: '0.7rem', color: '#94a3b8', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{labels.salaryMin}</p>
+          <p style={{ fontSize: isMobile ? '1rem' : '1.15rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>
+            {salaryData.salary?.min?.toLocaleString('sv-SE')} kr
           </p>
-        )}
+        </div>
+        <div style={{ width: '1px', background: '#e2e8f0', margin: '0 12px' }} />
+        <div style={{ textAlign: 'center', flex: 1 }}>
+          <p style={{ fontSize: '0.7rem', color: '#94a3b8', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{labels.salaryMax}</p>
+          <p style={{ fontSize: isMobile ? '1rem' : '1.15rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>
+            {salaryData.salary?.max?.toLocaleString('sv-SE')} kr
+          </p>
+        </div>
       </div>
+
+      {/* Tips */}
+      {salaryData.translatedTips && salaryData.translatedTips.length > 0 && (
+        <div style={{ marginBottom: '16px', flex: 1 }}>
+          {salaryData.translatedTips.slice(0, 2).map((tip, i) => (
+            <div key={i} style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '8px',
+              marginBottom: '10px',
+              fontSize: isMobile ? '0.8rem' : '0.85rem',
+              color: '#64748b',
+              lineHeight: 1.5
+            }}>
+              <span style={{ color: colors.brand, marginTop: '1px' }}>💡</span>
+              <span>{tip}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Sources */}
+      {salaryData.sources && salaryData.sources.length > 0 && (
+        <p style={{ fontSize: '0.7rem', color: '#94a3b8', margin: '0 0 16px 0' }}>
+          {labels.sources}: {salaryData.sources.join(', ')}
+        </p>
+      )}
+
+      {/* Apply button */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onApply(); }}
+        style={{
+          width: '100%',
+          padding: isMobile ? '12px' : '14px',
+          borderRadius: '12px',
+          border: 'none',
+          background: colors.brand,
+          color: '#fff',
+          fontWeight: 600,
+          fontSize: isMobile ? '0.9rem' : '0.95rem',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+          boxShadow: `0 4px 12px ${colors.brandDim}`,
+          marginTop: 'auto'
+        }}
+      >
+        <span>{labels.applyNow}</span>
+        <ExternalLink size={16} />
+      </button>
     </motion.div>
   );
 }
@@ -406,8 +425,8 @@ function JobCard({
   onRequestSalary,
   salaryLoading,
   salaryData,
-  showSalaryWidget,
-  onCloseSalaryWidget,
+  showSalaryView,
+  onCloseSalaryView,
   labels
 }: {
   job: Job;
@@ -419,8 +438,8 @@ function JobCard({
   onRequestSalary: () => void;
   salaryLoading: boolean;
   salaryData: SalaryData | null;
-  showSalaryWidget: boolean;
-  onCloseSalaryWidget: () => void;
+  showSalaryView: boolean;
+  onCloseSalaryView: () => void;
   labels: Labels;
 }) {
   const colors = useLogoColor(job.logoUrl, job.employer);
@@ -433,187 +452,204 @@ function JobCard({
         '--brand': colors.brand,
         '--brand-tint': colors.brandTint,
         '--brand-dim': colors.brandDim,
-        background: `linear-gradient(135deg, #fff 0%, #fff 60%, ${colors.brandTint} 100%)`,
-        borderColor: colors.brandTint
+        background: showSalaryView
+          ? `linear-gradient(135deg, #fff 0%, ${colors.brandTint} 100%)`
+          : `linear-gradient(135deg, #fff 0%, #fff 60%, ${colors.brandTint} 100%)`,
+        borderColor: showSalaryView ? colors.brand : colors.brandTint,
+        minHeight: showSalaryView ? '320px' : 'auto'
       } as React.CSSProperties}
-      onClick={onToggle}
+      onClick={showSalaryView ? undefined : onToggle}
     >
-      {/* Brand glow effect */}
-      <div style={{
-        position: 'absolute',
-        top: cardIsMobile ? '-30%' : '-50%',
-        right: cardIsMobile ? '-15%' : '-20%',
-        width: cardIsMobile ? '120px' : '200px',
-        height: cardIsMobile ? '120px' : '200px',
-        borderRadius: '50%',
-        background: `radial-gradient(circle, ${colors.brandDim} 0%, transparent 70%)`,
-        opacity: 0.5,
-        pointerEvents: 'none'
-      }} />
-
-      {/* Save button */}
-      <button
-        onClick={(e) => { e.stopPropagation(); onSave(); }}
-        style={{
-          position: 'absolute',
-          top: '16px',
-          right: '16px',
-          zIndex: 10,
-          width: '36px',
-          height: '36px',
-          borderRadius: '50%',
-          border: isSaved ? 'none' : '1px solid rgba(0,0,0,0.1)',
-          background: isSaved ? '#f43f5e' : '#fff',
-          color: isSaved ? '#fff' : '#94a3b8',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          transition: 'all 0.2s'
-        }}
-      >
-        <Heart size={16} fill={isSaved ? 'currentColor' : 'none'} />
-      </button>
-
-      <div className="card-content">
-        <div className="card-header">
-          <CompanyLogo name={job.employer} logoUrl={job.logoUrl} brandColor={colors.brand} />
-          <div className="header-text">
-            <h3 className="job-title">{job.title}</h3>
-            <div className="company-row">
-              <span className="company-name">{job.employer}</span>
-              <VerifiedBadge />
-            </div>
-          </div>
-        </div>
-
-        <div className="info-tags">
-          {job.isRemote && <span className="tag remote-tag">Distans</span>}
-          {job.experienceRequired === false ? (
-            <span className="tag no-exp-tag">Kräver ej erfarenhet</span>
-          ) : (
-            <span className="tag exp-tag">Kräver erfarenhet</span>
-          )}
-          {job.workingHours && <span className="tag">{job.workingHours}</span>}
-          {job.deadline && <span className="tag deadline-tag">Ansök senast {job.deadline}</span>}
-        </div>
-
-        <p className="job-description">
-          {job.description || 'Ingen beskrivning tillgänglig.'}
-        </p>
-
-        {/* Action buttons - always visible, more prominent */}
+      {/* Brand glow effect - hidden when showing salary */}
+      {!showSalaryView && (
         <div style={{
-          display: 'flex',
-          gap: '10px',
-          marginTop: '16px',
-          paddingTop: '16px',
-          borderTop: '1px solid rgba(0,0,0,0.06)',
-          position: 'relative'
-        }}>
-          {/* Salary Widget Popup */}
-          <AnimatePresence>
-            {showSalaryWidget && salaryData && (
-              <SalaryWidget
-                salaryData={salaryData}
-                colors={colors}
-                labels={labels}
-                onClose={onCloseSalaryWidget}
-                isMobile={cardIsMobile}
-              />
-            )}
-          </AnimatePresence>
+          position: 'absolute',
+          top: cardIsMobile ? '-30%' : '-50%',
+          right: cardIsMobile ? '-15%' : '-20%',
+          width: cardIsMobile ? '120px' : '200px',
+          height: cardIsMobile ? '120px' : '200px',
+          borderRadius: '50%',
+          background: `radial-gradient(circle, ${colors.brandDim} 0%, transparent 70%)`,
+          opacity: 0.5,
+          pointerEvents: 'none'
+        }} />
+      )}
 
-          {/* Salary button with loading spinner */}
-          <button
-            onClick={(e) => { e.stopPropagation(); onRequestSalary(); }}
-            disabled={salaryLoading}
-            style={{
-              flex: 1,
-              padding: cardIsMobile ? '10px 12px' : '12px 16px',
-              borderRadius: '10px',
-              border: `1px solid ${salaryData ? colors.brand : 'rgba(0,0,0,0.1)'}`,
-              background: salaryData ? colors.brandTint : '#fff',
-              color: salaryData ? colors.brand : '#64748b',
-              fontWeight: 600,
-              fontSize: cardIsMobile ? '0.8rem' : '0.85rem',
-              cursor: salaryLoading ? 'wait' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              transition: 'all 0.2s'
-            }}
-          >
-            {salaryLoading ? (
-              <>
-                <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
-                <span>{labels.fetching}</span>
-              </>
-            ) : salaryData ? (
-              <>
-                <TrendingUp size={16} />
-                <span>{salaryData.salary?.avg?.toLocaleString('sv-SE')} kr</span>
-              </>
-            ) : (
-              <>
-                <TrendingUp size={16} />
-                <span>{labels.salaryInfo}</span>
-              </>
-            )}
-          </button>
+      {/* Save button - only show in job view */}
+      {!showSalaryView && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onSave(); }}
+          style={{
+            position: 'absolute',
+            top: '16px',
+            right: '16px',
+            zIndex: 10,
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            border: isSaved ? 'none' : '1px solid rgba(0,0,0,0.1)',
+            background: isSaved ? '#f43f5e' : '#fff',
+            color: isSaved ? '#fff' : '#94a3b8',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          <Heart size={16} fill={isSaved ? 'currentColor' : 'none'} />
+        </button>
+      )}
 
-          {/* Apply button */}
-          <button
-            onClick={(e) => { e.stopPropagation(); window.openai?.openExternal?.({ href: job.url }); }}
-            style={{
-              flex: 1,
-              padding: cardIsMobile ? '10px 12px' : '12px 16px',
-              borderRadius: '10px',
-              border: 'none',
-              background: colors.brand,
-              color: '#fff',
-              fontWeight: 600,
-              fontSize: cardIsMobile ? '0.8rem' : '0.85rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              boxShadow: `0 2px 8px ${colors.brandDim}`,
-              transition: 'all 0.2s'
-            }}
-          >
-            <span>{labels.applyNow}</span>
-            <ExternalLink size={14} />
-          </button>
-        </div>
+      <div className="card-content" style={{ height: showSalaryView ? '100%' : 'auto' }}>
+        <AnimatePresence mode="wait">
+          {showSalaryView && salaryData ? (
+            /* Salary View */
+            <SalaryContent
+              key="salary"
+              salaryData={salaryData}
+              colors={colors}
+              labels={labels}
+              onClose={onCloseSalaryView}
+              onApply={() => window.openai?.openExternal?.({ href: job.url })}
+              isMobile={cardIsMobile}
+            />
+          ) : (
+            /* Job View */
+            <motion.div
+              key="job"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="card-header">
+                <CompanyLogo name={job.employer} logoUrl={job.logoUrl} brandColor={colors.brand} />
+                <div className="header-text">
+                  <h3 className="job-title">{job.title}</h3>
+                  <div className="company-row">
+                    <span className="company-name">{job.employer}</span>
+                    <VerifiedBadge />
+                  </div>
+                </div>
+              </div>
 
-        {/* Expanded content - show more details button */}
-        <div className="expanded-actions">
-          <button
-            onClick={(e) => { e.stopPropagation(); onClick(); }}
-            style={{
-              width: '100%',
-              padding: '12px',
-              borderRadius: '10px',
-              border: '1px dashed rgba(0,0,0,0.15)',
-              background: 'rgba(0,0,0,0.02)',
-              color: '#64748b',
-              fontWeight: 500,
-              fontSize: '0.9rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              marginTop: '12px'
-            }}
-          >
-            {labels.showMore}
-            <ChevronRight size={16} />
-          </button>
-        </div>
+              <div className="info-tags">
+                {job.isRemote && <span className="tag remote-tag">Distans</span>}
+                {job.experienceRequired === false ? (
+                  <span className="tag no-exp-tag">Kräver ej erfarenhet</span>
+                ) : (
+                  <span className="tag exp-tag">Kräver erfarenhet</span>
+                )}
+                {job.workingHours && <span className="tag">{job.workingHours}</span>}
+                {job.deadline && <span className="tag deadline-tag">Ansök senast {job.deadline}</span>}
+              </div>
+
+              <p className="job-description">
+                {job.description || 'Ingen beskrivning tillgänglig.'}
+              </p>
+
+              {/* Action buttons */}
+              <div style={{
+                display: 'flex',
+                gap: '10px',
+                marginTop: '16px',
+                paddingTop: '16px',
+                borderTop: '1px solid rgba(0,0,0,0.06)'
+              }}>
+                {/* Salary button */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); onRequestSalary(); }}
+                  disabled={salaryLoading}
+                  style={{
+                    flex: 1,
+                    padding: cardIsMobile ? '10px 12px' : '12px 16px',
+                    borderRadius: '10px',
+                    border: `1px solid ${salaryData ? colors.brand : 'rgba(0,0,0,0.1)'}`,
+                    background: salaryData ? colors.brandTint : '#fff',
+                    color: salaryData ? colors.brand : '#64748b',
+                    fontWeight: 600,
+                    fontSize: cardIsMobile ? '0.8rem' : '0.85rem',
+                    cursor: salaryLoading ? 'wait' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {salaryLoading ? (
+                    <>
+                      <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                      <span>{labels.fetching}</span>
+                    </>
+                  ) : salaryData ? (
+                    <>
+                      <TrendingUp size={16} />
+                      <span>{salaryData.salary?.avg?.toLocaleString('sv-SE')} kr</span>
+                    </>
+                  ) : (
+                    <>
+                      <TrendingUp size={16} />
+                      <span>{labels.salaryInfo}</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Apply button */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); window.openai?.openExternal?.({ href: job.url }); }}
+                  style={{
+                    flex: 1,
+                    padding: cardIsMobile ? '10px 12px' : '12px 16px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: colors.brand,
+                    color: '#fff',
+                    fontWeight: 600,
+                    fontSize: cardIsMobile ? '0.8rem' : '0.85rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    boxShadow: `0 2px 8px ${colors.brandDim}`,
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <span>{labels.applyNow}</span>
+                  <ExternalLink size={14} />
+                </button>
+              </div>
+
+              {/* Expanded content - show more details button */}
+              <div className="expanded-actions">
+                <button
+                  onClick={(e) => { e.stopPropagation(); onClick(); }}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '10px',
+                    border: '1px dashed rgba(0,0,0,0.15)',
+                    background: 'rgba(0,0,0,0.02)',
+                    color: '#64748b',
+                    fontWeight: 500,
+                    fontSize: '0.9rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    marginTop: '12px'
+                  }}
+                >
+                  {labels.showMore}
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
@@ -995,7 +1031,7 @@ export default function App() {
   // Track salary data per job
   const [jobSalaryData, setJobSalaryData] = useState<Record<string, SalaryData>>({});
   const [jobSalaryLoading, setJobSalaryLoading] = useState<Record<string, boolean>>({});
-  const [visibleSalaryWidgetId, setVisibleSalaryWidgetId] = useState<string | null>(null);
+  const [salaryViewJobId, setSalaryViewJobId] = useState<string | null>(null);
   const currentSalaryJobId = useRef<string | null>(null);
   const selectedJobRef = useRef<Job | null>(null);
   const salaryForModalRef = useRef<boolean>(false);
@@ -1063,6 +1099,20 @@ export default function App() {
 
   // Request salary for a job (from card or modal)
   const requestSalary = useCallback((job: Job, forModal = false) => {
+    // Check if we already have salary data for this job
+    const existingSalaryData = jobSalaryData[job.id];
+
+    if (existingSalaryData) {
+      // Data already exists - just show the salary view (no new fetch!)
+      console.log('💰 Salary data already exists for job:', job.id);
+      setSalaryViewJobId(job.id);
+      if (forModal) {
+        setModalSalaryData(existingSalaryData);
+      }
+      return;
+    }
+
+    // No data yet - need to fetch
     currentSalaryJobId.current = job.id;
     salaryForModalRef.current = forModal;
 
@@ -1092,7 +1142,7 @@ export default function App() {
 
         setJobSalaryData(prev => ({ ...prev, [job.id]: mockSalaryData }));
         setJobSalaryLoading(prev => ({ ...prev, [job.id]: false }));
-        setVisibleSalaryWidgetId(job.id);
+        setSalaryViewJobId(job.id);
 
         if (forModal) {
           setModalSalaryData(mockSalaryData);
@@ -1107,7 +1157,7 @@ Sök på webben efter aktuell lönedata och anropa sedan update_widget_info med:
 { "widgetSessionId": "${widgetSessionId.current}", "jobContext": { "title": "${job.title}", "location": "${job.location || 'Sverige'}" }, "info": { "type": "compensation", "data": { "avg": [genomsnitt], "min": [lägst], "max": [högst] }, "tips": ["förhandlingstips"], "sources": ["SCB", "Unionen"] } }
 [Använd ENDAST update_widget_info från Smidra MCP. Skriv ingen text.]`;
     window.openai?.sendFollowUpMessage?.({ prompt: msg });
-  }, []);
+  }, [jobSalaryData]);
 
   // SSE for salary updates
   useEffect(() => {
@@ -1136,8 +1186,8 @@ Sök på webben efter aktuell lönedata och anropa sedan update_widget_info med:
             // Update job-specific salary data
             setJobSalaryData(prev => ({ ...prev, [jobId]: data }));
             setJobSalaryLoading(prev => ({ ...prev, [jobId]: false }));
-            // Auto-show the salary widget popup
-            setVisibleSalaryWidgetId(jobId);
+            // Auto-show the salary view in the card
+            setSalaryViewJobId(jobId);
             console.log('✅ Updated salary for job:', jobId);
           }
 
@@ -1279,8 +1329,8 @@ Sök på webben efter aktuell lönedata och anropa sedan update_widget_info med:
                 onRequestSalary={() => requestSalary(job)}
                 salaryLoading={jobSalaryLoading[job.id] || false}
                 salaryData={jobSalaryData[job.id] || null}
-                showSalaryWidget={visibleSalaryWidgetId === job.id}
-                onCloseSalaryWidget={() => setVisibleSalaryWidgetId(null)}
+                showSalaryView={salaryViewJobId === job.id}
+                onCloseSalaryView={() => setSalaryViewJobId(null)}
                 labels={labels}
               />
             ))}

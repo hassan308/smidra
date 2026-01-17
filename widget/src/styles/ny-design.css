@@ -207,11 +207,10 @@
 /* Action Area */
 .expanded-actions {
     display: none;
-    flex-direction: row;
-    gap: 12px;
-    margin-top: 24px;
-    padding-top: 20px;
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    flex-direction: column;
+    gap: 0;
+    margin-top: 20px;
+    padding-top: 0;
     opacity: 0;
     transform: translateY(10px);
     transition: all 0.3s ease;
@@ -262,13 +261,74 @@
 @media (max-width: 600px) {
     .job-grid {
         grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 0 8px;
+    }
+
+    .job-card {
+        padding: 16px;
+        border-radius: 16px;
     }
 
     .job-card.expanded {
         grid-column: span 1;
     }
 
+    .card-header {
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .logo-box {
+        width: 44px !important;
+        height: 44px !important;
+        border-radius: 10px;
+    }
+
+    .job-title {
+        font-size: 1rem;
+        line-height: 1.25;
+    }
+
+    .company-name {
+        font-size: 0.8rem;
+    }
+
+    .verified-badge {
+        width: 14px;
+        height: 14px;
+    }
+
+    .info-tags {
+        gap: 6px;
+        margin-bottom: 14px;
+    }
+
+    .tag {
+        padding: 4px 8px;
+        font-size: 0.7rem;
+        border-radius: 6px;
+    }
+
+    .job-description {
+        font-size: 0.9rem;
+        line-height: 1.5;
+        -webkit-line-clamp: 2;
+    }
+
     .expanded-actions {
         flex-direction: column;
+        margin-top: 14px;
+    }
+
+    .btn {
+        padding: 10px 14px;
+        font-size: 0.85rem;
+        border-radius: 10px;
+    }
+
+    /* Pagination mobile */
+    .pagination-text {
+        display: none;
     }
 }
