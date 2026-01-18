@@ -766,7 +766,7 @@ SKRIV INGEN TEXT - anropa bara detta verktyg.`,
     if (Object.keys(finalDescriptions).length > 0) {
       console.log(`   📝 Beskrivningar (från server):`);
       for (const [jobId, desc] of Object.entries(finalDescriptions)) {
-        console.log(`      ${jobId.substring(0, 8)}... → ${(desc as string).length} tecken`);
+        console.log(`      ${jobId.substring(0, 8)}... → ${desc.length} tecken`);
       }
     }
 
