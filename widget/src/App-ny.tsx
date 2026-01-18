@@ -1293,6 +1293,10 @@ export default function App() {
   const currentSalaryJobId = useRef<string | null>(null);
   const selectedJobRef = useRef<Job | null>(null);
   const salaryForModalRef = useRef<boolean>(false);
+  const isPrefetchRef = useRef<boolean>(false);
+  const prefetchedJobsRef = useRef<Set<string>>(new Set());
+  const prefetchQueueRef = useRef<Job[]>([]);
+  const isPrefetchingRef = useRef<boolean>(false);
 
   const widgetSessionId = useRef('ws_' + Math.random().toString(36).substr(2, 9));
   const langRef = useRef('sv');
@@ -1373,6 +1377,7 @@ export default function App() {
     // No data yet - need to fetch
     currentSalaryJobId.current = job.id;
     salaryForModalRef.current = forModal;
+    isPrefetchRef.current = false; // User-initiated, not prefetch
 
     if (forModal) {
       setModalSalaryLoading(true);
@@ -1442,6 +1447,88 @@ INSTRUKTIONER:
     window.openai?.sendFollowUpMessage?.({ prompt: msg });
   }, [jobSalaryData]);
 
+  // Prefetch salary for a single job (silent mode)
+  const prefetchSalary = useCallback((job: Job) => {
+    // Skip if already prefetched or has data
+    if (prefetchedJobsRef.current.has(job.id) || jobSalaryData[job.id]) {
+      return false;
+    }
+
+    prefetchedJobsRef.current.add(job.id);
+    currentSalaryJobId.current = job.id;
+    isPrefetchRef.current = true; // Mark as prefetch
+
+    console.log('🔄 Prefetching salary for:', job.title);
+
+    const msg = `⛔ TYST LÄGE - SKRIV ABSOLUT INGEN TEXT!
+
+ANALYSERA DENNA ANNONS OCH UPPSKATTA LÖN:
+
+Titel: ${job.title}
+Företag: ${job.employer}
+Plats: ${job.location || 'Sverige'}
+Typ: ${job.workingHours || 'Heltid'}
+${job.description ? `Beskrivning: ${job.description.substring(0, 300)}` : ''}
+${job.experienceRequired === false ? 'Kräver EJ erfarenhet' : 'Kräver erfarenhet'}
+
+Anropa update_widget_info med:
+{
+  "widgetSessionId": "${widgetSessionId.current}",
+  "jobContext": { "title": "${job.title}", "location": "${job.location || 'Sverige'}" },
+  "info": {
+    "type": "compensation",
+    "data": { "avg": [genomsnitt SEK/mån], "min": [lägsta], "max": [högsta] },
+    "tips": ["1-2 korta tips"],
+    "sources": ["SCB", "Unionen"]
+  }
+}
+
+⛔⛔⛔ SKRIV INGEN TEXT! ANROPA BARA VERKTYGET! ⛔⛔⛔`;
+
+    window.openai?.sendFollowUpMessage?.({ prompt: msg });
+    return true;
+  }, [jobSalaryData]);
+
+  // Process next job in prefetch queue
+  const processNextPrefetch = useCallback(() => {
+    if (prefetchQueueRef.current.length === 0) {
+      isPrefetchingRef.current = false;
+      console.log('✅ Prefetch queue empty - all salaries fetched!');
+      return;
+    }
+
+    const nextJob = prefetchQueueRef.current.shift();
+    if (nextJob) {
+      // Small delay between requests to not overwhelm
+      setTimeout(() => {
+        if (!prefetchSalary(nextJob)) {
+          // Job already has data, try next
+          processNextPrefetch();
+        }
+      }, 500);
+    }
+  }, [prefetchSalary]);
+
+  // Start prefetching salaries for all jobs on the page
+  const startPrefetchingSalaries = useCallback((jobsList: Job[]) => {
+    // Filter jobs that don't have salary data yet
+    const jobsToPrefetch = jobsList.filter(
+      job => !jobSalaryData[job.id] && !prefetchedJobsRef.current.has(job.id)
+    );
+
+    if (jobsToPrefetch.length === 0) {
+      console.log('✅ All jobs already have salary data');
+      return;
+    }
+
+    console.log(`🚀 Starting prefetch for ${jobsToPrefetch.length} jobs...`);
+    prefetchQueueRef.current = [...jobsToPrefetch];
+    isPrefetchingRef.current = true;
+
+    // Start with first job
+    processNextPrefetch();
+  }, [jobSalaryData, processNextPrefetch]);
+
   // SSE for salary updates
   useEffect(() => {
     const sessionId = toolOutput?.widgetSessionId || widgetSessionId.current;
@@ -1464,19 +1551,28 @@ INSTRUKTIONER:
           }
 
           const jobId = currentSalaryJobId.current;
-          console.log('💰 Salary data for jobId:', jobId, 'salary:', data.salary);
+          const wasPrefetch = isPrefetchRef.current;
+          console.log('💰 Salary data for jobId:', jobId, 'salary:', data.salary, 'prefetch:', wasPrefetch);
+
           if (jobId) {
             // Update job-specific salary data
             setJobSalaryData(prev => ({ ...prev, [jobId]: data }));
             setJobSalaryLoading(prev => ({ ...prev, [jobId]: false }));
-            // Auto-show the salary view in the card
-            setSalaryViewJobId(jobId);
-            console.log('✅ Updated salary for job:', jobId);
+
+            // Only auto-show the salary view if NOT a prefetch
+            if (!wasPrefetch) {
+              setSalaryViewJobId(jobId);
+              console.log('✅ Updated salary for job:', jobId, '(showing view)');
+            } else {
+              console.log('✅ Prefetched salary for job:', jobId, '(cached silently)');
+              // Process next job in prefetch queue
+              processNextPrefetch();
+            }
           }
 
           // Also update modal salary if open (use ref to avoid stale closure)
           const currentSelectedJob = selectedJobRef.current;
-          if (currentSelectedJob && jobId === currentSelectedJob.id) {
+          if (currentSelectedJob && jobId === currentSelectedJob.id && !wasPrefetch) {
             setModalSalaryData(data);
             setModalSalaryLoading(false);
             console.log('✅ Updated modal salary');
@@ -1529,6 +1625,18 @@ INSTRUKTIONER:
 
     handleData();
   }, [toolOutput]);
+
+  // Auto-prefetch salaries when jobs load
+  useEffect(() => {
+    if (jobs.length > 0 && !isPrefetchingRef.current) {
+      // Delay to let widget render first and not overwhelm
+      const timer = setTimeout(() => {
+        startPrefetchingSalaries(jobs);
+      }, 2000); // 2 second delay before starting prefetch
+
+      return () => clearTimeout(timer);
+    }
+  }, [jobs, startPrefetchingSalaries]);
 
   if (!hasReceivedData) {
     return (
