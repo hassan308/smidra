@@ -86,6 +86,8 @@ export interface ToolOutput {
   analyzingText?: string;
   // Preloaded salary data
   preloadedSalaries?: Record<string, { salary: { avg: number; min: number; max: number }; tips: string[]; sources: string[] }>;
+  // Preloaded job descriptions
+  preloadedDescriptions?: Record<string, string>;
 }
 
 export interface Labels {

@@ -926,7 +926,8 @@ function JobDetailModal({
   onRequestSalary,
   isSaved,
   onSave,
-  langRef
+  langRef,
+  preloadedDescription
 }: {
   job: Job;
   onClose: () => void;
@@ -937,6 +938,7 @@ function JobDetailModal({
   isSaved: boolean;
   onSave: () => void;
   langRef: React.MutableRefObject<string>;
+  preloadedDescription?: string;
 }) {
   const [fullDescription, setFullDescription] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -950,13 +952,23 @@ function JobDetailModal({
     }
   }, [salaryData, salaryLoading]);
 
-  // Fetch full job description
+  // Use preloaded description or fetch from API
   useEffect(() => {
+    // Check preloaded description first (from send_jobs_to_widget)
+    if (preloadedDescription) {
+      console.log('📝 Using preloaded description for job:', job.id);
+      setFullDescription(preloadedDescription);
+      return;
+    }
+
+    // Check if job already has fullDescription
     if (job.fullDescription) {
       setFullDescription(job.fullDescription);
       return;
     }
 
+    // Fallback: fetch from API (for page 2+ jobs)
+    console.log('🌐 Fetching description from API for job:', job.id);
     setLoading(true);
     fetch(`https://api.smidra.se/api/job/${job.id}`)
       .then(res => res.json())
@@ -976,7 +988,7 @@ function JobDetailModal({
         setFullDescription(job.description || labels.noDesc);
         setLoading(false);
       });
-  }, [job, labels.noDesc, langRef]);
+  }, [job, labels.noDesc, langRef, preloadedDescription]);
 
   const handleSalaryClick = () => {
     if (salaryData) {
@@ -1295,7 +1307,9 @@ export default function App() {
   const currentSalaryJobId = useRef<string | null>(null);
   const selectedJobRef = useRef<Job | null>(null);
   const salaryForModalRef = useRef<boolean>(false);
-  // Refs removed - salaries now come preloaded from server
+
+  // Track preloaded descriptions per job
+  const [jobDescriptions, setJobDescriptions] = useState<Record<string, string>>({});
 
   const widgetSessionId = useRef('ws_' + Math.random().toString(36).substr(2, 9));
   const langRef = useRef('sv');
@@ -1621,7 +1635,7 @@ INSTRUKTIONER:
       const lang = toolOutput.language || 'sv';
       langRef.current = lang;
 
-      // 🔥 Load preloaded salary data if available (from display_jobs_with_salaries)
+      // 🔥 Load preloaded salary data if available (from send_jobs_to_widget)
       if (toolOutput.preloadedSalaries) {
         console.log('💰💰💰 PRELOADED SALARIES FOUND!', Object.keys(toolOutput.preloadedSalaries));
 
@@ -1645,6 +1659,27 @@ INSTRUKTIONER:
 
         setJobSalaryData(processedSalaries);
         console.log('✅ All salaries pre-loaded:', Object.keys(processedSalaries));
+      }
+
+      // 🔥 Load preloaded descriptions if available (from send_jobs_to_widget)
+      if (toolOutput.preloadedDescriptions) {
+        console.log('📝📝📝 PRELOADED DESCRIPTIONS FOUND!', Object.keys(toolOutput.preloadedDescriptions));
+
+        // Translate descriptions if needed
+        const processedDescriptions: Record<string, string> = {};
+        for (const [jobId, desc] of Object.entries(toolOutput.preloadedDescriptions)) {
+          let translatedDesc = desc;
+          if (lang !== 'sv' && desc) {
+            try {
+              const [translated] = await translateBatch([desc], lang);
+              translatedDesc = translated || desc;
+            } catch {}
+          }
+          processedDescriptions[jobId] = translatedDesc;
+        }
+
+        setJobDescriptions(processedDescriptions);
+        console.log('✅ All descriptions pre-loaded:', Object.keys(processedDescriptions));
       }
 
       // Only show first page of jobs (JOBS_PER_PAGE)
@@ -1950,6 +1985,7 @@ INSTRUKTIONER:
             isSaved={widgetState.savedJobs.includes(selectedJob.id)}
             onSave={() => toggleSave(selectedJob.id)}
             langRef={langRef}
+            preloadedDescription={jobDescriptions[selectedJob.id]}
           />
         )}
       </AnimatePresence>

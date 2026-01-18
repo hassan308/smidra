@@ -559,15 +559,16 @@ ANVÄNDAREN SER INGENTING förrän du anropar send_jobs_to_widget!`,
     if (fulltime) filters.fulltime = true;
     if (parttime) filters.parttime = true;
 
-    // Search for jobs
+    // Search for jobs - get more than 6 so we have total count
     const effectiveLimit = Math.min(limit || 50, 100);
     const data = await searchJobs(query, location, effectiveLimit, filters);
     const total = data.total?.value || 0;
 
-    // Enrich first 8 jobs with detailed info
-    const jobs = await enrichJobsParallel(data.hits, 8);
+    // Enrich ONLY first 6 jobs with detailed info (page 1)
+    const JOBS_PER_PAGE = 6;
+    const jobs = await enrichJobsParallel(data.hits, JOBS_PER_PAGE);
 
-    console.log(`📦 Resultat: ${jobs.length} jobb hämtade (totalt ${total})`);
+    console.log(`📦 Page 1: ${jobs.length} jobb berikade (totalt ${total} tillgängliga)`);
 
     const lang = (language || 'sv').toLowerCase();
     const dir = direction || (lang === 'ar' || lang === 'he' || lang === 'fa' || lang === 'ur' ? 'rtl' : 'ltr');
@@ -576,13 +577,40 @@ ANVÄNDAREN SER INGENTING förrän du anropar send_jobs_to_widget!`,
     const widgetSessionId = `ws_${Date.now().toString(36)}${Math.random().toString(36).substr(2, 5)}`;
     console.log(`🔑 Session: ${widgetSessionId}`);
 
-    // Build job list for salary analysis (top 6 jobs)
-    const jobsForSalary = jobs.slice(0, 6).map(j => ({
+    // Prepare first 6 jobs with SHORT descriptions for ChatGPT
+    const jobsForWidget = jobs.slice(0, JOBS_PER_PAGE).map(j => ({
       id: j.id,
       title: j.title,
-      location: j.location
+      employer: j.employer,
+      location: j.location,
+      city: j.city,
+      region: j.region,
+      lat: j.lat,
+      lng: j.lng,
+      url: j.url,
+      logoUrl: j.logoUrl,
+      deadline: j.deadline,
+      workingHours: j.workingHours,
+      duration: j.duration,
+      scope: j.scope,
+      experienceRequired: j.experienceRequired,
+      drivingLicenseRequired: j.drivingLicenseRequired,
+      isRemote: j.isRemote,
+      occupationField: j.occupationField,
+      vacancies: j.vacancies,
+      // SHORT description for display (200 chars)
+      description: j.description?.substring(0, 200) || ''
     }));
 
+    // Prepare FULL descriptions separately
+    const descriptionsMap = {};
+    jobs.slice(0, JOBS_PER_PAGE).forEach(j => {
+      if (j.fullDescription) {
+        descriptionsMap[j.id] = j.fullDescription;
+      }
+    });
+
+    console.log(`📝 Descriptions förberedda: ${Object.keys(descriptionsMap).length} jobb`);
     console.log(`\n⏳ Väntar på att ChatGPT anropar send_jobs_to_widget...`);
     console.log(`${'='.repeat(60)}\n`);
 
@@ -597,10 +625,11 @@ STEG 1 KLART ✅ | STEG 2 KRÄVS ⏳
 ═══════════════════════════════════════════════════════════════
 
 Hittade ${total} jobb för "${query}" i ${location || 'Sverige'}.
+Visar första ${jobsForWidget.length} jobb (page 1). Fler laddas när kunden bläddrar.
 
 NÄSTA STEG (GÖR DETTA NU):
 1. Sök på webben: "${query} lön Sverige SCB statistik"
-2. Anropa send_jobs_to_widget med data nedan + löner
+2. Anropa send_jobs_to_widget med data nedan + löner + beskrivningar
 
 PARAMETRAR FÖR send_jobs_to_widget:
 {
@@ -610,28 +639,39 @@ PARAMETRAR FÖR send_jobs_to_widget:
   "query": "${query}",
   "location": "${location || 'Sverige'}",
   "total": ${total},
-  "jobs": [SE NEDAN],
+  "jobs": [JOBB NEDAN - ${jobsForWidget.length} st],
   "salaries": [
-    { "jobId": "${jobsForSalary[0]?.id || ''}", "avg": XXXX, "min": XXXX, "max": XXXX, "tips": ["tip"] },
-    ... (en per jobb, max 6)
-  ]
+    { "jobId": "XXX", "avg": XXXX, "min": XXXX, "max": XXXX, "tips": ["tip"] }
+    ... (en per jobb)
+  ],
+  "descriptions": {
+    "jobId1": "full beskrivning...",
+    "jobId2": "full beskrivning..."
+  }
 }
 
-JOBBDATA:
-${JSON.stringify(jobs, null, 2)}`
+═══════════════════════════════════════════════════════════════
+JOBB (${jobsForWidget.length} st för page 1):
+═══════════════════════════════════════════════════════════════
+${JSON.stringify(jobsForWidget, null, 2)}
+
+═══════════════════════════════════════════════════════════════
+BESKRIVNINGAR (kopiera till "descriptions"):
+═══════════════════════════════════════════════════════════════
+${JSON.stringify(descriptionsMap, null, 2)}`
       }]
     };
   }
 );
 
 // ============================================================
-// send_jobs_to_widget - STEP 2: Display widget with jobs + salaries
+// send_jobs_to_widget - STEP 2: Display widget with jobs + salaries + descriptions
 // ============================================================
 server.registerTool(
   "send_jobs_to_widget",
   {
     title: "Display Jobs with Salaries - Step 2 of 2 (Smidra MCP)",
-    description: `⛔ STEG 2 - VISAR WIDGET MED JOBB + LÖNER.
+    description: `⛔ STEG 2 - VISAR WIDGET MED JOBB + LÖNER + BESKRIVNINGAR.
 
 DETTA ÄR DET ENDA SÄTTET ATT VISA JOBB FÖR ANVÄNDAREN!
 Utan detta verktyg ser användaren INGENTING.
@@ -643,7 +683,7 @@ SKRIV INGEN TEXT - anropa bara detta verktyg.`,
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
       query: z.string().describe("Original search query"),
       location: z.string().describe("Location"),
-      total: z.number().describe("Total jobs found"),
+      total: z.number().describe("Total jobs found (all pages)"),
       jobs: z.array(z.object({
         id: z.string(),
         title: z.string(),
@@ -654,28 +694,33 @@ SKRIV INGEN TEXT - anropa bara detta verktyg.`,
         logoUrl: z.string().optional(),
         workingHours: z.string().optional(),
         duration: z.string().optional(),
+        scope: z.string().optional(),
         experienceRequired: z.boolean().nullable().optional(),
+        drivingLicenseRequired: z.boolean().optional(),
         isRemote: z.boolean().optional(),
+        occupationField: z.string().optional(),
+        vacancies: z.number().optional(),
         description: z.string().optional()
-      })).describe("Jobs array from search_jobs"),
+      })).describe("Jobs array (first 6 for page 1)"),
       salaries: z.array(z.object({
         jobId: z.string().describe("Job ID"),
         avg: z.number().describe("Average salary SEK/month"),
         min: z.number().describe("Minimum salary"),
         max: z.number().describe("Maximum salary"),
         tips: z.array(z.string()).optional().describe("1-2 salary negotiation tips")
-      })).describe("Salary data for each job")
+      })).describe("Salary data for each job"),
+      descriptions: z.record(z.string(), z.string()).optional().describe("Full job descriptions: { jobId: 'full text...' }")
     },
     _meta: {
       "openai/outputTemplate": "ui://widget/job-list.html",
-      "openai/widgetDescription": "Visar jobbresultat med lönedata. Ingen ytterligare text behövs."
+      "openai/widgetDescription": "Visar jobbresultat med lönedata och beskrivningar. Ingen ytterligare text behövs."
     }
   },
-  async ({ widgetSessionId, language, direction, query, location, total, jobs, salaries }) => {
+  async ({ widgetSessionId, language, direction, query, location, total, jobs, salaries, descriptions }) => {
     console.log(`\n${'='.repeat(60)}`);
     console.log(`✅ STEG 2: send_jobs_to_widget`);
     console.log(`   Session: ${widgetSessionId}`);
-    console.log(`   Jobb: ${jobs.length} | Löner: ${salaries.length}`);
+    console.log(`   Jobb: ${jobs.length} | Löner: ${salaries.length} | Beskrivningar: ${descriptions ? Object.keys(descriptions).length : 0}`);
     console.log(`${'='.repeat(60)}`);
 
     // Build salary map for widget
@@ -689,10 +734,22 @@ SKRIV INGEN TEXT - anropa bara detta verktyg.`,
       console.log(`   💰 ${s.jobId.substring(0, 8)}... → ${s.avg} kr/mån`);
     }
 
-    console.log(`\n🎉 WIDGET VISAS NU MED ${jobs.length} JOBB + ${Object.keys(salaryMap).length} LÖNER`);
+    // Log descriptions
+    if (descriptions) {
+      console.log(`   📝 Beskrivningar:`);
+      for (const [jobId, desc] of Object.entries(descriptions)) {
+        console.log(`      ${jobId.substring(0, 8)}... → ${desc.length} tecken`);
+      }
+    }
+
+    console.log(`\n🎉 WIDGET VISAS NU:`);
+    console.log(`   📋 ${jobs.length} jobb (page 1)`);
+    console.log(`   💰 ${Object.keys(salaryMap).length} löner`);
+    console.log(`   📝 ${descriptions ? Object.keys(descriptions).length : 0} beskrivningar`);
+    console.log(`   📊 ${total} totalt tillgängliga`);
     console.log(`${'='.repeat(60)}\n`);
 
-    // Return widget with jobs + preloaded salaries
+    // Return widget with jobs + preloaded salaries + descriptions
     return {
       structuredContent: {
         _rule: "⛔ TYST! VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS!",
@@ -706,7 +763,8 @@ SKRIV INGEN TEXT - anropa bara detta verktyg.`,
         total: total || jobs.length,
         jobs,
         widgetSessionId: widgetSessionId,
-        preloadedSalaries: salaryMap
+        preloadedSalaries: salaryMap,
+        preloadedDescriptions: descriptions || {}
       },
       content: []
     };
