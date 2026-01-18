@@ -1279,6 +1279,8 @@ export default function App() {
   const [labels, setLabels] = useState<Labels>(DEFAULT_LABELS);
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [hasReceivedData, setHasReceivedData] = useState(false);
+  const [loadingMode, setLoadingMode] = useState(false);
+  const [loadingText, setLoadingText] = useState('Söker jobb...');
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [modalSalaryData, setModalSalaryData] = useState<SalaryData | null>(null);
   const [modalSalaryLoading, setModalSalaryLoading] = useState(false);
@@ -1449,7 +1451,7 @@ INSTRUKTIONER:
     window.openai?.sendFollowUpMessage?.({ prompt: msg });
   }, [jobSalaryData]);
 
-  // SSE for salary updates (fallback for individual requests)
+  // SSE for job data and salary updates
   useEffect(() => {
     const sessionId = toolOutput?.widgetSessionId || widgetSessionId.current;
     if (toolOutput?.widgetSessionId) {
@@ -1464,33 +1466,86 @@ INSTRUKTIONER:
         const data = JSON.parse(event.data);
         console.log('📨 SSE received:', data.type, data);
 
+        // 🔥 Handle JOBS DATA from send_jobs_to_widget (STEP 2)
+        if (data.type === 'jobs_data') {
+          console.log('🎉🎉🎉 JOBS DATA RECEIVED via SSE!');
+          console.log('📦 Jobs:', data.jobs?.length);
+          console.log('💰 Salaries:', Object.keys(data.salaries || {}).length);
+
+          const lang = data.language || 'sv';
+          langRef.current = lang;
+
+          // Save search query for pagination
+          searchQueryRef.current = {
+            query: data.query || '',
+            location: data.location || ''
+          };
+
+          // Set total
+          setTotalJobs(data.total || data.jobs?.length || 0);
+
+          // Process salary data
+          if (data.salaries) {
+            const processedSalaries: Record<string, SalaryData> = {};
+            for (const [jobId, salaryInfo] of Object.entries(data.salaries)) {
+              const info = salaryInfo as { salary: { avg: number; min: number; max: number }; tips: string[]; sources: string[] };
+              let translatedTips = info.tips || [];
+              if (lang !== 'sv' && info.tips?.length) {
+                try {
+                  translatedTips = await translateBatch(info.tips, lang);
+                } catch {}
+              }
+              processedSalaries[jobId] = {
+                salary: info.salary,
+                tips: info.tips,
+                translatedTips,
+                sources: info.sources
+              };
+            }
+            setJobSalaryData(processedSalaries);
+            console.log('✅ Salaries loaded:', Object.keys(processedSalaries));
+          }
+
+          // Process jobs
+          const jobsToShow = data.jobs?.slice(0, JOBS_PER_PAGE) || [];
+          if (lang !== 'sv' && jobsToShow.length) {
+            const [translatedJobs, translatedLabels] = await Promise.all([
+              translateJobs(jobsToShow, lang),
+              translateLabels(DEFAULT_LABELS as Record<string, string>, lang)
+            ]);
+            setJobs(translatedJobs);
+            setLabels(translatedLabels);
+          } else {
+            setJobs(jobsToShow);
+            setLabels(DEFAULT_LABELS);
+          }
+
+          // Exit loading mode, show jobs!
+          setLoadingMode(false);
+          setHasReceivedData(true);
+          setCurrentPage(1);
+          console.log('✅ Widget updated with jobs + salaries!');
+        }
+
         // Handle BATCH salary updates (prefetch - all jobs at once)
         if (data.type === 'batch_salary') {
           const jobId = data.jobId;
-          console.log('💰💰💰 BATCH SALARY RECEIVED for jobId:', jobId);
-          console.log('💰 Salary data:', data.salary);
+          console.log('💰 BATCH SALARY RECEIVED for jobId:', jobId);
 
-          // Translate tips if needed
           let translatedTips = data.tips || [];
           if (langRef.current !== 'sv' && data.tips?.length) {
             translatedTips = await translateBatch(data.tips, langRef.current);
           }
 
-          // Cache the salary data (don't show flip view - it's prefetch)
-          setJobSalaryData(prev => {
-            const newData = {
-              ...prev,
-              [jobId]: {
-                salary: data.salary,
-                tips: data.tips,
-                translatedTips,
-                sources: data.sources
-              }
-            };
-            console.log('💾 Updated jobSalaryData, now has keys:', Object.keys(newData));
-            return newData;
-          });
-          console.log('✅ Batch prefetched salary for job:', jobId, '(cached silently)');
+          setJobSalaryData(prev => ({
+            ...prev,
+            [jobId]: {
+              salary: data.salary,
+              tips: data.tips,
+              translatedTips,
+              sources: data.sources
+            }
+          }));
         }
 
         // Handle SINGLE salary updates (user click)
@@ -1502,24 +1557,16 @@ INSTRUKTIONER:
           }
 
           const jobId = currentSalaryJobId.current;
-          console.log('💰 Salary data for jobId:', jobId, 'salary:', data.salary);
-
           if (jobId) {
-            // Update job-specific salary data
             setJobSalaryData(prev => ({ ...prev, [jobId]: data }));
             setJobSalaryLoading(prev => ({ ...prev, [jobId]: false }));
-
-            // Show the salary view (user clicked, not prefetch)
             setSalaryViewJobId(jobId);
-            console.log('✅ Updated salary for job:', jobId);
           }
 
-          // Also update modal salary if open
           const currentSelectedJob = selectedJobRef.current;
           if (currentSelectedJob && jobId === currentSelectedJob.id) {
             setModalSalaryData(data);
             setModalSalaryLoading(false);
-            console.log('✅ Updated modal salary');
           }
         }
       } catch {}
@@ -1531,11 +1578,34 @@ INSTRUKTIONER:
     };
   }, [toolOutput?.widgetSessionId]);
 
-  // Handle tool output
+  // Handle tool output - loadingMode OR jobs
   useEffect(() => {
+    // Handle LOADING MODE (Step 1 - widget waits for SSE data)
+    if (toolOutput?.loadingMode) {
+      console.log('🔄 LOADING MODE ACTIVATED - waiting for jobs via SSE');
+      console.log('🔑 Session:', toolOutput.widgetSessionId);
+      setLoadingMode(true);
+      setHasReceivedData(true); // Show loading UI, not "waiting" text
+      setLoadingText(toolOutput.analyzingText || toolOutput.loadingText || 'Analyserar löner...');
+      setTotalJobs(toolOutput.total || 0);
+
+      // Store session ID
+      if (toolOutput.widgetSessionId) {
+        widgetSessionId.current = toolOutput.widgetSessionId;
+      }
+      langRef.current = toolOutput.language || 'sv';
+      searchQueryRef.current = {
+        query: toolOutput.query || '',
+        location: toolOutput.location || ''
+      };
+      return;
+    }
+
+    // Handle JOBS directly (legacy mode)
     if (!toolOutput?.jobs) return;
 
     const handleData = async () => {
+      setLoadingMode(false);
       setHasReceivedData(true);
       setCurrentPage(1);
 
@@ -1596,6 +1666,7 @@ INSTRUKTIONER:
     handleData();
   }, [toolOutput]);
 
+  // Show initial waiting state
   if (!hasReceivedData) {
     return (
       <div style={{
@@ -1608,6 +1679,82 @@ INSTRUKTIONER:
         fontSize: '14px'
       }}>
         Väntar på jobbsökning...
+      </div>
+    );
+  }
+
+  // 🔥 Show LOADING STATE while ChatGPT analyzes salaries
+  if (loadingMode) {
+    return (
+      <div style={{
+        minHeight: '500px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: 'Outfit, sans-serif',
+        padding: '40px 20px',
+        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)'
+      }}>
+        <div style={{
+          width: '80px',
+          height: '80px',
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: '24px',
+          boxShadow: '0 10px 40px rgba(59, 130, 246, 0.3)'
+        }}>
+          <Loader2 size={40} color="white" style={{ animation: 'spin 1s linear infinite' }} />
+        </div>
+        <h2 style={{
+          fontSize: '24px',
+          fontWeight: 600,
+          color: '#1e293b',
+          marginBottom: '12px',
+          textAlign: 'center'
+        }}>
+          {loadingText}
+        </h2>
+        <p style={{
+          fontSize: '16px',
+          color: '#64748b',
+          textAlign: 'center',
+          maxWidth: '400px'
+        }}>
+          {totalJobs > 0 ? `Hittade ${totalJobs} jobb - hämtar lönedata...` : 'Söker och analyserar jobb...'}
+        </p>
+        <div style={{
+          marginTop: '32px',
+          display: 'flex',
+          gap: '8px'
+        }}>
+          {[0, 1, 2].map(i => (
+            <div
+              key={i}
+              style={{
+                width: '12px',
+                height: '12px',
+                borderRadius: '50%',
+                background: '#3b82f6',
+                opacity: 0.3,
+                animation: `pulse 1.5s ease-in-out ${i * 0.2}s infinite`
+              }}
+            />
+          ))}
+        </div>
+        <style>{`
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+          @keyframes pulse {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+          }
+        `}</style>
       </div>
     );
   }

@@ -80,6 +80,12 @@ export interface ToolOutput {
   widgetSessionId?: string;
   // Jobs currently being verified (show spinner on badge)
   jobsBeingVerified?: string[];
+  // Loading mode - widget shows loading while ChatGPT analyzes salaries
+  loadingMode?: boolean;
+  loadingText?: string;
+  analyzingText?: string;
+  // Preloaded salary data
+  preloadedSalaries?: Record<string, { salary: { avg: number; min: number; max: number }; tips: string[]; sources: string[] }>;
 }
 
 export interface Labels {

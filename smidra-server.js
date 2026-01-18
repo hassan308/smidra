@@ -519,15 +519,19 @@ server.registerResource("salary-widget", "ui://widget/salary.html", {}, async ()
 }));
 
 // ============================================================
-// search_jobs - Searches jobs and shows widget directly
+// search_jobs - STEP 1: Shows loading widget, then ChatGPT analyzes salaries
 // ============================================================
 server.registerTool(
   "search_jobs",
   {
-    title: "Search Jobs (Smidra MCP)",
-    description: `🔍 Sök jobb i Sverige och visa resultat direkt i widget.
+    title: "Search Jobs - Step 1 of 2 (Smidra MCP)",
+    description: `🔍 Sök jobb i Sverige. STEG 1 av 2.
 
-⛔ TYST VERKTYG - Widget visar allt. SKRIV INGEN TEXT!
+⚠️ VIKTIGT FLÖDE:
+1. Detta verktyg visar widget med LOADING state
+2. Du får jobbdata + instruktioner tillbaka
+3. Du MÅSTE sedan söka löner på webben
+4. Du MÅSTE sedan anropa send_jobs_to_widget med jobb + löner
 
 Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), lärare (teacher)`,
     inputSchema: {
@@ -537,119 +541,183 @@ Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), l
       language: z.string().describe("User's language code (e.g., 'so', 'ar', 'sv')"),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
       loadingText: z.string().describe("'Searching for jobs...' in user's language"),
-      waitingText: z.string().describe("'Please wait, fetching data...' in user's language"),
+      analyzingText: z.string().describe("'Analyzing salaries...' in user's language"),
       // Filter options
       remote: z.boolean().optional().describe("Only remote/distansarbete jobs"),
       fulltime: z.boolean().optional().describe("Only fulltime/heltid jobs"),
-      parttime: z.boolean().optional().describe("Only parttime/deltid jobs"),
-      drivingLicense: z.boolean().optional().describe("Only jobs that require driving license"),
-      trainee: z.boolean().optional().describe("Only trainee/praktik positions"),
-      abroad: z.boolean().optional().describe("Only jobs abroad/utomlands"),
-      jobLanguage: z.string().optional().describe("Job language requirement (e.g., 'sv', 'en', 'ar')")
+      parttime: z.boolean().optional().describe("Only parttime/deltid jobs")
     },
     _meta: {
       "openai/outputTemplate": "ui://widget/job-list.html",
-      "openai/widgetDescription": "Visar en interaktiv lista med lediga jobb. Användaren kan filtrera, se karta, spara favoriter och klicka för detaljer. Ingen ytterligare text behövs."
+      "openai/widgetDescription": "Visar loading-widget som väntar på jobbdata."
     }
   },
-  async ({ query, location, limit, language, direction, loadingText, waitingText, remote, fulltime, parttime, drivingLicense, trainee, abroad, jobLanguage }) => {
-    // Build filters object
+  async ({ query, location, limit, language, direction, loadingText, analyzingText, remote, fulltime, parttime }) => {
+    // Build filters
     const filters = {};
     if (remote) filters.remote = true;
     if (fulltime) filters.fulltime = true;
     if (parttime) filters.parttime = true;
-    if (drivingLicense) filters.drivingLicense = true;
-    if (trainee) filters.trainee = true;
-    if (abroad) filters.abroad = true;
-    if (jobLanguage) filters.language = jobLanguage;
 
-    const activeFilters = Object.keys(filters).length > 0 ? ` [filters: ${Object.keys(filters).join(', ')}]` : '';
-    console.log(`🔧 search_jobs called: "${query}" in ${location || 'Sweden'} (${language})${activeFilters}`);
+    console.log(`🔧 search_jobs STEP 1: "${query}" in ${location || 'Sweden'} (${language})`);
 
-    // Search for jobs with filters
+    // Search for jobs
     const effectiveLimit = Math.min(limit || 50, 100);
     const data = await searchJobs(query, location, effectiveLimit, filters);
     const total = data.total?.value || 0;
 
-    // Enrich first 8 jobs with detailed info in parallel
-    // This fetches full descriptions, skills, etc. for the visible jobs
+    // Enrich first 8 jobs with detailed info
     const jobs = await enrichJobsParallel(data.hits, 8);
-    console.log(`📦 Enriched ${Math.min(jobs.length, 8)} jobs with full details`);
+    console.log(`📦 Found ${jobs.length} jobs, enriched ${Math.min(jobs.length, 8)}`);
 
     const lang = (language || 'sv').toLowerCase();
     const dir = direction || (lang === 'ar' || lang === 'he' || lang === 'fa' || lang === 'ur' ? 'rtl' : 'ltr');
 
-    // Check if any jobs need AI verification
-    const jobsNeedingVerification = jobs.filter(j => j.needsVerification === true);
-
     // Generate unique widget session ID for SSE updates
     const widgetSessionId = `ws_${Date.now().toString(36)}${Math.random().toString(36).substr(2, 5)}`;
+    console.log(`🔑 Widget session: ${widgetSessionId}`);
 
-    console.log(`📤 Found ${jobs.length} jobs (${jobsNeedingVerification.length} need verification)`);
+    // Build job list for salary analysis (top 6 jobs)
+    const jobsForSalary = jobs.slice(0, 6).map(j => ({
+      id: j.id,
+      title: j.title,
+      employer: j.employer,
+      location: j.location,
+      workingHours: j.workingHours || 'Heltid',
+      experienceRequired: j.experienceRequired
+    }));
 
-    // Build verification data if needed
-    let verificationData = [];
-    if (jobsNeedingVerification.length > 0) {
-      console.log(`\n🤖 ========== BADGE VERIFICATION NEEDED ==========`);
-      console.log(`📊 ${jobsNeedingVerification.length} jobb att verifiera`);
-      console.log(`🔑 Session: ${widgetSessionId}`);
+    // The RULE must be FIRST and CLEAR
+    const rule = `⛔ STEG 2 KRÄVS - SKRIV INGEN TEXT TILL ANVÄNDAREN!
 
-      verificationData = jobsNeedingVerification.map(j => {
-        console.log(`\n📋 JOB: ${j.id}`);
-        console.log(`   Titel: ${j.title}`);
-        console.log(`   Snippets:\n   ${j.verificationSnippets?.replace(/\n/g, '\n   ') || '(inga)'}`);
-        return {
-          id: j.id,
-          title: j.title,
-          snippets: j.verificationSnippets
-        };
-      });
+Widget visar nu "Laddar..." och väntar på data.
 
-      console.log(`\n🤖 ================================================\n`);
-    }
+DU MÅSTE GÖRA FÖLJANDE:
+1. SÖK PÅ WEBBEN efter svenska löner för: "${query}" i ${location || 'Sverige'}
+   - Använd källor som SCB, Unionen, Sveriges Ingenjörer
+   - Hitta genomsnittslön, min och max för denna yrkesroll
 
-    // Build _rule - verification instruction FIRST if needed
-    let rule;
-    if (jobsNeedingVerification.length > 0) {
-      rule = `⚠️ VIKTIGT: ${jobsNeedingVerification.length} JOBB BEHÖVER BADGE-VERIFIERING!
+2. ANROPA send_jobs_to_widget MED EXAKT DETTA FORMAT:
+{
+  "widgetSessionId": "${widgetSessionId}",
+  "language": "${lang}",
+  "direction": "${dir}",
+  "query": "${query}",
+  "location": "${location || 'Sverige'}",
+  "total": ${total},
+  "jobs": ${JSON.stringify(jobs, null, 2)},
+  "salaries": [
+    { "jobId": "${jobsForSalary[0]?.id || 'job1'}", "avg": 45000, "min": 38000, "max": 55000, "tips": ["Förhandla alltid", "Kolla marknadslön"] },
+    ... för varje jobb
+  ]
+}
 
-STEG 1: Widget visas nu med spinner på badges.
-STEG 2: DU MÅSTE anropa verify_job_badges för VARJE jobb nedan:
+⛔ KRITISKT:
+- Skriv INGEN text till användaren
+- Anropa BARA send_jobs_to_widget
+- Widget uppdateras automatiskt via SSE`;
 
-${verificationData.map(j => `
-📋 JOB ID: ${j.id}
-   Titel: "${j.title}"
-   Snippets: "${j.snippets?.substring(0, 300) || ''}"
-
-   → Om snippets nämner "X års erfarenhet", "senior", "erfaren" → experienceRequired: true
-   → Om INGET erfarenhetskrav nämns → experienceRequired: false
-
-   Anropa: verify_job_badges({ widgetSessionId: "${widgetSessionId}", jobId: "${j.id}", badges: { experienceRequired: true/false } })
-`).join('\n')}
-
-SKRIV INGEN TEXT. Anropa verify_job_badges för varje jobb DIREKT.`;
-    } else {
-      rule = "VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS.";
-    }
-
-    // Return structuredContent to show widget directly
+    // Return loading widget + instructions
     return {
       structuredContent: {
         _rule: rule,
+        loadingMode: true,
+        loadingText: loadingText || 'Söker jobb...',
+        analyzingText: analyzingText || 'Analyserar löner...',
         language: lang,
         direction: dir,
-        translateMode: lang !== 'sv',
-        loadingText: loadingText || 'Söker jobb...',
-        waitingText: waitingText || 'Vänta...',
-        query: query,
-        querySwedish: query,
-        location: location || 'Sverige',
-        locationSwedish: location || 'Sverige',
-        total,
-        jobs,
         widgetSessionId: widgetSessionId,
-        jobsNeedingBadgeVerification: jobsNeedingVerification.length > 0 ? verificationData : undefined
+        query: query,
+        location: location || 'Sverige',
+        total: total
       },
+      content: []
+    };
+  }
+);
+
+// ============================================================
+// send_jobs_to_widget - STEP 2: Push jobs + salaries via SSE
+// ============================================================
+server.registerTool(
+  "send_jobs_to_widget",
+  {
+    title: "Send Jobs to Widget - Step 2 of 2 (Smidra MCP)",
+    description: `⛔ STEG 2 - Skicka jobb + löner till widget via SSE.
+
+DETTA ÄR DET ENDA SÄTTET ATT VISA JOBB FÖR ANVÄNDAREN!
+Widget visar loading tills du anropar detta verktyg.
+
+SKRIV INGEN TEXT - anropa bara detta verktyg.`,
+    inputSchema: {
+      widgetSessionId: z.string().describe("Session ID from search_jobs"),
+      language: z.string().describe("Language code"),
+      direction: z.enum(["ltr", "rtl"]).default("ltr"),
+      query: z.string().describe("Original search query"),
+      location: z.string().describe("Location"),
+      total: z.number().describe("Total jobs found"),
+      jobs: z.array(z.object({
+        id: z.string(),
+        title: z.string(),
+        employer: z.string(),
+        location: z.string(),
+        url: z.string(),
+        deadline: z.string().optional(),
+        logoUrl: z.string().optional(),
+        workingHours: z.string().optional(),
+        duration: z.string().optional(),
+        experienceRequired: z.boolean().nullable().optional(),
+        isRemote: z.boolean().optional(),
+        description: z.string().optional()
+      })).describe("Jobs array from search_jobs"),
+      salaries: z.array(z.object({
+        jobId: z.string().describe("Job ID"),
+        avg: z.number().describe("Average salary SEK/month"),
+        min: z.number().describe("Minimum salary"),
+        max: z.number().describe("Maximum salary"),
+        tips: z.array(z.string()).optional().describe("1-2 salary negotiation tips")
+      })).describe("Salary data for each job")
+    },
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false
+    },
+    _meta: {
+      "openai/widgetAccessible": true
+    }
+  },
+  async ({ widgetSessionId, language, direction, query, location, total, jobs, salaries }) => {
+    console.log(`📤 send_jobs_to_widget: ${jobs.length} jobs, ${salaries.length} salaries to session ${widgetSessionId}`);
+
+    // Build salary map
+    const salaryMap = {};
+    for (const s of salaries) {
+      salaryMap[s.jobId] = {
+        salary: { avg: s.avg, min: s.min, max: s.max },
+        tips: s.tips || [],
+        sources: ['SCB', 'Unionen', 'AI-analys']
+      };
+    }
+
+    // Push to widget via SSE
+    const pushed = pushToWidget(widgetSessionId, 'jobs_data', {
+      language,
+      direction,
+      query,
+      location,
+      total,
+      jobs,
+      salaries: salaryMap
+    });
+
+    if (pushed) {
+      console.log(`✅ Data pushed to widget ${widgetSessionId}`);
+    } else {
+      console.log(`⚠️ Widget ${widgetSessionId} not connected`);
+    }
+
+    // Return empty - no text response
+    return {
       content: []
     };
   }
@@ -1248,7 +1316,7 @@ Widget visar allt. Du ska vara HELT TYST.`,
   }
 );
 
-console.log("✅ Tools: search_jobs, display_jobs_with_salaries, display_jobs, get_job_details, update_widget_info, display_salary");
+console.log("✅ Tools: search_jobs, send_jobs_to_widget, display_jobs, get_job_details, update_widget_info, display_salary");
 
 // HTTP Server
 const transports = new Map();
