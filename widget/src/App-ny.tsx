@@ -1293,9 +1293,7 @@ export default function App() {
   const currentSalaryJobId = useRef<string | null>(null);
   const selectedJobRef = useRef<Job | null>(null);
   const salaryForModalRef = useRef<boolean>(false);
-  const isPrefetchRef = useRef<boolean>(false);
-  const prefetchedJobsRef = useRef<Set<string>>(new Set());
-  const isPrefetchingRef = useRef<boolean>(false);
+  // Refs removed - salaries now come preloaded from server
 
   const widgetSessionId = useRef('ws_' + Math.random().toString(36).substr(2, 9));
   const langRef = useRef('sv');
@@ -1379,10 +1377,9 @@ export default function App() {
 
     console.log('⚠️ No cached salary data - fetching from AI...');
 
-    // No data yet - need to fetch
+    // No data yet - need to fetch via AI
     currentSalaryJobId.current = job.id;
     salaryForModalRef.current = forModal;
-    isPrefetchRef.current = false; // User-initiated, not prefetch
 
     if (forModal) {
       setModalSalaryLoading(true);
@@ -1452,69 +1449,7 @@ INSTRUKTIONER:
     window.openai?.sendFollowUpMessage?.({ prompt: msg });
   }, [jobSalaryData]);
 
-  // Prefetch ALL salaries in ONE batch request (parallel)
-  const prefetchAllSalaries = useCallback((jobsList: Job[]) => {
-    // Filter jobs that don't have salary data yet
-    const jobsToPrefetch = jobsList.filter(
-      job => !jobSalaryData[job.id] && !prefetchedJobsRef.current.has(job.id)
-    );
-
-    if (jobsToPrefetch.length === 0) {
-      console.log('✅ All jobs already have salary data');
-      return;
-    }
-
-    // Mark all as prefetching
-    jobsToPrefetch.forEach(job => prefetchedJobsRef.current.add(job.id));
-    isPrefetchingRef.current = true;
-
-    console.log(`🚀🚀🚀 PREFETCH STARTING for ${jobsToPrefetch.length} jobs in ONE batch...`);
-    console.log('🚀 Jobs to prefetch:', jobsToPrefetch.map(j => ({ id: j.id, title: j.title })));
-
-    // Build job list for the prompt
-    const jobsDescription = jobsToPrefetch.map((job, index) => `
-${index + 1}. JOB ID: "${job.id}"
-   Titel: ${job.title}
-   Företag: ${job.employer}
-   Plats: ${job.location || 'Sverige'}
-   ${job.description ? `Beskrivning: ${job.description.substring(0, 200)}...` : ''}
-   ${job.experienceRequired === false ? 'Entry-level (kräver EJ erfarenhet)' : 'Kräver erfarenhet'}`
-    ).join('\n');
-
-    const msg = `⛔ TYST LÄGE - SKRIV ABSOLUT INGEN TEXT!
-
-ANALYSERA DESSA ${jobsToPrefetch.length} JOBBANNONSER OCH UPPSKATTA LÖN FÖR VARJE:
-
-${jobsDescription}
-
-INSTRUKTIONER:
-1. Sök på webben efter svenska löner för dessa typer av jobb
-2. Analysera VARJE annons individuellt - anpassa lön baserat på:
-   - Jobbets specifika titel och ansvar
-   - Företagets storlek/typ
-   - Plats (storstäder har ofta högre löner)
-   - Om det kräver erfarenhet eller ej (entry-level = lägre)
-3. Anropa update_batch_salaries med ALLA löner:
-
-{
-  "widgetSessionId": "${widgetSessionId.current}",
-  "salaries": [
-${jobsToPrefetch.map(job => `    {
-      "jobId": "${job.id}",
-      "title": "${job.title}",
-      "salary": { "avg": [genomsnitt], "min": [lägsta], "max": [högsta] },
-      "tips": ["Ett specifikt tips för denna roll"],
-      "sources": ["SCB", "Unionen"]
-    }`).join(',\n')}
-  ]
-}
-
-⛔⛔⛔ KRITISKT: SKRIV ABSOLUT INGEN TEXT! ANROPA BARA update_batch_salaries! ⛔⛔⛔`;
-
-    window.openai?.sendFollowUpMessage?.({ prompt: msg });
-  }, [jobSalaryData]);
-
-  // SSE for salary updates
+  // SSE for salary updates (fallback for individual requests)
   useEffect(() => {
     const sessionId = toolOutput?.widgetSessionId || widgetSessionId.current;
     if (toolOutput?.widgetSessionId) {
@@ -1567,26 +1502,21 @@ ${jobsToPrefetch.map(job => `    {
           }
 
           const jobId = currentSalaryJobId.current;
-          const wasPrefetch = isPrefetchRef.current;
-          console.log('💰 Salary data for jobId:', jobId, 'salary:', data.salary, 'prefetch:', wasPrefetch);
+          console.log('💰 Salary data for jobId:', jobId, 'salary:', data.salary);
 
           if (jobId) {
             // Update job-specific salary data
             setJobSalaryData(prev => ({ ...prev, [jobId]: data }));
             setJobSalaryLoading(prev => ({ ...prev, [jobId]: false }));
 
-            // Only auto-show the salary view if NOT a prefetch
-            if (!wasPrefetch) {
-              setSalaryViewJobId(jobId);
-              console.log('✅ Updated salary for job:', jobId, '(showing view)');
-            } else {
-              console.log('✅ Prefetched salary for job:', jobId, '(cached silently)');
-            }
+            // Show the salary view (user clicked, not prefetch)
+            setSalaryViewJobId(jobId);
+            console.log('✅ Updated salary for job:', jobId);
           }
 
-          // Also update modal salary if open (use ref to avoid stale closure)
+          // Also update modal salary if open
           const currentSelectedJob = selectedJobRef.current;
-          if (currentSelectedJob && jobId === currentSelectedJob.id && !wasPrefetch) {
+          if (currentSelectedJob && jobId === currentSelectedJob.id) {
             setModalSalaryData(data);
             setModalSalaryLoading(false);
             console.log('✅ Updated modal salary');
@@ -1621,6 +1551,32 @@ ${jobsToPrefetch.map(job => `    {
       const lang = toolOutput.language || 'sv';
       langRef.current = lang;
 
+      // 🔥 Load preloaded salary data if available (from display_jobs_with_salaries)
+      if (toolOutput.preloadedSalaries) {
+        console.log('💰💰💰 PRELOADED SALARIES FOUND!', Object.keys(toolOutput.preloadedSalaries));
+
+        // Translate tips if needed
+        const processedSalaries: Record<string, SalaryData> = {};
+        for (const [jobId, data] of Object.entries(toolOutput.preloadedSalaries)) {
+          const salaryData = data as { salary: { avg: number; min: number; max: number }; tips: string[]; sources: string[] };
+          let translatedTips = salaryData.tips || [];
+          if (lang !== 'sv' && salaryData.tips?.length) {
+            try {
+              translatedTips = await translateBatch(salaryData.tips, lang);
+            } catch {}
+          }
+          processedSalaries[jobId] = {
+            salary: salaryData.salary,
+            tips: salaryData.tips,
+            translatedTips,
+            sources: salaryData.sources
+          };
+        }
+
+        setJobSalaryData(processedSalaries);
+        console.log('✅ All salaries pre-loaded:', Object.keys(processedSalaries));
+      }
+
       // Only show first page of jobs (JOBS_PER_PAGE)
       const firstPageJobs = toolOutput.jobs.slice(0, JOBS_PER_PAGE);
 
@@ -1639,18 +1595,6 @@ ${jobsToPrefetch.map(job => `    {
 
     handleData();
   }, [toolOutput]);
-
-  // Auto-prefetch ALL salaries when jobs load (parallel batch)
-  useEffect(() => {
-    if (jobs.length > 0 && !isPrefetchingRef.current) {
-      // Delay to let widget render first
-      const timer = setTimeout(() => {
-        prefetchAllSalaries(jobs);
-      }, 2000); // 2 second delay before starting batch prefetch
-
-      return () => clearTimeout(timer);
-    }
-  }, [jobs, prefetchAllSalaries]);
 
   if (!hasReceivedData) {
     return (
