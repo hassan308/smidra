@@ -1346,16 +1346,34 @@ export default function App() {
     setExpandedJobId(null);
     setPageLoading(true);
 
-    // Fetch new page from API
+    // Ask ChatGPT to fetch and analyze the new page (same flow as page 1)
     const { query, location } = searchQueryRef.current;
-    if (query) {
+    if (query && window.openai?.sendFollowUpMessage) {
+      console.log(`📄 Requesting page ${page} via ChatGPT...`);
+
+      // Send message to ChatGPT to fetch page with salary analysis
+      const message = `Hämta sida ${page} för sökningen "${query}" i ${location || 'Sverige'}.
+
+Anropa search_jobs med:
+- query: "${query}"
+- location: "${location || 'Sverige'}"
+- page: ${page}
+- language: "${langRef.current}"
+
+Analysera löner och anropa sedan send_jobs_to_widget som vanligt.`;
+
+      window.openai.sendFollowUpMessage({ prompt: message });
+
+      // Note: The widget will be updated when ChatGPT calls send_jobs_to_widget
+      // We don't set pageLoading to false here - it will be set when new data arrives
+    } else {
+      // Fallback: Direct API fetch (no salary analysis)
       try {
         const offset = (page - 1) * JOBS_PER_PAGE;
         const res = await fetch(`https://api.smidra.se/api/search?q=${encodeURIComponent(query)}&location=${encodeURIComponent(location)}&limit=${JOBS_PER_PAGE}&offset=${offset}`);
         const data = await res.json();
 
         if (data.jobs?.length) {
-          // Translate if needed
           if (langRef.current !== 'sv') {
             const translatedJobs = await translateJobs(data.jobs, langRef.current);
             setJobs(translatedJobs);
@@ -1363,13 +1381,13 @@ export default function App() {
             setJobs(data.jobs);
           }
         }
+        setCurrentPage(page);
+        setPageLoading(false);
       } catch (err) {
         console.error('Failed to fetch page:', err);
+        setPageLoading(false);
       }
     }
-
-    setCurrentPage(page);
-    setPageLoading(false);
   }, [currentPage]);
 
   const toggleSave = useCallback((id: string) => {
@@ -1638,7 +1656,8 @@ INSTRUKTIONER:
     const handleData = async () => {
       setLoadingMode(false);
       setHasReceivedData(true);
-      setCurrentPage(1);
+      setPageLoading(false); // Reset page loading state when new data arrives
+      setCurrentPage(toolOutput.page || 1);
 
       // Save search query for pagination
       searchQueryRef.current = {

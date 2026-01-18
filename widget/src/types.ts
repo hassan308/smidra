@@ -73,6 +73,7 @@ export interface ToolOutput {
   location?: string;
   locationSwedish?: string;
   total?: number;
+  page?: number;
   jobs?: Job[];
   translateMode?: boolean;
   labels?: Labels;

@@ -13,6 +13,7 @@ const PORT = process.env.PORT || 8002;
 
 // Arbetsformedlingen JobSearch API
 const AF_API_BASE = "https://jobsearch.api.jobtechdev.se";
+const JOBS_PER_PAGE = 6;
 
 // Swedish regions mapping (län)
 const regions = {
@@ -204,9 +205,14 @@ async function searchJobsAll(query, location, filters = {}) {
 }
 
 // Main search function - quick by default, all if specified
-async function searchJobs(query, location, limit = 100, filters = {}) {
+async function searchJobs(query, location, limit = 100, offset = 0, filters = {}) {
   if (limit === 0) {
     return searchJobsAll(query, location, filters);
+  }
+  // Support pagination with offset
+  if (offset > 0) {
+    console.log(`📄 Fetching page with offset ${offset}...`);
+    return searchJobsSingle(query, location, limit, offset, filters);
   }
   return searchJobsQuick(query, location, limit, filters);
 }
@@ -538,6 +544,8 @@ VIKTIGT FLÖDE:
       query: z.string().describe("Search query IN SWEDISH"),
       location: z.string().optional().describe("City/region in Sweden"),
       limit: z.number().optional().default(50).describe("Number of jobs (default 50)"),
+      offset: z.number().optional().default(0).describe("Offset for pagination (0 = page 1, 6 = page 2, etc)"),
+      page: z.number().optional().default(1).describe("Page number (1, 2, 3...)"),
       language: z.string().describe("User's language code"),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
       loadingText: z.string().optional(),
@@ -547,10 +555,15 @@ VIKTIGT FLÖDE:
       parttime: z.boolean().optional()
     }
   },
-  async ({ query, location, limit, language, direction, remote, fulltime, parttime }) => {
+  async ({ query, location, limit, offset, page, language, direction, remote, fulltime, parttime }) => {
+    // Calculate offset from page if not provided
+    const effectiveOffset = offset || ((page || 1) - 1) * JOBS_PER_PAGE;
+    const effectivePage = page || Math.floor(effectiveOffset / JOBS_PER_PAGE) + 1;
+
     console.log(`\n${'='.repeat(60)}`);
     console.log(`🔍 STEG 1: search_jobs`);
     console.log(`   Query: "${query}" | Location: ${location || 'Sverige'} | Lang: ${language}`);
+    console.log(`   Page: ${effectivePage} | Offset: ${effectiveOffset}`);
     console.log(`${'='.repeat(60)}`);
 
     // Build filters
@@ -559,16 +572,15 @@ VIKTIGT FLÖDE:
     if (fulltime) filters.fulltime = true;
     if (parttime) filters.parttime = true;
 
-    // Search for jobs - get more than 6 so we have total count
+    // Search for jobs with pagination support
     const effectiveLimit = Math.min(limit || 50, 100);
-    const data = await searchJobs(query, location, effectiveLimit, filters);
+    const data = await searchJobs(query, location, effectiveLimit, effectiveOffset, filters);
     const total = data.total?.value || 0;
 
-    // Enrich ONLY first 6 jobs with detailed info (page 1)
-    const JOBS_PER_PAGE = 6;
+    // Enrich ONLY the 6 jobs for this page with detailed info
     const jobs = await enrichJobsParallel(data.hits, JOBS_PER_PAGE);
 
-    console.log(`📦 Page 1: ${jobs.length} jobb berikade (totalt ${total} tillgängliga)`);
+    console.log(`📦 Page ${effectivePage}: ${jobs.length} jobb berikade (totalt ${total} tillgängliga)`);
 
     const lang = (language || 'sv').toLowerCase();
     const dir = direction || (lang === 'ar' || lang === 'he' || lang === 'fa' || lang === 'ur' ? 'rtl' : 'ltr');
@@ -617,6 +629,7 @@ VIKTIGT FLÖDE:
       query,
       location: location || 'Sverige',
       total,
+      page: effectivePage,
       language: lang,
       direction: dir
     });
@@ -696,6 +709,7 @@ Utan detta verktyg ser användaren INGENTING.
 SKRIV INGEN TEXT - anropa bara detta verktyg.`,
     inputSchema: {
       widgetSessionId: z.string().describe("Session ID from search_jobs"),
+      page: z.number().optional().default(1).describe("Page number (1, 2, 3...)"),
       language: z.string().describe("Language code"),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
       query: z.string().describe("Original search query"),
@@ -733,14 +747,15 @@ SKRIV INGEN TEXT - anropa bara detta verktyg.`,
       "openai/widgetDescription": "Visar jobbresultat med lönedata och beskrivningar. Ingen ytterligare text behövs."
     }
   },
-  async ({ widgetSessionId, language, direction, query, location, total, jobs, salaries, descriptions }) => {
+  async ({ widgetSessionId, page, language, direction, query, location, total, jobs, salaries, descriptions }) => {
+    // 🔥 Retrieve stored job data from server FIRST (includes descriptions!)
+    const storedData = sessionJobData.get(widgetSessionId);
+    const finalPage = page || storedData?.page || 1;
+
     console.log(`\n${'='.repeat(60)}`);
     console.log(`✅ STEG 2: send_jobs_to_widget`);
-    console.log(`   Session: ${widgetSessionId}`);
+    console.log(`   Session: ${widgetSessionId} | Page: ${finalPage}`);
     console.log(`${'='.repeat(60)}`);
-
-    // 🔥 Retrieve stored job data from server (includes descriptions!)
-    const storedData = sessionJobData.get(widgetSessionId);
     if (storedData) {
       console.log(`   📦 Retrieved stored data for session`);
       console.log(`   📝 Descriptions från server: ${Object.keys(storedData.descriptions).length}`);
@@ -809,6 +824,7 @@ SKRIV INGEN TEXT - anropa bara detta verktyg.`,
         location: finalLocation,
         locationSwedish: finalLocation,
         total: finalTotal,
+        page: finalPage,
         jobs: finalJobs,
         widgetSessionId: widgetSessionId,
         preloadedSalaries: salaryMap,
