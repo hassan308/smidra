@@ -587,66 +587,68 @@ Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), l
       experienceRequired: j.experienceRequired
     }));
 
-    // The RULE must be FIRST and CLEAR
-    const rule = `⛔ STEG 2 KRÄVS - SKRIV INGEN TEXT TILL ANVÄNDAREN!
+    // Return ONLY text - NO widget yet! ChatGPT must call send_jobs_to_widget
+    return {
+      content: [{
+        type: "text",
+        text: `⛔⛔⛔ STEG 2 KRÄVS - ANVÄNDAREN SER INGENTING ÄN! ⛔⛔⛔
 
-Widget visar nu "Laddar..." och väntar på data.
+Jag hittade ${total} jobb för "${query}" i ${location || 'Sverige'}.
 
-DU MÅSTE GÖRA FÖLJANDE:
-1. SÖK PÅ WEBBEN efter svenska löner för: "${query}" i ${location || 'Sverige'}
-   - Använd källor som SCB, Unionen, Sveriges Ingenjörer
-   - Hitta genomsnittslön, min och max för denna yrkesroll
+ANVÄNDAREN SER INGEN WIDGET ÄN - DU MÅSTE ANROPA send_jobs_to_widget!
 
-2. ANROPA send_jobs_to_widget MED EXAKT DETTA FORMAT:
-{
+═══════════════════════════════════════════════════════════════
+STEG 1: ✅ KLART - Jobb hämtade
+STEG 2: ⏳ VÄNTAR - Du måste göra detta NU:
+═══════════════════════════════════════════════════════════════
+
+1️⃣ SÖK PÅ WEBBEN efter svenska löner för "${query}"
+   - SCB lönestatistik
+   - Unionen lönedata
+   - Sveriges Ingenjörer
+
+2️⃣ ANROPA send_jobs_to_widget DIREKT med denna data:
+
+send_jobs_to_widget({
   "widgetSessionId": "${widgetSessionId}",
   "language": "${lang}",
   "direction": "${dir}",
   "query": "${query}",
   "location": "${location || 'Sverige'}",
   "total": ${total},
-  "jobs": ${JSON.stringify(jobs, null, 2)},
+  "jobs": <ALLA JOBB NEDAN>,
   "salaries": [
-    { "jobId": "${jobsForSalary[0]?.id || 'job1'}", "avg": 45000, "min": 38000, "max": 55000, "tips": ["Förhandla alltid", "Kolla marknadslön"] },
+    { "jobId": "${jobsForSalary[0]?.id}", "avg": <lön>, "min": <min>, "max": <max>, "tips": ["tips1", "tips2"] },
+    { "jobId": "${jobsForSalary[1]?.id || 'job2'}", "avg": <lön>, "min": <min>, "max": <max>, "tips": ["tips1"] },
     ... för varje jobb
   ]
-}
+})
 
-⛔ KRITISKT:
-- Skriv INGEN text till användaren
+═══════════════════════════════════════════════════════════════
+JOBB ATT SKICKA (kopiera dessa till "jobs" parametern):
+═══════════════════════════════════════════════════════════════
+${JSON.stringify(jobs, null, 2)}
+
+⛔ VIKTIGT:
+- SKRIV INGEN TEXT till användaren
 - Anropa BARA send_jobs_to_widget
-- Widget uppdateras automatiskt via SSE`;
-
-    // Return loading widget + instructions
-    return {
-      structuredContent: {
-        _rule: rule,
-        loadingMode: true,
-        loadingText: loadingText || 'Söker jobb...',
-        analyzingText: analyzingText || 'Analyserar löner...',
-        language: lang,
-        direction: dir,
-        widgetSessionId: widgetSessionId,
-        query: query,
-        location: location || 'Sverige',
-        total: total
-      },
-      content: []
+- Användaren väntar och ser ingenting förrän du anropar verktyget!`
+      }]
     };
   }
 );
 
 // ============================================================
-// send_jobs_to_widget - STEP 2: Push jobs + salaries via SSE
+// send_jobs_to_widget - STEP 2: Display widget with jobs + salaries
 // ============================================================
 server.registerTool(
   "send_jobs_to_widget",
   {
-    title: "Send Jobs to Widget - Step 2 of 2 (Smidra MCP)",
-    description: `⛔ STEG 2 - Skicka jobb + löner till widget via SSE.
+    title: "Display Jobs with Salaries - Step 2 of 2 (Smidra MCP)",
+    description: `⛔ STEG 2 - VISAR WIDGET MED JOBB + LÖNER.
 
 DETTA ÄR DET ENDA SÄTTET ATT VISA JOBB FÖR ANVÄNDAREN!
-Widget visar loading tills du anropar detta verktyg.
+Utan detta verktyg ser användaren INGENTING.
 
 SKRIV INGEN TEXT - anropa bara detta verktyg.`,
     inputSchema: {
@@ -678,18 +680,15 @@ SKRIV INGEN TEXT - anropa bara detta verktyg.`,
         tips: z.array(z.string()).optional().describe("1-2 salary negotiation tips")
       })).describe("Salary data for each job")
     },
-    annotations: {
-      readOnlyHint: true,
-      openWorldHint: false
-    },
     _meta: {
-      "openai/widgetAccessible": true
+      "openai/outputTemplate": "ui://widget/job-list.html",
+      "openai/widgetDescription": "Visar jobbresultat med lönedata. Ingen ytterligare text behövs."
     }
   },
   async ({ widgetSessionId, language, direction, query, location, total, jobs, salaries }) => {
-    console.log(`📤 send_jobs_to_widget: ${jobs.length} jobs, ${salaries.length} salaries to session ${widgetSessionId}`);
+    console.log(`📤 send_jobs_to_widget: ${jobs.length} jobs, ${salaries.length} salaries`);
 
-    // Build salary map
+    // Build salary map for widget
     const salaryMap = {};
     for (const s of salaries) {
       salaryMap[s.jobId] = {
@@ -699,25 +698,24 @@ SKRIV INGEN TEXT - anropa bara detta verktyg.`,
       };
     }
 
-    // Push to widget via SSE
-    const pushed = pushToWidget(widgetSessionId, 'jobs_data', {
-      language,
-      direction,
-      query,
-      location,
-      total,
-      jobs,
-      salaries: salaryMap
-    });
+    console.log(`💰 Salary data for ${Object.keys(salaryMap).length} jobs`);
 
-    if (pushed) {
-      console.log(`✅ Data pushed to widget ${widgetSessionId}`);
-    } else {
-      console.log(`⚠️ Widget ${widgetSessionId} not connected`);
-    }
-
-    // Return empty - no text response
+    // Return widget with jobs + preloaded salaries
     return {
+      structuredContent: {
+        _rule: "⛔ VIKTIGT: VISA ENDAST WIDGET. SKRIV ABSOLUT INGEN TEXT!",
+        language: language || 'sv',
+        direction: direction || 'ltr',
+        translateMode: (language || 'sv') !== 'sv',
+        query: query,
+        querySwedish: query,
+        location: location || 'Sverige',
+        locationSwedish: location || 'Sverige',
+        total: total || jobs.length,
+        jobs,
+        widgetSessionId: widgetSessionId,
+        preloadedSalaries: salaryMap
+      },
       content: []
     };
   }
