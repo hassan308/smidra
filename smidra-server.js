@@ -636,54 +636,46 @@ VIKTIGT FLÖDE:
     console.log(`   ⏳ Väntar på att ChatGPT analyserar och anropar send_jobs_to_widget...`);
     console.log(`${'='.repeat(60)}\n`);
 
-    // Return TEXT with job data - ChatGPT will analyze and call send_jobs_to_widget
+    // Return TEXT with _rule FIRST - ChatGPT MUST call send_jobs_to_widget
     return {
       content: [{
         type: "text",
-        text: `STEG 1 KLART ✅ - ANVÄNDAREN SER INGENTING ÄN!
+        text: `_rule: DU MÅSTE ANROPA send_jobs_to_widget EFTER ATT DU ANALYSERAT LÖNERNA. SKRIV INGEN TEXT TILL ANVÄNDAREN. ANVÄNDAREN SER INGENTING FÖRRÄN DU ANROPAR send_jobs_to_widget.
 
-══════════════════════════════════════════════════════════
-NÄSTA STEG: SÖK LÖNER + ANROPA send_jobs_to_widget
-══════════════════════════════════════════════════════════
+═══════════════════════════════════════════════════════════════════════════════
+⛔ OBLIGATORISKT: ANROPA send_jobs_to_widget NÄR DU ANALYSERAT KLART!
+═══════════════════════════════════════════════════════════════════════════════
 
 Hittade ${total} jobb för "${query}" i ${location || 'Sverige'}.
-Session: ${widgetSessionId}
+widgetSessionId: "${widgetSessionId}"
 
-📋 FÖRSTA 6 JOBB ATT ANALYSERA:
-${jobsForWidget.map((j, i) => `
-${i + 1}. ${j.title} - ${j.employer}
-   ID: ${j.id}
-   Plats: ${j.location}
-   Typ: ${j.workingHours || 'Ej angivet'}
-   Erfarenhet: ${j.experienceRequired === false ? 'Krävs EJ' : 'Krävs'}
-   Distans: ${j.isRemote ? 'Ja' : 'Nej'}
-   Beskrivning: ${(descriptionsMap[j.id] || j.description || '').substring(0, 150)}...
-`).join('')}
+JOBB ATT ANALYSERA (sök lön för dessa):
+${jobsForWidget.map((j, i) => `${i + 1}. [${j.id}] ${j.title} @ ${j.employer} (${j.workingHours || 'Heltid'})`).join('\n')}
 
-══════════════════════════════════════════════════════════
-GÖR DETTA NU:
-══════════════════════════════════════════════════════════
+═══════════════════════════════════════════════════════════════════════════════
+STEG-FÖR-STEG INSTRUKTION:
+═══════════════════════════════════════════════════════════════════════════════
 
-1. SÖK PÅ WEBBEN: "${query} lön Sverige 2024"
-2. Analysera lönenivåer för denna typ av jobb
-3. ANROPA send_jobs_to_widget med lönedata:
+STEG A: Sök på webben efter "${query} lön Sverige 2024 SCB"
 
+STEG B: ANROPA send_jobs_to_widget med detta format:
 {
   "widgetSessionId": "${widgetSessionId}",
   "salaries": [
-    {"jobId": "${jobsForWidget[0]?.id}", "avg": [SNITTLÖN], "min": [MIN], "max": [MAX], "tips": ["förhandlingstips"]},
-    {"jobId": "${jobsForWidget[1]?.id}", "avg": [SNITTLÖN], "min": [MIN], "max": [MAX], "tips": ["förhandlingstips"]},
-    {"jobId": "${jobsForWidget[2]?.id}", "avg": [SNITTLÖN], "min": [MIN], "max": [MAX], "tips": ["förhandlingstips"]},
-    {"jobId": "${jobsForWidget[3]?.id}", "avg": [SNITTLÖN], "min": [MIN], "max": [MAX], "tips": ["förhandlingstips"]},
-    {"jobId": "${jobsForWidget[4]?.id}", "avg": [SNITTLÖN], "min": [MIN], "max": [MAX], "tips": ["förhandlingstips"]},
-    {"jobId": "${jobsForWidget[5]?.id}", "avg": [SNITTLÖN], "min": [MIN], "max": [MAX], "tips": ["förhandlingstips"]}
+    {"jobId": "${jobsForWidget[0]?.id}", "avg": 45000, "min": 38000, "max": 55000, "tips": ["Förhandla vid årlig lönerevision"]},
+    {"jobId": "${jobsForWidget[1]?.id}", "avg": 45000, "min": 38000, "max": 55000, "tips": ["Lyft fram certifieringar"]},
+    {"jobId": "${jobsForWidget[2]?.id}", "avg": 45000, "min": 38000, "max": 55000, "tips": ["Jämför med marknadslön"]},
+    {"jobId": "${jobsForWidget[3]?.id}", "avg": 45000, "min": 38000, "max": 55000, "tips": ["Fråga om förmåner"]},
+    {"jobId": "${jobsForWidget[4]?.id}", "avg": 45000, "min": 38000, "max": 55000, "tips": ["Var tydlig med krav"]},
+    {"jobId": "${jobsForWidget[5]?.id}", "avg": 45000, "min": 38000, "max": 55000, "tips": ["Förbered lönediskussion"]}
   ]
 }
 
-⚠️ VIKTIGT:
-- Jobb och beskrivningar finns redan på servern (session: ${widgetSessionId})
-- Du behöver BARA skicka widgetSessionId + salaries
-- SKRIV INGEN TEXT till användaren - anropa bara send_jobs_to_widget!`
+⚠️ VIKTIGT: Ersätt exempellönerna (45000) med FAKTISKA löner från din webbsökning!
+
+═══════════════════════════════════════════════════════════════════════════════
+_rule: ANROPA send_jobs_to_widget NU! SKRIV INGEN TEXT!
+═══════════════════════════════════════════════════════════════════════════════`
       }]
     };
   }
