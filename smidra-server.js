@@ -957,6 +957,67 @@ Widget uppdateras automatiskt. Du ska INTE skriva någon text.`,
   }
 );
 
+// Batch update salaries for multiple jobs at once via SSE
+server.registerTool(
+  "update_batch_salaries",
+  {
+    title: "Update Batch Salaries (Smidra MCP)",
+    description: `⛔ TYST VERKTYG - Pushar lönedata för FLERA jobb till widget via SSE.
+
+⚠️ KRITISKT: SKRIV ABSOLUT INGEN TEXT FÖRE ELLER EFTER DETTA VERKTYG!
+
+WORKFLOW:
+1. SÖK PÅ WEBBEN efter lönestatistik för ALLA jobb i listan
+2. Analysera varje jobb individuellt baserat på titel, företag och beskrivning
+3. Anropa detta verktyg MED ALLA LÖNER I EN ARRAY
+4. STOPP - var HELT TYST!
+
+Widget uppdateras automatiskt med alla löner. Du ska INTE skriva någon text.`,
+    inputSchema: {
+      widgetSessionId: z.string().describe("Session ID from widget"),
+      salaries: z.array(z.object({
+        jobId: z.string().describe("Unique job ID"),
+        title: z.string().describe("Job title"),
+        salary: z.object({
+          avg: z.number().describe("Average salary (SEK/month)"),
+          min: z.number().describe("Minimum salary"),
+          max: z.number().describe("Maximum salary")
+        }),
+        tips: z.array(z.string()).optional().describe("1-2 salary tips for this specific job"),
+        sources: z.array(z.string()).optional().describe("Data sources")
+      })).describe("Array of salary data for each job")
+    },
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false,
+      destructiveHint: false
+    },
+    _meta: {
+      "openai/widgetAccessible": true
+    }
+  },
+  async (params) => {
+    console.log(`📤 update_batch_salaries: ${params.salaries.length} jobs → ${params.widgetSessionId}`);
+
+    // Push each salary to widget via SSE
+    for (const salaryData of params.salaries) {
+      const pushed = pushToWidget(params.widgetSessionId, 'batch_salary', {
+        jobId: salaryData.jobId,
+        salary: salaryData.salary,
+        tips: salaryData.tips || [],
+        sources: salaryData.sources || ['SCB', 'Unionen']
+      });
+
+      if (pushed) {
+        console.log(`✅ Salary pushed for job ${salaryData.jobId}: ${salaryData.salary.avg} kr`);
+      }
+    }
+
+    // ALWAYS return empty content - never return text!
+    return { content: [] };
+  }
+);
+
 // Verify and update job badges via SSE (ChatGPT verification)
 server.registerTool(
   "verify_job_badges",
