@@ -1281,7 +1281,7 @@ Widget visar allt. Du ska vara HELT TYST.`,
   }
 );
 
-console.log("✅ Tools: search_jobs, display_jobs, get_job_details, update_widget_info, display_salary");
+console.log("✅ Tools: search_jobs, display_jobs_with_salaries, display_jobs, get_job_details, update_widget_info, display_salary");
 
 // HTTP Server
 const transports = new Map();
