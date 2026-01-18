@@ -540,6 +540,10 @@ Widget visas automatiskt med jobbresultat.`,
       remote: z.boolean().optional(),
       fulltime: z.boolean().optional(),
       parttime: z.boolean().optional()
+    },
+    _meta: {
+      "openai/outputTemplate": "ui://widget/job-list.html",
+      "openai/widgetDescription": "Visar jobbresultat direkt i widget. Ingen ytterligare text behövs."
     }
   },
   async ({ query, location, limit, language, direction, remote, fulltime, parttime }) => {
