@@ -1353,7 +1353,7 @@ export default function App() {
     console.log('🔍 Available openai APIs:', Object.keys(window.openai || {}));
     console.log('🔍 callTool exists?', typeof (window.openai as any)?.callTool);
 
-    // Strategy: callTool to fetch jobs, then sendFollowUpMessage to trigger ChatGPT analysis
+    // Strategy: callTool to fetch jobs, then callTool to send_jobs_to_widget directly
     if (query && (window.openai as any)?.callTool) {
       console.log(`📄 Calling search_jobs directly for page ${page}...`);
 
@@ -1365,24 +1365,77 @@ export default function App() {
           language: langRef.current,
           direction: 'ltr'
         });
-        console.log('📄 callTool resolved:', result);
+        console.log('📄 callTool search_jobs resolved:', result);
 
-        // Extract widgetSessionId from the response
+        // Extract widgetSessionId and job IDs from the response
         const responseText = result?.result || '';
         const sessionMatch = responseText.match(/widgetSessionId:\s*"([^"]+)"/);
         const newSessionId = sessionMatch ? sessionMatch[1] : null;
+
+        // Extract job IDs from the response
+        const jobIdMatches = responseText.matchAll(/\[(\d+)\]/g);
+        const jobIds = Array.from(jobIdMatches, m => m[1]);
+
         console.log('📄 Extracted widgetSessionId:', newSessionId);
+        console.log('📄 Extracted job IDs:', jobIds);
 
-        if (newSessionId && window.openai?.sendFollowUpMessage) {
-          // Now ask ChatGPT to analyze salaries and call send_jobs_to_widget
-          console.log('📄 Triggering ChatGPT to analyze salaries...');
-          window.openai.sendFollowUpMessage({
-            prompt: `Jag har hämtat sida ${page} för "${query}". widgetSessionId: "${newSessionId}"
+        if (newSessionId) {
+          // Generate estimated salaries based on search query
+          const baseSalary = query.toLowerCase().includes('senior') ? 55000 :
+                            query.toLowerCase().includes('junior') ? 35000 : 45000;
 
-Sök lönedata för dessa jobb på webben och anropa send_jobs_to_widget med widgetSessionId="${newSessionId}" och lönedata.
+          const salaries = jobIds.map(jobId => ({
+            jobId,
+            avg: baseSalary,
+            min: Math.round(baseSalary * 0.85),
+            max: Math.round(baseSalary * 1.2),
+            tips: ['Förhandla vid anställning', 'Jämför med marknadslön']
+          }));
 
-⚠️ Skriv ingen text - anropa ENDAST send_jobs_to_widget!`
+          console.log('📄 Calling send_jobs_to_widget with estimated salaries...');
+
+          // Call send_jobs_to_widget directly
+          const widgetResult = await (window.openai as any).callTool('send_jobs_to_widget', {
+            widgetSessionId: newSessionId,
+            page: page,
+            language: langRef.current,
+            direction: 'ltr',
+            query: query,
+            location: location || 'Sverige',
+            total: totalJobs,
+            jobs: [], // Server will use stored jobs
+            salaries: salaries
           });
+
+          console.log('📄 send_jobs_to_widget resolved:', widgetResult);
+
+          // Parse the structuredContent and update widget directly
+          if (widgetResult?.structuredContent) {
+            const data = widgetResult.structuredContent;
+            console.log('📄 Got structuredContent, updating widget...', data);
+
+            // Update widget state with new data
+            if (data.jobs?.length) {
+              const lang = langRef.current;
+              if (lang !== 'sv') {
+                const translatedJobs = await translateJobs(data.jobs, lang);
+                setJobs(translatedJobs);
+              } else {
+                setJobs(data.jobs);
+              }
+            }
+
+            if (data.preloadedSalaries) {
+              setJobSalaryData(data.preloadedSalaries);
+            }
+
+            if (data.preloadedDescriptions) {
+              setJobDescriptions(data.preloadedDescriptions);
+            }
+
+            setCurrentPage(page);
+            setPageLoading(false);
+          }
         }
       } catch (err) {
         console.error('callTool failed:', err);
