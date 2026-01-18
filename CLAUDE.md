@@ -784,6 +784,133 @@ const requestSalary = useCallback((job) => {
 }, [jobSalaryData]);
 ```
 
+### 🚀 Automatisk Salary Prefetch
+
+Widget hämtar lönedata för ALLA jobb på sidan automatiskt vid sidladdning. Detta gör att lönedata visas direkt när användaren klickar "Visa lön" istället för att vänta på API-anrop.
+
+#### Flödet
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 1. WIDGET LADDAS MED JOBB                                   │
+│    - jobs state uppdateras med sökresultat                  │
+│    - useEffect triggas efter 2 sekunder                     │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 2. PREFETCH STARTAR                                         │
+│    - Filtrerar bort jobb som redan har lönedata             │
+│    - Lägger alla i prefetchQueueRef                         │
+│    - Startar processNextPrefetch()                          │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 3. SEKVENTIELL HÄMTNING                                     │
+│    - Hämtar EN lön i taget                                  │
+│    - 500ms paus mellan anrop                                │
+│    - isPrefetchRef = true (markerar som prefetch)           │
+│    - sendFollowUpMessage med jobbinfo                       │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 4. SSE TAR EMOT                                             │
+│    - Sparar i jobSalaryData[jobId]                          │
+│    - OM prefetch: visa EJ flip-view (bara cacha)            │
+│    - Anropar processNextPrefetch() för nästa jobb           │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 5. ANVÄNDARE KLICKAR "VISA LÖN"                             │
+│    - Data finns redan i cache!                              │
+│    - Visar direkt - ingen väntan! 🎉                        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Implementation (App-ny.tsx)
+
+```javascript
+// Refs för prefetch-tracking
+const isPrefetchRef = useRef<boolean>(false);
+const prefetchedJobsRef = useRef<Set<string>>(new Set());
+const prefetchQueueRef = useRef<Job[]>([]);
+const isPrefetchingRef = useRef<boolean>(false);
+
+// Prefetch för ett enskilt jobb (tyst)
+const prefetchSalary = useCallback((job: Job) => {
+  if (prefetchedJobsRef.current.has(job.id) || jobSalaryData[job.id]) {
+    return false; // Redan hämtad
+  }
+  prefetchedJobsRef.current.add(job.id);
+  currentSalaryJobId.current = job.id;
+  isPrefetchRef.current = true; // Markera som prefetch
+
+  const msg = `⛔ TYST LÄGE... [jobbinfo]`;
+  window.openai?.sendFollowUpMessage?.({ prompt: msg });
+  return true;
+}, [jobSalaryData]);
+
+// Bearbetar kön sekventiellt
+const processNextPrefetch = useCallback(() => {
+  if (prefetchQueueRef.current.length === 0) {
+    isPrefetchingRef.current = false;
+    return;
+  }
+  const nextJob = prefetchQueueRef.current.shift();
+  if (nextJob) {
+    setTimeout(() => {
+      if (!prefetchSalary(nextJob)) processNextPrefetch();
+    }, 500); // 500ms mellan varje
+  }
+}, [prefetchSalary]);
+
+// Startar prefetch för alla jobb
+const startPrefetchingSalaries = useCallback((jobsList: Job[]) => {
+  const jobsToPrefetch = jobsList.filter(
+    job => !jobSalaryData[job.id] && !prefetchedJobsRef.current.has(job.id)
+  );
+  if (jobsToPrefetch.length === 0) return;
+  prefetchQueueRef.current = [...jobsToPrefetch];
+  isPrefetchingRef.current = true;
+  processNextPrefetch();
+}, [jobSalaryData, processNextPrefetch]);
+
+// Triggas automatiskt när jobb laddas
+useEffect(() => {
+  if (jobs.length > 0 && !isPrefetchingRef.current) {
+    const timer = setTimeout(() => {
+      startPrefetchingSalaries(jobs);
+    }, 2000); // 2 sek delay
+    return () => clearTimeout(timer);
+  }
+}, [jobs, startPrefetchingSalaries]);
+```
+
+#### SSE-hantering (skilja prefetch från user-click)
+
+```javascript
+es.onmessage = async (event) => {
+  const data = JSON.parse(event.data);
+  if (data.type === 'salary' || data.type === 'market_info') {
+    const jobId = currentSalaryJobId.current;
+    const wasPrefetch = isPrefetchRef.current;
+
+    // Spara alltid
+    setJobSalaryData(prev => ({ ...prev, [jobId]: data }));
+
+    if (!wasPrefetch) {
+      // User-click: visa flip-view
+      setSalaryViewJobId(jobId);
+    } else {
+      // Prefetch: bara cacha, fortsätt med nästa
+      processNextPrefetch();
+    }
+  }
+};
+```
+
 ---
 
 ## MCP Tools
@@ -1565,6 +1692,7 @@ className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bl
 - [x] AI Badge-verifiering (Erfarenhet krävs/ej krävs via ChatGPT + SSE)
 - [x] Flip Card lönevisning (jobbkort och modal flippar med animation)
 - [x] Personlig löneanalys per annons (skickar jobbinfo till AI)
+- [x] Automatisk salary prefetch (hämtar alla löner vid sidladdning)
 - [ ] Notifikationer för nya jobb
 - [ ] CV-matchning mot jobb
 - [ ] Personligt brev-generator
