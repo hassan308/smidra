@@ -519,31 +519,32 @@ server.registerResource("salary-widget", "ui://widget/salary.html", {}, async ()
 }));
 
 // ============================================================
-// search_jobs - Fetch jobs and show widget immediately
+// search_jobs - STEP 1: Fetch jobs, return data for ChatGPT to analyze
 // ============================================================
 server.registerTool(
   "search_jobs",
   {
-    title: "Search Jobs (Smidra MCP)",
-    description: `🔍 Sök jobb i Sverige. Visar widget direkt med jobbresultat.
+    title: "Search Jobs - Step 1 (Smidra MCP)",
+    description: `🔍 STEG 1: Hämtar jobb från Arbetsförmedlingen.
 
-⛔ TYST VERKTYG - SKRIV INGEN TEXT ALLS!
-Widget visas automatiskt med jobbresultat.`,
+VIKTIGT FLÖDE:
+1. Detta verktyg hämtar jobbdata (returnerar TEXT, ingen widget!)
+2. Du får 6 jobb med beskrivningar
+3. SÖK LÖNER på webben för varje jobbtyp
+4. Anropa send_jobs_to_widget med jobb + löner
+
+⚠️ ANVÄNDAREN SER INGENTING förrän du anropar send_jobs_to_widget!`,
     inputSchema: {
       query: z.string().describe("Search query IN SWEDISH"),
       location: z.string().optional().describe("City/region in Sweden"),
       limit: z.number().optional().default(50).describe("Number of jobs (default 50)"),
       language: z.string().describe("User's language code"),
       direction: z.enum(["ltr", "rtl"]).default("ltr"),
-      loadingText: z.string().optional().describe("Loading text (unused)"),
-      analyzingText: z.string().optional().describe("Analyzing text (unused)"),
+      loadingText: z.string().optional(),
+      analyzingText: z.string().optional(),
       remote: z.boolean().optional(),
       fulltime: z.boolean().optional(),
       parttime: z.boolean().optional()
-    },
-    _meta: {
-      "openai/outputTemplate": "ui://widget/job-list.html",
-      "openai/widgetDescription": "Visar jobbresultat direkt i widget. Ingen ytterligare text behövs."
     }
   },
   async ({ query, location, limit, language, direction, remote, fulltime, parttime }) => {
@@ -628,29 +629,62 @@ Widget visas automatiskt med jobbresultat.`,
       console.log(`🗑️ Cleaned up session: ${widgetSessionId}`);
     }, 10 * 60 * 1000);
 
-    console.log(`\n🎉 WIDGET VISAS DIREKT:`);
+    console.log(`\n📤 SKICKAR JOBBDATA TILL CHATGPT:`);
     console.log(`   📋 ${jobsForWidget.length} jobb (page 1)`);
     console.log(`   📝 ${Object.keys(descriptionsMap).length} beskrivningar`);
     console.log(`   📊 ${total} totalt tillgängliga`);
+    console.log(`   ⏳ Väntar på att ChatGPT analyserar och anropar send_jobs_to_widget...`);
     console.log(`${'='.repeat(60)}\n`);
 
-    // Return widget DIRECTLY with jobs (user clicks "Visa lön" for salary)
+    // Return TEXT with job data - ChatGPT will analyze and call send_jobs_to_widget
     return {
-      structuredContent: {
-        _rule: "⛔ TYST! VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS!",
-        language: lang,
-        direction: dir,
-        translateMode: lang !== 'sv',
-        query: query,
-        querySwedish: query,
-        location: location || 'Sverige',
-        locationSwedish: location || 'Sverige',
-        total: total,
-        jobs: jobsForWidget,
-        widgetSessionId: widgetSessionId,
-        preloadedDescriptions: descriptionsMap
-      },
-      content: []
+      content: [{
+        type: "text",
+        text: `STEG 1 KLART ✅ - ANVÄNDAREN SER INGENTING ÄN!
+
+══════════════════════════════════════════════════════════
+NÄSTA STEG: SÖK LÖNER + ANROPA send_jobs_to_widget
+══════════════════════════════════════════════════════════
+
+Hittade ${total} jobb för "${query}" i ${location || 'Sverige'}.
+Session: ${widgetSessionId}
+
+📋 FÖRSTA 6 JOBB ATT ANALYSERA:
+${jobsForWidget.map((j, i) => `
+${i + 1}. ${j.title} - ${j.employer}
+   ID: ${j.id}
+   Plats: ${j.location}
+   Typ: ${j.workingHours || 'Ej angivet'}
+   Erfarenhet: ${j.experienceRequired === false ? 'Krävs EJ' : 'Krävs'}
+   Distans: ${j.isRemote ? 'Ja' : 'Nej'}
+   Beskrivning: ${(descriptionsMap[j.id] || j.description || '').substring(0, 150)}...
+`).join('')}
+
+══════════════════════════════════════════════════════════
+GÖR DETTA NU:
+══════════════════════════════════════════════════════════
+
+1. SÖK PÅ WEBBEN: "${query} lön Sverige 2024"
+2. Analysera lönenivåer för denna typ av jobb
+3. ANROPA send_jobs_to_widget med lönedata:
+
+{
+  "widgetSessionId": "${widgetSessionId}",
+  "salaries": [
+    {"jobId": "${jobsForWidget[0]?.id}", "avg": [SNITTLÖN], "min": [MIN], "max": [MAX], "tips": ["förhandlingstips"]},
+    {"jobId": "${jobsForWidget[1]?.id}", "avg": [SNITTLÖN], "min": [MIN], "max": [MAX], "tips": ["förhandlingstips"]},
+    {"jobId": "${jobsForWidget[2]?.id}", "avg": [SNITTLÖN], "min": [MIN], "max": [MAX], "tips": ["förhandlingstips"]},
+    {"jobId": "${jobsForWidget[3]?.id}", "avg": [SNITTLÖN], "min": [MIN], "max": [MAX], "tips": ["förhandlingstips"]},
+    {"jobId": "${jobsForWidget[4]?.id}", "avg": [SNITTLÖN], "min": [MIN], "max": [MAX], "tips": ["förhandlingstips"]},
+    {"jobId": "${jobsForWidget[5]?.id}", "avg": [SNITTLÖN], "min": [MIN], "max": [MAX], "tips": ["förhandlingstips"]}
+  ]
+}
+
+⚠️ VIKTIGT:
+- Jobb och beskrivningar finns redan på servern (session: ${widgetSessionId})
+- Du behöver BARA skicka widgetSessionId + salaries
+- SKRIV INGEN TEXT till användaren - anropa bara send_jobs_to_widget!`
+      }]
     };
   }
 );
