@@ -519,21 +519,16 @@ server.registerResource("salary-widget", "ui://widget/salary.html", {}, async ()
 }));
 
 // ============================================================
-// search_jobs - STEP 1: Fetch jobs, ChatGPT analyzes, then shows widget
+// search_jobs - Fetch jobs and show widget immediately
 // ============================================================
 server.registerTool(
   "search_jobs",
   {
-    title: "Search Jobs - Step 1 of 2 (Smidra MCP)",
-    description: `🔍 Sök jobb i Sverige. STEG 1 av 2.
+    title: "Search Jobs (Smidra MCP)",
+    description: `🔍 Sök jobb i Sverige. Visar widget direkt med jobbresultat.
 
-⚠️ VIKTIGT FLÖDE:
-1. Detta verktyg hämtar jobbdata (INGEN widget visas!)
-2. Du får jobbdata tillbaka
-3. SÖK PÅ WEBBEN efter löner för jobbtyperna
-4. Anropa send_jobs_to_widget med jobb + löner
-
-ANVÄNDAREN SER INGENTING förrän du anropar send_jobs_to_widget!`,
+⛔ TYST VERKTYG - SKRIV INGEN TEXT ALLS!
+Widget visas automatiskt med jobbresultat.`,
     inputSchema: {
       query: z.string().describe("Search query IN SWEDISH"),
       location: z.string().optional().describe("City/region in Sweden"),
@@ -629,44 +624,30 @@ ANVÄNDAREN SER INGENTING förrän du anropar send_jobs_to_widget!`,
       console.log(`🗑️ Cleaned up session: ${widgetSessionId}`);
     }, 10 * 60 * 1000);
 
-    console.log(`\n⏳ Väntar på att ChatGPT anropar send_jobs_to_widget...`);
+    console.log(`\n🎉 WIDGET VISAS DIREKT (utan löner):`);
+    console.log(`   📋 ${jobsForWidget.length} jobb (page 1)`);
+    console.log(`   📝 ${Object.keys(descriptionsMap).length} beskrivningar`);
+    console.log(`   📊 ${total} totalt tillgängliga`);
     console.log(`${'='.repeat(60)}\n`);
 
-    // Return ONLY text - NO widget! ChatGPT MUST call send_jobs_to_widget
-    // NOTE: Descriptions are stored on server - ChatGPT only needs to pass salaries!
+    // Return widget DIRECTLY with jobs (no salaries yet - user can request via button)
     return {
-      content: [{
-        type: "text",
-        text: `_RULE: ANVÄNDAREN SER INGENTING! Du MÅSTE anropa send_jobs_to_widget NU. SKRIV INGEN TEXT.
-
-═══════════════════════════════════════════════════════════════
-STEG 1 KLART ✅ | STEG 2 KRÄVS ⏳
-═══════════════════════════════════════════════════════════════
-
-Hittade ${total} jobb för "${query}" i ${location || 'Sverige'}.
-
-GÖR DETTA NU:
-1. Sök på webben: "${query} lön Sverige SCB"
-2. Anropa send_jobs_to_widget med lönedata
-
-ANROPA send_jobs_to_widget:
-{
-  "widgetSessionId": "${widgetSessionId}",
-  "salaries": [
-    { "jobId": "${jobsForWidget[0]?.id || ''}", "avg": XXXX, "min": XXXX, "max": XXXX, "tips": ["tip"] },
-    { "jobId": "${jobsForWidget[1]?.id || ''}", "avg": XXXX, "min": XXXX, "max": XXXX, "tips": ["tip"] },
-    { "jobId": "${jobsForWidget[2]?.id || ''}", "avg": XXXX, "min": XXXX, "max": XXXX, "tips": ["tip"] },
-    { "jobId": "${jobsForWidget[3]?.id || ''}", "avg": XXXX, "min": XXXX, "max": XXXX, "tips": ["tip"] },
-    { "jobId": "${jobsForWidget[4]?.id || ''}", "avg": XXXX, "min": XXXX, "max": XXXX, "tips": ["tip"] },
-    { "jobId": "${jobsForWidget[5]?.id || ''}", "avg": XXXX, "min": XXXX, "max": XXXX, "tips": ["tip"] }
-  ]
-}
-
-OBS: Jobb och beskrivningar lagras på servern. Du behöver BARA skicka widgetSessionId + salaries!
-
-JOBB-IDs för lönedata:
-${jobsForWidget.map((j, i) => `${i + 1}. ${j.id} - ${j.title} (${j.employer})`).join('\n')}`
-      }]
+      structuredContent: {
+        _rule: "⛔ TYST! VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS!",
+        language: lang,
+        direction: dir,
+        translateMode: lang !== 'sv',
+        query: query,
+        querySwedish: query,
+        location: location || 'Sverige',
+        locationSwedish: location || 'Sverige',
+        total: total,
+        jobs: jobsForWidget,
+        widgetSessionId: widgetSessionId,
+        preloadedDescriptions: descriptionsMap
+        // No preloadedSalaries - user can request via "Visa lön" button
+      },
+      content: []
     };
   }
 );
