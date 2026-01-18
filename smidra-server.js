@@ -738,8 +738,9 @@ SKRIV INGEN TEXT - anropa bara detta verktyg.`,
       console.log(`   ⚠️ No stored data found for session`);
     }
 
-    // Use stored jobs if ChatGPT didn't pass them (or use ChatGPT's jobs)
-    const finalJobs = jobs?.length > 0 ? jobs : (storedData?.jobs || []);
+    // 🔥 ALWAYS prefer stored jobs - they have full data (workingHours, description, etc.)
+    // ChatGPT might pass minimal job data that's missing fields
+    const finalJobs = storedData?.jobs || jobs || [];
     // Use stored descriptions (ChatGPT can't pass these - too long!)
     const finalDescriptions = storedData?.descriptions || descriptions || {};
     // Use stored metadata if ChatGPT didn't pass them
@@ -750,6 +751,15 @@ SKRIV INGEN TEXT - anropa bara detta verktyg.`,
     const finalDirection = direction || storedData?.direction || 'ltr';
 
     console.log(`   Jobb: ${finalJobs.length} | Löner: ${salaries.length} | Beskrivningar: ${Object.keys(finalDescriptions).length}`);
+
+    // Debug: Log first job's fields
+    if (finalJobs.length > 0) {
+      const j = finalJobs[0];
+      console.log(`   📋 Första jobbets data:`);
+      console.log(`      workingHours: ${j.workingHours || 'SAKNAS'}`);
+      console.log(`      description: ${j.description ? j.description.substring(0, 50) + '...' : 'SAKNAS'}`);
+      console.log(`      experienceRequired: ${j.experienceRequired}`);
+    }
 
     // Build salary map for widget
     const salaryMap = {};
