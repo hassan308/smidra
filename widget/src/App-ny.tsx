@@ -1353,35 +1353,47 @@ export default function App() {
     console.log('🔍 Available openai APIs:', Object.keys(window.openai || {}));
     console.log('🔍 callTool exists?', typeof (window.openai as any)?.callTool);
 
-    // Try callTool first, fallback to sendFollowUpMessage
+    // Strategy: callTool to fetch jobs, then sendFollowUpMessage to trigger ChatGPT analysis
     if (query && (window.openai as any)?.callTool) {
       console.log(`📄 Calling search_jobs directly for page ${page}...`);
 
       try {
-        const result = (window.openai as any).callTool('search_jobs', {
+        const result = await (window.openai as any).callTool('search_jobs', {
           query: query,
           location: location || 'Sverige',
           page: page,
           language: langRef.current,
           direction: 'ltr'
         });
-        console.log('📄 callTool result:', result);
+        console.log('📄 callTool resolved:', result);
 
-        // If callTool returns a promise, wait for it
-        if (result && typeof result.then === 'function') {
-          result.then((r: any) => console.log('📄 callTool resolved:', r))
-                .catch((e: any) => console.error('📄 callTool rejected:', e));
+        // Extract widgetSessionId from the response
+        const responseText = result?.result || '';
+        const sessionMatch = responseText.match(/widgetSessionId:\s*"([^"]+)"/);
+        const newSessionId = sessionMatch ? sessionMatch[1] : null;
+        console.log('📄 Extracted widgetSessionId:', newSessionId);
+
+        if (newSessionId && window.openai?.sendFollowUpMessage) {
+          // Now ask ChatGPT to analyze salaries and call send_jobs_to_widget
+          console.log('📄 Triggering ChatGPT to analyze salaries...');
+          window.openai.sendFollowUpMessage({
+            prompt: `Jag har hämtat sida ${page} för "${query}". widgetSessionId: "${newSessionId}"
+
+Sök lönedata för dessa jobb på webben och anropa send_jobs_to_widget med widgetSessionId="${newSessionId}" och lönedata.
+
+⚠️ Skriv ingen text - anropa ENDAST send_jobs_to_widget!`
+          });
         }
       } catch (err) {
         console.error('callTool failed:', err);
         setPageLoading(false);
       }
     } else if (query && window.openai?.sendFollowUpMessage) {
-      // Fallback to sendFollowUpMessage if callTool doesn't exist
+      // Fallback: just use sendFollowUpMessage
       console.log(`📄 Fallback: Using sendFollowUpMessage for page ${page}...`);
 
       window.openai.sendFollowUpMessage({
-        prompt: `[SYSTEM: User clicked page ${page} in widget. Call search_jobs tool NOW with query="${query}", location="${location || 'Sverige'}", page=${page}, language="${langRef.current}". Do NOT write text - ONLY call the tool.]`
+        prompt: `Hämta sida ${page} för "${query}" i ${location || 'Sverige'}. Anropa search_jobs med page=${page}, analysera löner, och anropa send_jobs_to_widget.`
       });
 
       // Note: The widget will be updated when ChatGPT calls send_jobs_to_widget
