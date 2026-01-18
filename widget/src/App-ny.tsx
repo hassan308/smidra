@@ -1430,61 +1430,25 @@ export default function App() {
             return { avg: 42000, min: 35000, max: 52000 };
           };
 
-          const salaries = jobIds.map((jobId, idx) => {
-            const title = jobTitles[idx] || query;
-            const salary = estimateSalary(title, idx);
-            return {
-              jobId,
-              avg: salary.avg,
-              min: salary.min,
-              max: salary.max,
-              tips: ['Förhandla vid anställning', 'Baserat på svensk lönestatistik']
-            };
-          });
+          // Ask ChatGPT to search for salaries and call send_jobs_to_widget
+          // Format as a natural user request to encourage tool usage
+          if (window.openai?.sendFollowUpMessage) {
+            const jobList = jobTitles.slice(0, 3).join(', ') || query;
+            console.log('📄 Asking ChatGPT to analyze salaries for:', jobList);
 
-          console.log('📄 Calling send_jobs_to_widget with estimated salaries...');
+            window.openai.sendFollowUpMessage({
+              prompt: `Visa sida ${page} av jobbsökningen. Jag har redan hämtat jobben (widgetSessionId: ${newSessionId}).
 
-          // Call send_jobs_to_widget directly
-          const widgetResult = await (window.openai as any).callTool('send_jobs_to_widget', {
-            widgetSessionId: newSessionId,
-            page: page,
-            language: langRef.current,
-            direction: 'ltr',
-            query: query,
-            location: location || 'Sverige',
-            total: totalJobs,
-            jobs: [], // Server will use stored jobs
-            salaries: salaries
-          });
+Sök på webben efter aktuella löner för ${jobList} i Sverige 2024.
 
-          console.log('📄 send_jobs_to_widget resolved:', widgetResult);
+När du har lönedata, anropa send_jobs_to_widget med:
+- widgetSessionId: "${newSessionId}"
+- page: ${page}
+- salaries: [array med lönedata för varje jobb]
 
-          // Parse the structuredContent and update widget directly
-          if (widgetResult?.structuredContent) {
-            const data = widgetResult.structuredContent;
-            console.log('📄 Got structuredContent, updating widget...', data);
-
-            // Update widget state with new data
-            if (data.jobs?.length) {
-              const lang = langRef.current;
-              if (lang !== 'sv') {
-                const translatedJobs = await translateJobs(data.jobs, lang);
-                setJobs(translatedJobs);
-              } else {
-                setJobs(data.jobs);
-              }
-            }
-
-            if (data.preloadedSalaries) {
-              setJobSalaryData(data.preloadedSalaries);
-            }
-
-            if (data.preloadedDescriptions) {
-              setJobDescriptions(data.preloadedDescriptions);
-            }
-
-            setCurrentPage(page);
-            setPageLoading(false);
+Jobben som behöver löner:
+${jobIds.map((id, i) => `- ${id}: ${jobTitles[i] || query}`).join('\n')}`
+            });
           }
         }
       } catch (err) {
