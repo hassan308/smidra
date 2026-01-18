@@ -519,19 +519,15 @@ server.registerResource("salary-widget", "ui://widget/salary.html", {}, async ()
 }));
 
 // ============================================================
-// search_jobs - Searches jobs AND requires salary analysis before display
-// Returns job data for ChatGPT to analyze, then display_jobs_with_salaries shows widget
+// search_jobs - Searches jobs and shows widget directly
 // ============================================================
 server.registerTool(
   "search_jobs",
   {
-    title: "Search Jobs - Step 1 (Smidra MCP)",
-    description: `🔍 Sök jobb i Sverige. STEG 1 av 2.
+    title: "Search Jobs (Smidra MCP)",
+    description: `🔍 Sök jobb i Sverige och visa resultat direkt i widget.
 
-⚠️ VIKTIGT: Detta verktyg visar INTE widget direkt!
-Efter detta verktyg MÅSTE du:
-1. Analysera löner för varje jobb (sök på webben)
-2. Anropa display_jobs_with_salaries med jobb + lönedata
+⛔ TYST VERKTYG - Widget visar allt. SKRIV INGEN TEXT!
 
 Swedish keywords: utvecklare (developer), sjuksköterska (nurse), kock (chef), lärare (teacher)`,
     inputSchema: {
@@ -636,54 +632,25 @@ SKRIV INGEN TEXT. Anropa verify_job_badges för varje jobb DIREKT.`;
       rule = "VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS.";
     }
 
-    // Return jobs data + instructions to analyze salaries
-    // Widget will be shown when display_jobs_with_salaries is called
-    const salaryInstructions = jobs.slice(0, 6).map((job, i) =>
-      `${i + 1}. "${job.title}" hos ${job.employer} (${job.location}) - ID: ${job.id}
-   ${job.experienceRequired === false ? 'Entry-level' : 'Erfaren'}, ${job.workingHours || 'Heltid'}`
-    ).join('\n');
-
+    // Return structuredContent to show widget directly
     return {
-      content: [{
-        type: "text",
-        text: `✅ Hittade ${total} jobb för "${query}" i ${location || 'Sverige'}.
-
-⚠️ STEG 2 KRÄVS - ANALYSERA LÖNER:
-Sök på webben efter svenska löner för dessa jobbtyper och anropa sedan display_jobs_with_salaries.
-
-JOBB ATT ANALYSERA:
-${salaryInstructions}
-
-ANROPA display_jobs_with_salaries MED:
-- language: "${lang}"
-- direction: "${dir}"
-- query: "${query}"
-- location: "${location || 'Sverige'}"
-- total: ${total}
-- widgetSessionId: "${widgetSessionId}"
-- jobs: (alla ${jobs.length} jobb från denna sökning)
-- salaries: [
-    { jobId: "...", avg: X, min: Y, max: Z, tips: ["..."] },
-    ... för varje jobb
-  ]
-
-⛔ VIKTIGT: SKRIV INGEN TEXT TILL ANVÄNDAREN! Anropa bara display_jobs_with_salaries direkt.`
-      }],
-      // Store jobs in structured data for ChatGPT to pass along
-      _jobData: {
+      structuredContent: {
+        _rule: rule,
         language: lang,
         direction: dir,
+        translateMode: lang !== 'sv',
+        loadingText: loadingText || 'Söker jobb...',
+        waitingText: waitingText || 'Vänta...',
         query: query,
+        querySwedish: query,
         location: location || 'Sverige',
+        locationSwedish: location || 'Sverige',
         total,
         jobs,
         widgetSessionId: widgetSessionId,
-        jobsNeedingBadgeVerification: jobsNeedingVerification.map(j => ({
-          id: j.id,
-          title: j.title,
-          snippets: j.verificationSnippets
-        }))
-      }
+        jobsNeedingBadgeVerification: jobsNeedingVerification.length > 0 ? verificationData : undefined
+      },
+      content: []
     };
   }
 );
