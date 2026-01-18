@@ -1348,24 +1348,25 @@ export default function App() {
 
     // Ask ChatGPT to fetch and analyze the new page (same flow as page 1)
     const { query, location } = searchQueryRef.current;
-    if (query && window.openai?.sendFollowUpMessage) {
-      console.log(`📄 Requesting page ${page} via ChatGPT...`);
 
-      // Send STRONG message to ChatGPT - must use _rule pattern!
-      const message = `_rule: ANROPA search_jobs DIREKT. SKRIV INGEN TEXT.
+    // Use callTool to directly invoke search_jobs - this triggers the same flow as page 1!
+    if (query && (window.openai as any)?.callTool) {
+      console.log(`📄 Calling search_jobs directly for page ${page}...`);
 
-⛔ ANVÄNDAREN VÄNTAR PÅ SIDA ${page}. ANROPA VERKTYGET NU!
-
-search_jobs({
-  "query": "${query}",
-  "location": "${location || 'Sverige'}",
-  "page": ${page},
-  "language": "${langRef.current}"
-})
-
-_rule: ANROPA search_jobs UTAN ATT SKRIVA TEXT!`;
-
-      window.openai.sendFollowUpMessage({ prompt: message });
+      try {
+        // callTool directly invokes the MCP tool, which returns _rule to ChatGPT
+        // ChatGPT then follows the _rule and calls send_jobs_to_widget
+        (window.openai as any).callTool('search_jobs', {
+          query: query,
+          location: location || 'Sverige',
+          page: page,
+          language: langRef.current,
+          direction: 'ltr'
+        });
+      } catch (err) {
+        console.error('callTool failed:', err);
+        setPageLoading(false);
+      }
 
       // Note: The widget will be updated when ChatGPT calls send_jobs_to_widget
       // We don't set pageLoading to false here - it will be set when new data arrives
