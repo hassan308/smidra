@@ -1351,16 +1351,19 @@ export default function App() {
     if (query && window.openai?.sendFollowUpMessage) {
       console.log(`📄 Requesting page ${page} via ChatGPT...`);
 
-      // Send message to ChatGPT to fetch page with salary analysis
-      const message = `Hämta sida ${page} för sökningen "${query}" i ${location || 'Sverige'}.
+      // Send STRONG message to ChatGPT - must use _rule pattern!
+      const message = `_rule: ANROPA search_jobs DIREKT. SKRIV INGEN TEXT.
 
-Anropa search_jobs med:
-- query: "${query}"
-- location: "${location || 'Sverige'}"
-- page: ${page}
-- language: "${langRef.current}"
+⛔ ANVÄNDAREN VÄNTAR PÅ SIDA ${page}. ANROPA VERKTYGET NU!
 
-Analysera löner och anropa sedan send_jobs_to_widget som vanligt.`;
+search_jobs({
+  "query": "${query}",
+  "location": "${location || 'Sverige'}",
+  "page": ${page},
+  "language": "${langRef.current}"
+})
+
+_rule: ANROPA search_jobs UTAN ATT SKRIVA TEXT!`;
 
       window.openai.sendFollowUpMessage({ prompt: message });
 
