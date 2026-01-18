@@ -954,26 +954,42 @@ function JobDetailModal({
 
   // Use preloaded description or fetch from API
   useEffect(() => {
+    console.log('🔍 Modal opened for job:', job.id);
+    console.log('   preloadedDescription:', preloadedDescription ? `${preloadedDescription.substring(0, 50)}...` : 'NONE');
+    console.log('   job.fullDescription:', job.fullDescription ? `${job.fullDescription.substring(0, 50)}...` : 'NONE');
+    console.log('   job.description:', job.description ? `${job.description.substring(0, 50)}...` : 'NONE');
+
     // Check preloaded description first (from send_jobs_to_widget)
     if (preloadedDescription) {
-      console.log('📝 Using preloaded description for job:', job.id);
+      console.log('📝 Using preloaded description for job:', job.id, `(${preloadedDescription.length} chars)`);
       setFullDescription(preloadedDescription);
+      setLoading(false);
       return;
     }
 
     // Check if job already has fullDescription
     if (job.fullDescription) {
+      console.log('📝 Using job.fullDescription:', job.id);
       setFullDescription(job.fullDescription);
+      setLoading(false);
       return;
     }
 
-    // Fallback: fetch from API (for page 2+ jobs)
+    // Check if job has short description
+    if (job.description) {
+      console.log('📝 Using job.description (short):', job.id);
+      setFullDescription(job.description);
+      // Still try to fetch full description in background
+    }
+
+    // Fallback: fetch from API (for page 2+ jobs or if no preloaded)
     console.log('🌐 Fetching description from API for job:', job.id);
     setLoading(true);
     fetch(`https://api.smidra.se/api/job/${job.id}`)
       .then(res => res.json())
       .then(async (data) => {
         let desc = data.fullDescription || data.description || job.description || labels.noDesc;
+        console.log('🌐 API returned description:', desc ? `${desc.substring(0, 50)}...` : 'NONE');
         // Translate if needed
         if (langRef.current !== 'sv' && desc) {
           try {
@@ -984,7 +1000,8 @@ function JobDetailModal({
         setFullDescription(desc);
         setLoading(false);
       })
-      .catch(() => {
+      .catch((err) => {
+        console.log('🌐 API error:', err);
         setFullDescription(job.description || labels.noDesc);
         setLoading(false);
       });
@@ -1663,7 +1680,9 @@ INSTRUKTIONER:
 
       // 🔥 Load preloaded descriptions if available (from send_jobs_to_widget)
       if (toolOutput.preloadedDescriptions) {
-        console.log('📝📝📝 PRELOADED DESCRIPTIONS FOUND!', Object.keys(toolOutput.preloadedDescriptions));
+        const descKeys = Object.keys(toolOutput.preloadedDescriptions);
+        console.log('📝📝📝 PRELOADED DESCRIPTIONS FOUND!', descKeys);
+        console.log('   Description IDs:', descKeys.join(', '));
 
         // Translate descriptions if needed
         const processedDescriptions: Record<string, string> = {};
@@ -1676,14 +1695,18 @@ INSTRUKTIONER:
             } catch {}
           }
           processedDescriptions[jobId] = translatedDesc;
+          console.log(`   📝 ${jobId}: ${desc.substring(0, 40)}... (${desc.length} chars)`);
         }
 
         setJobDescriptions(processedDescriptions);
         console.log('✅ All descriptions pre-loaded:', Object.keys(processedDescriptions));
+      } else {
+        console.log('⚠️ NO preloadedDescriptions in toolOutput');
       }
 
       // Only show first page of jobs (JOBS_PER_PAGE)
       const firstPageJobs = toolOutput.jobs.slice(0, JOBS_PER_PAGE);
+      console.log('📋 Jobs on page 1:', firstPageJobs.map(j => j.id).join(', '));
 
       if ((toolOutput.translateMode || lang !== 'sv') && firstPageJobs.length) {
         const [translatedJobs, translatedLabels] = await Promise.all([
@@ -1974,20 +1997,25 @@ INSTRUKTIONER:
 
       {/* Modal for job details */}
       <AnimatePresence>
-        {selectedJob && (
-          <JobDetailModal
-            job={selectedJob}
-            onClose={closeModal}
-            labels={labels}
-            salaryData={modalSalaryData || jobSalaryData[selectedJob.id] || null}
-            salaryLoading={modalSalaryLoading}
-            onRequestSalary={(job) => requestSalary(job, true)}
-            isSaved={widgetState.savedJobs.includes(selectedJob.id)}
-            onSave={() => toggleSave(selectedJob.id)}
-            langRef={langRef}
-            preloadedDescription={jobDescriptions[selectedJob.id]}
-          />
-        )}
+        {selectedJob && (() => {
+          console.log('🔍 Opening modal for job:', selectedJob.id);
+          console.log('   jobDescriptions keys:', Object.keys(jobDescriptions).join(', '));
+          console.log('   preloadedDescription for this job:', jobDescriptions[selectedJob.id] ? `YES (${jobDescriptions[selectedJob.id].length} chars)` : 'NO');
+          return (
+            <JobDetailModal
+              job={selectedJob}
+              onClose={closeModal}
+              labels={labels}
+              salaryData={modalSalaryData || jobSalaryData[selectedJob.id] || null}
+              salaryLoading={modalSalaryLoading}
+              onRequestSalary={(job) => requestSalary(job, true)}
+              isSaved={widgetState.savedJobs.includes(selectedJob.id)}
+              onSave={() => toggleSave(selectedJob.id)}
+              langRef={langRef}
+              preloadedDescription={jobDescriptions[selectedJob.id]}
+            />
+          );
+        })()}
       </AnimatePresence>
     </div>
   );
