@@ -628,16 +628,18 @@ Widget visas automatiskt med jobbresultat.`,
       console.log(`🗑️ Cleaned up session: ${widgetSessionId}`);
     }, 10 * 60 * 1000);
 
-    console.log(`\n🎉 WIDGET VISAS DIREKT (utan löner):`);
+    console.log(`\n🎉 WIDGET VISAS DIREKT:`);
     console.log(`   📋 ${jobsForWidget.length} jobb (page 1)`);
     console.log(`   📝 ${Object.keys(descriptionsMap).length} beskrivningar`);
     console.log(`   📊 ${total} totalt tillgängliga`);
+    console.log(`   💰 Väntar på lönedata från ChatGPT...`);
     console.log(`${'='.repeat(60)}\n`);
 
-    // Return widget DIRECTLY with jobs (no salaries yet - user can request via button)
+    // Return widget DIRECTLY with jobs + loading state for salaries
+    // Also include instructions for ChatGPT to fetch salaries and push via SSE
     return {
       structuredContent: {
-        _rule: "⛔ TYST! VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS!",
+        _rule: "⛔ VISA WIDGET. SÖK SEN LÖNER OCH ANROPA update_widget_info.",
         language: lang,
         direction: dir,
         translateMode: lang !== 'sv',
@@ -648,10 +650,32 @@ Widget visas automatiskt med jobbresultat.`,
         total: total,
         jobs: jobsForWidget,
         widgetSessionId: widgetSessionId,
-        preloadedDescriptions: descriptionsMap
-        // No preloadedSalaries - user can request via "Visa lön" button
+        preloadedDescriptions: descriptionsMap,
+        // Show loading state for salaries
+        loadingMode: true,
+        loadingText: lang === 'sv' ? 'Hämtar lönestatistik...' : 'Fetching salary data...'
       },
-      content: []
+      content: [{
+        type: "text",
+        text: `Widget visas nu! Sök lönedata och pusha till widget:
+
+SÖK PÅ WEBBEN: "${query} lön Sverige 2024 SCB"
+
+ANROPA update_widget_info för varje jobb:
+${jobsForWidget.slice(0, 6).map(j => `- ${j.title}: widgetSessionId="${widgetSessionId}", jobId="${j.id}"`).join('\n')}
+
+Exempel:
+{
+  "widgetSessionId": "${widgetSessionId}",
+  "jobContext": { "title": "${jobsForWidget[0]?.title || 'Utvecklare'}", "location": "${location || 'Sverige'}" },
+  "info": {
+    "type": "compensation",
+    "data": { "avg": 45000, "min": 38000, "max": 55000 },
+    "tips": ["Förhandla vid årlig lönerevision"],
+    "sources": ["SCB", "Unionen"]
+  }
+}`
+      }]
     };
   }
 );
