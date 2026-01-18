@@ -784,9 +784,9 @@ const requestSalary = useCallback((job) => {
 }, [jobSalaryData]);
 ```
 
-### 🚀 Automatisk Salary Prefetch
+### 🚀 Automatisk Salary Prefetch (Parallell Batch)
 
-Widget hämtar lönedata för ALLA jobb på sidan automatiskt vid sidladdning. Detta gör att lönedata visas direkt när användaren klickar "Visa lön" istället för att vänta på API-anrop.
+Widget hämtar lönedata för ALLA jobb på sidan automatiskt vid sidladdning. Alla löner hämtas i EN batch-request så AI:n analyserar alla jobb parallellt och skickar tillbaka alla löner på en gång.
 
 #### Flödet
 ```
@@ -798,27 +798,27 @@ Widget hämtar lönedata för ALLA jobb på sidan automatiskt vid sidladdning. D
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ 2. PREFETCH STARTAR                                         │
+│ 2. BATCH PREFETCH STARTAR                                   │
 │    - Filtrerar bort jobb som redan har lönedata             │
-│    - Lägger alla i prefetchQueueRef                         │
-│    - Startar processNextPrefetch()                          │
+│    - Bygger EN prompt med ALLA jobb                         │
+│    - Skickar EN sendFollowUpMessage                         │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ 3. SEKVENTIELL HÄMTNING                                     │
-│    - Hämtar EN lön i taget                                  │
-│    - 500ms paus mellan anrop                                │
-│    - isPrefetchRef = true (markerar som prefetch)           │
-│    - sendFollowUpMessage med jobbinfo                       │
+│ 3. CHATGPT ANALYSERAR PARALLELLT                            │
+│    - Tar emot alla 6 jobb i prompten                        │
+│    - Söker löner för varje jobbtyp                          │
+│    - Analyserar individuellt: titel, plats, erfarenhet      │
+│    - Anropar update_batch_salaries med ALLA löner           │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ 4. SSE TAR EMOT                                             │
-│    - Sparar i jobSalaryData[jobId]                          │
-│    - OM prefetch: visa EJ flip-view (bara cacha)            │
-│    - Anropar processNextPrefetch() för nästa jobb           │
+│ 4. SERVER PUSHAR VIA SSE                                    │
+│    - Tar emot array med alla löner                          │
+│    - Pushar batch_salary event för varje jobb               │
+│    - Widget cachas alla löner tyst                          │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -835,78 +835,106 @@ Widget hämtar lönedata för ALLA jobb på sidan automatiskt vid sidladdning. D
 // Refs för prefetch-tracking
 const isPrefetchRef = useRef<boolean>(false);
 const prefetchedJobsRef = useRef<Set<string>>(new Set());
-const prefetchQueueRef = useRef<Job[]>([]);
 const isPrefetchingRef = useRef<boolean>(false);
 
-// Prefetch för ett enskilt jobb (tyst)
-const prefetchSalary = useCallback((job: Job) => {
-  if (prefetchedJobsRef.current.has(job.id) || jobSalaryData[job.id]) {
-    return false; // Redan hämtad
-  }
-  prefetchedJobsRef.current.add(job.id);
-  currentSalaryJobId.current = job.id;
-  isPrefetchRef.current = true; // Markera som prefetch
-
-  const msg = `⛔ TYST LÄGE... [jobbinfo]`;
-  window.openai?.sendFollowUpMessage?.({ prompt: msg });
-  return true;
-}, [jobSalaryData]);
-
-// Bearbetar kön sekventiellt
-const processNextPrefetch = useCallback(() => {
-  if (prefetchQueueRef.current.length === 0) {
-    isPrefetchingRef.current = false;
-    return;
-  }
-  const nextJob = prefetchQueueRef.current.shift();
-  if (nextJob) {
-    setTimeout(() => {
-      if (!prefetchSalary(nextJob)) processNextPrefetch();
-    }, 500); // 500ms mellan varje
-  }
-}, [prefetchSalary]);
-
-// Startar prefetch för alla jobb
-const startPrefetchingSalaries = useCallback((jobsList: Job[]) => {
+// Prefetch ALLA löner i EN batch
+const prefetchAllSalaries = useCallback((jobsList: Job[]) => {
   const jobsToPrefetch = jobsList.filter(
     job => !jobSalaryData[job.id] && !prefetchedJobsRef.current.has(job.id)
   );
   if (jobsToPrefetch.length === 0) return;
-  prefetchQueueRef.current = [...jobsToPrefetch];
+
+  // Markera alla som prefetching
+  jobsToPrefetch.forEach(job => prefetchedJobsRef.current.add(job.id));
   isPrefetchingRef.current = true;
-  processNextPrefetch();
-}, [jobSalaryData, processNextPrefetch]);
+
+  // Bygg jobb-lista för prompten
+  const jobsDescription = jobsToPrefetch.map((job, i) => `
+${i + 1}. JOB ID: "${job.id}"
+   Titel: ${job.title}
+   Företag: ${job.employer}
+   Plats: ${job.location || 'Sverige'}
+   ${job.description?.substring(0, 200)}...
+   ${job.experienceRequired === false ? 'Entry-level' : 'Kräver erfarenhet'}`
+  ).join('\n');
+
+  const msg = `⛔ TYST LÄGE - ANALYSERA DESSA ${jobsToPrefetch.length} JOBB:
+
+${jobsDescription}
+
+Anropa update_batch_salaries med ALLA löner i EN array:
+{
+  "widgetSessionId": "${widgetSessionId.current}",
+  "salaries": [
+    { "jobId": "...", "title": "...", "salary": {...}, "tips": [...] },
+    ...
+  ]
+}`;
+
+  window.openai?.sendFollowUpMessage?.({ prompt: msg });
+}, [jobSalaryData]);
 
 // Triggas automatiskt när jobb laddas
 useEffect(() => {
   if (jobs.length > 0 && !isPrefetchingRef.current) {
     const timer = setTimeout(() => {
-      startPrefetchingSalaries(jobs);
-    }, 2000); // 2 sek delay
+      prefetchAllSalaries(jobs);
+    }, 2000);
     return () => clearTimeout(timer);
   }
-}, [jobs, startPrefetchingSalaries]);
+}, [jobs, prefetchAllSalaries]);
 ```
 
-#### SSE-hantering (skilja prefetch från user-click)
+#### Server Tool (update_batch_salaries)
+
+```javascript
+server.registerTool("update_batch_salaries", {
+  title: "Update Batch Salaries (Smidra MCP)",
+  description: `⛔ TYST VERKTYG - Pushar lönedata för FLERA jobb...`,
+  inputSchema: {
+    widgetSessionId: z.string(),
+    salaries: z.array(z.object({
+      jobId: z.string(),
+      title: z.string(),
+      salary: z.object({ avg: z.number(), min: z.number(), max: z.number() }),
+      tips: z.array(z.string()).optional(),
+      sources: z.array(z.string()).optional()
+    }))
+  }
+}, async (params) => {
+  // Pusha varje lön till widget via SSE
+  for (const salaryData of params.salaries) {
+    pushToWidget(params.widgetSessionId, 'batch_salary', {
+      jobId: salaryData.jobId,
+      salary: salaryData.salary,
+      tips: salaryData.tips || [],
+      sources: salaryData.sources || ['SCB', 'Unionen']
+    });
+  }
+  return { content: [] };
+});
+```
+
+#### SSE-hantering (batch_salary events)
 
 ```javascript
 es.onmessage = async (event) => {
   const data = JSON.parse(event.data);
+
+  // Handle BATCH salary updates (prefetch)
+  if (data.type === 'batch_salary') {
+    const jobId = data.jobId;
+    // Cacha tyst utan att visa flip-view
+    setJobSalaryData(prev => ({
+      ...prev,
+      [jobId]: { salary: data.salary, tips: data.tips, sources: data.sources }
+    }));
+  }
+
+  // Handle SINGLE salary (user click) - visa flip-view
   if (data.type === 'salary' || data.type === 'market_info') {
-    const jobId = currentSalaryJobId.current;
-    const wasPrefetch = isPrefetchRef.current;
-
-    // Spara alltid
-    setJobSalaryData(prev => ({ ...prev, [jobId]: data }));
-
-    if (!wasPrefetch) {
-      // User-click: visa flip-view
-      setSalaryViewJobId(jobId);
-    } else {
-      // Prefetch: bara cacha, fortsätt med nästa
-      processNextPrefetch();
-    }
+    setSalaryViewJobId(currentSalaryJobId.current);
+    // ...
   }
 };
 ```
