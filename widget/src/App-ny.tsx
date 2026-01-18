@@ -1363,15 +1363,21 @@ export default function App() {
     // Check if we already have salary data for this job
     const existingSalaryData = jobSalaryData[job.id];
 
+    console.log('🔍 requestSalary called for job:', job.id);
+    console.log('🔍 jobSalaryData keys:', Object.keys(jobSalaryData));
+    console.log('🔍 existingSalaryData:', existingSalaryData);
+
     if (existingSalaryData) {
       // Data already exists - just show the salary view (no new fetch!)
-      console.log('💰 Salary data already exists for job:', job.id);
+      console.log('✅ Salary data already exists - showing directly!');
       setSalaryViewJobId(job.id);
       if (forModal) {
         setModalSalaryData(existingSalaryData);
       }
       return;
     }
+
+    console.log('⚠️ No cached salary data - fetching from AI...');
 
     // No data yet - need to fetch
     currentSalaryJobId.current = job.id;
@@ -1462,7 +1468,8 @@ INSTRUKTIONER:
     jobsToPrefetch.forEach(job => prefetchedJobsRef.current.add(job.id));
     isPrefetchingRef.current = true;
 
-    console.log(`🚀 Prefetching salaries for ${jobsToPrefetch.length} jobs in ONE batch...`);
+    console.log(`🚀🚀🚀 PREFETCH STARTING for ${jobsToPrefetch.length} jobs in ONE batch...`);
+    console.log('🚀 Jobs to prefetch:', jobsToPrefetch.map(j => ({ id: j.id, title: j.title })));
 
     // Build job list for the prompt
     const jobsDescription = jobsToPrefetch.map((job, index) => `
@@ -1525,7 +1532,8 @@ ${jobsToPrefetch.map(job => `    {
         // Handle BATCH salary updates (prefetch - all jobs at once)
         if (data.type === 'batch_salary') {
           const jobId = data.jobId;
-          console.log('💰 Batch salary for jobId:', jobId, 'salary:', data.salary);
+          console.log('💰💰💰 BATCH SALARY RECEIVED for jobId:', jobId);
+          console.log('💰 Salary data:', data.salary);
 
           // Translate tips if needed
           let translatedTips = data.tips || [];
@@ -1534,15 +1542,19 @@ ${jobsToPrefetch.map(job => `    {
           }
 
           // Cache the salary data (don't show flip view - it's prefetch)
-          setJobSalaryData(prev => ({
-            ...prev,
-            [jobId]: {
-              salary: data.salary,
-              tips: data.tips,
-              translatedTips,
-              sources: data.sources
-            }
-          }));
+          setJobSalaryData(prev => {
+            const newData = {
+              ...prev,
+              [jobId]: {
+                salary: data.salary,
+                tips: data.tips,
+                translatedTips,
+                sources: data.sources
+              }
+            };
+            console.log('💾 Updated jobSalaryData, now has keys:', Object.keys(newData));
+            return newData;
+          });
           console.log('✅ Batch prefetched salary for job:', jobId, '(cached silently)');
         }
 
