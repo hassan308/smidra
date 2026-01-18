@@ -610,11 +610,30 @@ ANVÄNDAREN SER INGENTING förrän du anropar send_jobs_to_widget!`,
       }
     });
 
-    console.log(`📝 Descriptions förberedda: ${Object.keys(descriptionsMap).length} jobb`);
+    // 🔥 Store job data on server (ChatGPT won't pass descriptions - too long!)
+    sessionJobData.set(widgetSessionId, {
+      jobs: jobsForWidget,
+      descriptions: descriptionsMap,
+      query,
+      location: location || 'Sverige',
+      total,
+      language: lang,
+      direction: dir
+    });
+    console.log(`💾 Stored job data for session: ${widgetSessionId}`);
+    console.log(`📝 Descriptions på server: ${Object.keys(descriptionsMap).length} jobb`);
+
+    // Auto-cleanup after 10 minutes
+    setTimeout(() => {
+      sessionJobData.delete(widgetSessionId);
+      console.log(`🗑️ Cleaned up session: ${widgetSessionId}`);
+    }, 10 * 60 * 1000);
+
     console.log(`\n⏳ Väntar på att ChatGPT anropar send_jobs_to_widget...`);
     console.log(`${'='.repeat(60)}\n`);
 
     // Return ONLY text - NO widget! ChatGPT MUST call send_jobs_to_widget
+    // NOTE: Descriptions are stored on server - ChatGPT only needs to pass salaries!
     return {
       content: [{
         type: "text",
@@ -625,40 +644,28 @@ STEG 1 KLART ✅ | STEG 2 KRÄVS ⏳
 ═══════════════════════════════════════════════════════════════
 
 Hittade ${total} jobb för "${query}" i ${location || 'Sverige'}.
-Visar första ${jobsForWidget.length} jobb (page 1). Fler laddas när kunden bläddrar.
 
-NÄSTA STEG (GÖR DETTA NU):
-1. Sök på webben: "${query} lön Sverige SCB statistik"
-2. Anropa send_jobs_to_widget med data nedan + löner + beskrivningar
+GÖR DETTA NU:
+1. Sök på webben: "${query} lön Sverige SCB"
+2. Anropa send_jobs_to_widget med lönedata
 
-PARAMETRAR FÖR send_jobs_to_widget:
+ANROPA send_jobs_to_widget:
 {
   "widgetSessionId": "${widgetSessionId}",
-  "language": "${lang}",
-  "direction": "${dir}",
-  "query": "${query}",
-  "location": "${location || 'Sverige'}",
-  "total": ${total},
-  "jobs": [JOBB NEDAN - ${jobsForWidget.length} st],
   "salaries": [
-    { "jobId": "XXX", "avg": XXXX, "min": XXXX, "max": XXXX, "tips": ["tip"] }
-    ... (en per jobb)
-  ],
-  "descriptions": {
-    "jobId1": "full beskrivning...",
-    "jobId2": "full beskrivning..."
-  }
+    { "jobId": "${jobsForWidget[0]?.id || ''}", "avg": XXXX, "min": XXXX, "max": XXXX, "tips": ["tip"] },
+    { "jobId": "${jobsForWidget[1]?.id || ''}", "avg": XXXX, "min": XXXX, "max": XXXX, "tips": ["tip"] },
+    { "jobId": "${jobsForWidget[2]?.id || ''}", "avg": XXXX, "min": XXXX, "max": XXXX, "tips": ["tip"] },
+    { "jobId": "${jobsForWidget[3]?.id || ''}", "avg": XXXX, "min": XXXX, "max": XXXX, "tips": ["tip"] },
+    { "jobId": "${jobsForWidget[4]?.id || ''}", "avg": XXXX, "min": XXXX, "max": XXXX, "tips": ["tip"] },
+    { "jobId": "${jobsForWidget[5]?.id || ''}", "avg": XXXX, "min": XXXX, "max": XXXX, "tips": ["tip"] }
+  ]
 }
 
-═══════════════════════════════════════════════════════════════
-JOBB (${jobsForWidget.length} st för page 1):
-═══════════════════════════════════════════════════════════════
-${JSON.stringify(jobsForWidget, null, 2)}
+OBS: Jobb och beskrivningar lagras på servern. Du behöver BARA skicka widgetSessionId + salaries!
 
-═══════════════════════════════════════════════════════════════
-BESKRIVNINGAR (kopiera till "descriptions"):
-═══════════════════════════════════════════════════════════════
-${JSON.stringify(descriptionsMap, null, 2)}`
+JOBB-IDs för lönedata:
+${jobsForWidget.map((j, i) => `${i + 1}. ${j.id} - ${j.title} (${j.employer})`).join('\n')}`
       }]
     };
   }
@@ -720,8 +727,29 @@ SKRIV INGEN TEXT - anropa bara detta verktyg.`,
     console.log(`\n${'='.repeat(60)}`);
     console.log(`✅ STEG 2: send_jobs_to_widget`);
     console.log(`   Session: ${widgetSessionId}`);
-    console.log(`   Jobb: ${jobs.length} | Löner: ${salaries.length} | Beskrivningar: ${descriptions ? Object.keys(descriptions).length : 0}`);
     console.log(`${'='.repeat(60)}`);
+
+    // 🔥 Retrieve stored job data from server (includes descriptions!)
+    const storedData = sessionJobData.get(widgetSessionId);
+    if (storedData) {
+      console.log(`   📦 Retrieved stored data for session`);
+      console.log(`   📝 Descriptions från server: ${Object.keys(storedData.descriptions).length}`);
+    } else {
+      console.log(`   ⚠️ No stored data found for session`);
+    }
+
+    // Use stored jobs if ChatGPT didn't pass them (or use ChatGPT's jobs)
+    const finalJobs = jobs?.length > 0 ? jobs : (storedData?.jobs || []);
+    // Use stored descriptions (ChatGPT can't pass these - too long!)
+    const finalDescriptions = storedData?.descriptions || descriptions || {};
+    // Use stored metadata if ChatGPT didn't pass them
+    const finalQuery = query || storedData?.query || '';
+    const finalLocation = location || storedData?.location || 'Sverige';
+    const finalTotal = total || storedData?.total || finalJobs.length;
+    const finalLanguage = language || storedData?.language || 'sv';
+    const finalDirection = direction || storedData?.direction || 'ltr';
+
+    console.log(`   Jobb: ${finalJobs.length} | Löner: ${salaries.length} | Beskrivningar: ${Object.keys(finalDescriptions).length}`);
 
     // Build salary map for widget
     const salaryMap = {};
@@ -735,36 +763,36 @@ SKRIV INGEN TEXT - anropa bara detta verktyg.`,
     }
 
     // Log descriptions
-    if (descriptions) {
-      console.log(`   📝 Beskrivningar:`);
-      for (const [jobId, desc] of Object.entries(descriptions)) {
-        console.log(`      ${jobId.substring(0, 8)}... → ${desc.length} tecken`);
+    if (Object.keys(finalDescriptions).length > 0) {
+      console.log(`   📝 Beskrivningar (från server):`);
+      for (const [jobId, desc] of Object.entries(finalDescriptions)) {
+        console.log(`      ${jobId.substring(0, 8)}... → ${(desc as string).length} tecken`);
       }
     }
 
     console.log(`\n🎉 WIDGET VISAS NU:`);
-    console.log(`   📋 ${jobs.length} jobb (page 1)`);
+    console.log(`   📋 ${finalJobs.length} jobb (page 1)`);
     console.log(`   💰 ${Object.keys(salaryMap).length} löner`);
-    console.log(`   📝 ${descriptions ? Object.keys(descriptions).length : 0} beskrivningar`);
-    console.log(`   📊 ${total} totalt tillgängliga`);
+    console.log(`   📝 ${Object.keys(finalDescriptions).length} beskrivningar`);
+    console.log(`   📊 ${finalTotal} totalt tillgängliga`);
     console.log(`${'='.repeat(60)}\n`);
 
     // Return widget with jobs + preloaded salaries + descriptions
     return {
       structuredContent: {
         _rule: "⛔ TYST! VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS!",
-        language: language || 'sv',
-        direction: direction || 'ltr',
-        translateMode: (language || 'sv') !== 'sv',
-        query: query,
-        querySwedish: query,
-        location: location || 'Sverige',
-        locationSwedish: location || 'Sverige',
-        total: total || jobs.length,
-        jobs,
+        language: finalLanguage,
+        direction: finalDirection,
+        translateMode: finalLanguage !== 'sv',
+        query: finalQuery,
+        querySwedish: finalQuery,
+        location: finalLocation,
+        locationSwedish: finalLocation,
+        total: finalTotal,
+        jobs: finalJobs,
         widgetSessionId: widgetSessionId,
         preloadedSalaries: salaryMap,
-        preloadedDescriptions: descriptions || {}
+        preloadedDescriptions: finalDescriptions
       },
       content: []
     };
@@ -1184,6 +1212,10 @@ const transports = new Map();
 
 // SSE clients for real-time widget updates
 const sseClients = new Map(); // widgetSessionId -> response object
+
+// Server-side storage for job data (keyed by widgetSessionId)
+// This avoids sending large descriptions through ChatGPT
+const sessionJobData = new Map(); // widgetSessionId -> { jobs, descriptions }
 
 function pushToWidget(sessionId, eventType, data) {
   const client = sseClients.get(sessionId);
