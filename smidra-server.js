@@ -632,14 +632,12 @@ Widget visas automatiskt med jobbresultat.`,
     console.log(`   📋 ${jobsForWidget.length} jobb (page 1)`);
     console.log(`   📝 ${Object.keys(descriptionsMap).length} beskrivningar`);
     console.log(`   📊 ${total} totalt tillgängliga`);
-    console.log(`   💰 Väntar på lönedata från ChatGPT...`);
     console.log(`${'='.repeat(60)}\n`);
 
-    // Return widget DIRECTLY with jobs + loading state for salaries
-    // Also include instructions for ChatGPT to fetch salaries and push via SSE
+    // Return widget DIRECTLY with jobs (user clicks "Visa lön" for salary)
     return {
       structuredContent: {
-        _rule: "⛔ VISA WIDGET. SÖK SEN LÖNER OCH ANROPA update_widget_info.",
+        _rule: "⛔ TYST! VISA ENDAST WIDGET. SKRIV INGEN TEXT ALLS!",
         language: lang,
         direction: dir,
         translateMode: lang !== 'sv',
@@ -650,32 +648,9 @@ Widget visas automatiskt med jobbresultat.`,
         total: total,
         jobs: jobsForWidget,
         widgetSessionId: widgetSessionId,
-        preloadedDescriptions: descriptionsMap,
-        // Show loading state for salaries
-        loadingMode: true,
-        loadingText: lang === 'sv' ? 'Hämtar lönestatistik...' : 'Fetching salary data...'
+        preloadedDescriptions: descriptionsMap
       },
-      content: [{
-        type: "text",
-        text: `Widget visas nu! Sök lönedata och pusha till widget:
-
-SÖK PÅ WEBBEN: "${query} lön Sverige 2024 SCB"
-
-ANROPA update_widget_info för varje jobb:
-${jobsForWidget.slice(0, 6).map(j => `- ${j.title}: widgetSessionId="${widgetSessionId}", jobId="${j.id}"`).join('\n')}
-
-Exempel:
-{
-  "widgetSessionId": "${widgetSessionId}",
-  "jobContext": { "title": "${jobsForWidget[0]?.title || 'Utvecklare'}", "location": "${location || 'Sverige'}" },
-  "info": {
-    "type": "compensation",
-    "data": { "avg": 45000, "min": 38000, "max": 55000 },
-    "tips": ["Förhandla vid årlig lönerevision"],
-    "sources": ["SCB", "Unionen"]
-  }
-}`
-      }]
+      content: []
     };
   }
 );
